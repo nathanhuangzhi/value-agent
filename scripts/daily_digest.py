@@ -7,8 +7,11 @@ email digest (+ optional publish step):
                                                     →  build_report
                                                     →  build_index
                                                     →  digest_summary (LLM)
-                                                    →  email_digest
                                                     →  publish (opt)
+                                                    →  email_digest
+
+Publish runs BEFORE the email so a broken publish (auth failure, network
+hiccup) aborts the run before recipients get a digest full of dead links.
 
 Default behavior: pick up the most recent daily-scan entry from
 `data/daily_industry_log.json`, run all four stages for its ticker list,
@@ -192,16 +195,21 @@ def main():
     # ---- 6. LLM-synthesised summary + one-pager digest ----
     summary_md, table_rows = _build_digest_summary(tickers, log_date, industry_label)
 
-    # ---- 7. Send the digest email ----
+    # ---- 7. Publish to git repo BEFORE emailing ----
+    # Order matters: the digest email links to <archive>/<TICKER>.html. If we
+    # email first and the publish fails, recipients click links to files that
+    # don't exist yet. Publishing first means a publish failure aborts the
+    # run with no email going out — caller can re-trigger after fixing auth
+    # without spamming dead links.
+    if args.publish_dir:
+        _publish(report_paths, log_date, industry_label, args.publish_dir)
+
+    # ---- 8. Send the digest email ----
     _send_digest(
         table_rows, summary_md, log_date, industry_label,
         subject_override=args.subject,
         dry_run=args.dry_run, skip_email=args.skip_email,
     )
-
-    # ---- 8. Publish to git repo (optional) ----
-    if args.publish_dir:
-        _publish(report_paths, log_date, industry_label, args.publish_dir)
 
 
 def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str | None):

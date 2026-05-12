@@ -114,7 +114,12 @@ jobs:
           python -m scripts.daily_digest "${ARGS[@]}"
 
       - name: Commit persisted state back to value-agent
-        if: ${{ !inputs.dry_run }}
+        # Always run on real runs, even if a prior step failed — otherwise
+        # a publish failure (or any mid-pipeline crash) would discard the
+        # day's classifier + daily_scan progress, forcing the next run to
+        # re-pay for DeepSeek narratives. The state files (atomic-written
+        # incrementally) are safe to persist mid-run.
+        if: ${{ always() && !inputs.dry_run }}
         run: |
           set -euo pipefail
           git config user.name  "value-agent-bot"
