@@ -1,0 +1,145 @@
+# Daily pipeline orchestrator. Runs Stages 2-5 of the value-agent funnel,
+# pushes per-ticker HTML reports to the value-agent-reports archive repo
+# (which Vercel deploys), commits the persisted-state files back to this
+# repo, and emails the digest one-pager.
+#
+# Schedule: 13:00 UTC every day = 5am PST (year-round). During Pacific
+# Daylight Time (Mar-Nov) this lands at 6am Pacific local time. To shift,
+# edit the cron string below — GitHub Actions cron is always UTC.
+#
+# What it costs:
+#   - SEC EDGAR + yfinance: free
+#   - DeepSeek narratives (~20-30 tickers/day × ~$0.03): ~$0.50-$1.00/day
+#   - DeepSeek digest summary: ~$0.005-$0.04
+#   - GitHub Actions minutes: well under the free tier for a public repo
+#
+# Manual run: Actions tab → "Daily pipeline" → "Run workflow".
+
+name: Daily pipeline
+
+on:
+  schedule:
+    - cron: "0 13 * * *"  # 5am PST = 13:00 UTC year-round
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build everything but skip the email send and publish push"
+        type: boolean
+        required: false
+        default: false
+
+# Prevent two daily runs from racing if one drags past midnight. We don't
+# cancel an in-flight run; we just queue and let it finish first.
+concurrency:
+  group: daily-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # commit data/state files back to this repo
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GMAIL_USER: ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+      REPORT_BASE_URL: ${{ secrets.REPORT_BASE_URL }}
+    steps:
+      - name: Checkout value-agent
+        uses: actions/checkout@v4
+        with:
+          # Full history so the bot commit cleanly fast-forwards on push.
+          fetch-depth: 0
+          # Use the default GITHUB_TOKEN — it's scoped to this repo with
+          # write access (the workflow `permissions: contents: write`).
+          persist-credentials: true
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Clone reports archive (publish target + report-cache seed)
+        env:
+          REPORTS_REPO_TOKEN: ${{ secrets.REPORTS_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          PUBLISH_DIR="$HOME/value-agent-reports"
+          # The PAT must have `Contents: read+write` on
+          # nathanhuangzhi/value-agent-reports. Stored as a repo secret.
+          git clone "https://x-access-token:${REPORTS_REPO_TOKEN}@github.com/nathanhuangzhi/value-agent-reports.git" "$PUBLISH_DIR"
+          git -C "$PUBLISH_DIR" config user.name  "value-agent-bot"
+          git -C "$PUBLISH_DIR" config user.email "value-agent-bot@users.noreply.github.com"
+
+          # Seed data/reports/ with the existing archive so today's
+          # daily_digest --publish-dir doesn't shrink the published set
+          # down to just today's tickers. -n = don't clobber freshly
+          # built reports during this run.
+          mkdir -p data/reports
+          shopt -s nullglob
+          for f in "$PUBLISH_DIR"/*.html; do
+            cp -n "$f" data/reports/ || true
+          done
+          echo "PUBLISH_DIR=$PUBLISH_DIR" >> "$GITHUB_ENV"
+
+      - name: Stage 2 — classify_companies (DeepSeek, JSON-mode)
+        run: python -m scripts.classify_companies
+
+      - name: Stage 3 — filter_companies
+        run: python -m scripts.filter_companies
+
+      - name: Stage 4 — daily_scan (DeepSeek narrative per ticker)
+        run: python -m scripts.daily_scan
+
+      - name: Stages 4b → 5 (SEC + yfinance + validate + reports + index + email + publish)
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          ARGS=(--publish-dir "$PUBLISH_DIR")
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            ARGS=(--dry-run --publish-dir "$PUBLISH_DIR")
+          fi
+          python -m scripts.daily_digest "${ARGS[@]}"
+
+      - name: Commit persisted state back to value-agent
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          git config user.name  "value-agent-bot"
+          git config user.email "value-agent-bot@users.noreply.github.com"
+          # Only stage the whitelisted state files (see .gitignore).
+          # `git add` is a no-op when a file isn't on disk; harmless.
+          git add \
+            data/companies.jsonl \
+            data/companies_classified.json \
+            data/companies_analyzed.json \
+            data/companies_classify_failures.json \
+            data/classify_probes.json \
+            data/daily_industry_log.json
+          if git diff --staged --quiet; then
+            echo "No state changes to commit."
+          else
+            git commit -m "Daily pipeline run $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Upload digest HTML as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ github.run_id }}
+          path: data/reports/_digest.html
+          if-no-files-found: ignore
+          retention-days: 14

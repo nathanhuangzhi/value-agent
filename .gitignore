@@ -2,3 +2,17 @@
 __pycache__/
 *.pyc
 venv/
+
+# Pipeline data: gitignore the whole dir, then whitelist the state files
+# that the daily GitHub Actions workflow needs to persist across runs.
+# Derived / regenerable artifacts (companies_sec.json, companies_yfinance.json,
+# companies_filtered.json, companies_validation.json, data/reports/*.html)
+# stay ignored — they're rebuilt every run from external APIs or other state.
+data/*
+!data/companies.jsonl
+!data/companies_classified.json
+!data/companies_analyzed.json
+!data/companies_classify_failures.json
+!data/classify_probes.json
+!data/daily_industry_log.json
+*.egg-info/

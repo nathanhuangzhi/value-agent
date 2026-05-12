@@ -1,6 +1,5 @@
 import yaml
 import re
-import os
 from pathlib import Path
 
 def load_prompt(prompt_name: str, **kwargs):

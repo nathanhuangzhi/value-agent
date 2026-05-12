@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "value-agent"
+version = "0.1.0"
+description = "Munger-style value-investing research agent (FastAPI + DeepSeek + yfinance pipeline)."
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "openai",
+    "exa-py",
+    "yfinance",
+    "python-dotenv",
+    "pydantic",
+    "PyYAML",
+    "requests",
+    "httpx",
+    "uvicorn",
+    "pandas",
+    "matplotlib",
+    "markdown-it-py",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "scripts*"]
+exclude = ["data*", "venv*", "tests*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
