@@ -126,13 +126,25 @@ jobs:
           git config user.email "value-agent-bot@users.noreply.github.com"
           # Only stage the whitelisted state files (see .gitignore).
           # `git add` is a no-op when a file isn't on disk; harmless.
+          #
+          # The four sidecars (sec, yfinance, validation, digest) are
+          # persisted so tomorrow's CI starts with yesterday's full
+          # dataset on disk. fetch_sec_annual + fetch_yfinance_statements
+          # are both incremental (skip tickers they've already fetched),
+          # so this turns each daily run from a cold-start (35 sec SEC
+          # + 20-30 min yfinance) into an incremental sync of just the
+          # day's new tickers (~5 sec SEC + ~1-2 min yfinance).
           git add \
             data/companies.jsonl \
             data/companies_classified.json \
             data/companies_analyzed.json \
             data/companies_classify_failures.json \
             data/classify_probes.json \
-            data/daily_industry_log.json
+            data/daily_industry_log.json \
+            data/companies_sec.json \
+            data/companies_yfinance.json \
+            data/companies_validation.json \
+            data/companies_digest.json
           if git diff --staged --quiet; then
             echo "No state changes to commit."
           else

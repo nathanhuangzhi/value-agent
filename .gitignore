@@ -5,9 +5,15 @@ venv/
 
 # Pipeline data: gitignore the whole dir, then whitelist the state files
 # that the daily GitHub Actions workflow needs to persist across runs.
-# Derived / regenerable artifacts (companies_sec.json, companies_yfinance.json,
-# companies_filtered.json, companies_validation.json, data/reports/*.html)
-# stay ignored — they're rebuilt every run from external APIs or other state.
+#
+# Sidecar files (sec, yfinance, validation, digest) are ALSO whitelisted:
+# they're technically regenerable, but committing them lets the daily CI
+# run start with yesterday's data already on disk (so it fetches only new
+# tickers instead of cold-starting). Steady-state size ~465 MB once all
+# ~7K NYSE+Nasdaq tickers are scanned — well within GitHub's repo limits.
+#
+# data/reports/*.html stays ignored — those go to the value-agent-reports
+# repo for Vercel hosting, not into this repo's history.
 data/*
 !data/companies.jsonl
 !data/companies_classified.json
@@ -15,4 +21,8 @@ data/*
 !data/companies_classify_failures.json
 !data/classify_probes.json
 !data/daily_industry_log.json
+!data/companies_sec.json
+!data/companies_yfinance.json
+!data/companies_validation.json
+!data/companies_digest.json
 *.egg-info/
