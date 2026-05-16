@@ -1,0 +1,314 @@
+"""JSON API routes for the mobile app.
+
+Every endpoint composes data from the existing pipeline outputs:
+  - companies_analyzed.json  — per-ticker identity + narrative + price
+  - companies_sec.json       — SEC XBRL financial statements
+  - companies_yfinance.json  — yfinance gap-fill
+  - companies_validation.json — data-quality status
+  - daily_industry_log.json  — daily-scan record
+
+Pure read-only; the pipeline writes, this reads. The helpers (`_load_*`)
+are kept module-private so the test suite can patch the data paths via
+the `_DataPaths` singleton.
+"""
+from __future__ import annotations
+
+import json
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException
+
+from app.tools.paths import (
+    COMPANIES_ANALYZED, COMPANIES_DIGEST, COMPANIES_SEC, COMPANIES_VALIDATION,
+    COMPANIES_YFINANCE, DAILY_LOG,
+)
+from app.tools.report.format import latest_by_ticker
+from app.tools.report.ratios import compute_snapshot_ratios
+from app.tools.report.sec_adapter import (
+    load_sec_by_ticker, sec_to_yfinance_annual, sec_to_yfinance_quarterly,
+)
+
+router = APIRouter(prefix="/api", tags=["mobile-api"])
+
+
+@dataclass
+class _DataPaths:
+    """Encapsulates the on-disk paths. Tests swap this out to point at
+    fixture files instead of the real `data/` directory."""
+    analyzed: Path = COMPANIES_ANALYZED
+    sec: Path = COMPANIES_SEC
+    yfinance: Path = COMPANIES_YFINANCE
+    validation: Path = COMPANIES_VALIDATION
+    daily_log: Path = DAILY_LOG
+    digest: Path = COMPANIES_DIGEST
+
+
+_paths = _DataPaths()
+
+
+# ---------- Helpers ----------
+
+def _read_json(path: Path, default):
+    if not path.exists():
+        return default
+    return json.loads(path.read_text())
+
+
+def _slug(s: str) -> str:
+    import re
+    s = (s or "").lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s or "uncategorized"
+
+
+def _load_analyzed() -> dict:
+    """Map ticker → latest analyzed row."""
+    return latest_by_ticker(_read_json(_paths.analyzed, []))
+
+
+def _load_validation() -> dict:
+    """Map ticker → validation row."""
+    return {r["ticker"]: r for r in _read_json(_paths.validation, []) if r.get("ticker")}
+
+
+def _load_sec() -> dict:
+    return load_sec_by_ticker(_paths.sec)
+
+
+def _load_yf() -> dict:
+    return load_sec_by_ticker(_paths.yfinance)
+
+
+def _blended_quarterly(sec_row, yf_row):
+    """Mirror what the renderer does: blend SEC + yfinance for the last
+    8 quarters across all three statements."""
+    return sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row)
+
+
+def _blended_annual(sec_row, yf_row):
+    return sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row)
+
+
+def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
+                         sec_by_ticker: dict, yf_by_ticker: dict) -> dict:
+    """Compute the same TTM-based snapshot KPIs the report renders:
+    market_cap, ttm_pe, ttm_pocf, ps, pb."""
+    sec_row = sec_by_ticker.get(ticker)
+    yf_row = yf_by_ticker.get(ticker)
+    if not (sec_row or yf_row):
+        return {"market_cap": analyzed_row.get("market_cap"),
+                "ttm_pe": None, "ttm_pocf": None, "ps": None, "pb": None}
+    q = _blended_quarterly(sec_row, yf_row)
+    ph = (analyzed_row.get("price_history") or {}).get("data") or []
+    out = compute_snapshot_ratios(
+        q["income_statement"], q["balance_sheet"], q["cash_flow"], ph,
+    )
+    # Prefer the recomputed mcap (price × diluted shares), fall back to
+    # the Stage-1 stored value if we couldn't recompute.
+    out["market_cap"] = out.get("market_cap") or analyzed_row.get("market_cap")
+    return out
+
+
+def _summarize_industries(analyzed: dict) -> list[dict]:
+    """Group analyzed rows by industry; return list of summary dicts
+    sorted by latest_analyzed (newest first)."""
+    by_industry: dict[str, list[dict]] = defaultdict(list)
+    for row in analyzed.values():
+        by_industry[row.get("industry") or "Uncategorized"].append(row)
+
+    out = []
+    for name, rows in by_industry.items():
+        latest = max((r.get("analyzed_date") or "" for r in rows), default="")
+        out.append({
+            "name": name,
+            "slug": _slug(name),
+            "ticker_count": len(rows),
+            "latest_analyzed": latest,
+        })
+    return sorted(out, key=lambda i: (i["latest_analyzed"], i["name"]), reverse=True)
+
+
+def _ticker_summary(analyzed_row: dict, validation_row: dict | None,
+                    ratios: dict) -> dict:
+    """One ticker as a compact row for the industry list / digest table."""
+    return {
+        "ticker": analyzed_row["ticker"],
+        "name": analyzed_row.get("name") or analyzed_row["ticker"],
+        "sector": analyzed_row.get("sector") or "",
+        "industry": analyzed_row.get("industry") or "Uncategorized",
+        "market_cap": ratios.get("market_cap"),
+        "ttm_pe": ratios.get("ttm_pe"),
+        "ttm_pocf": ratios.get("ttm_pocf"),
+        "ps": ratios.get("ps"),
+        "pb": ratios.get("pb"),
+        "analyzed_date": analyzed_row.get("analyzed_date") or "",
+        "status": (validation_row or {}).get("status") or "ok",
+    }
+
+
+# ---------- Routes ----------
+
+@router.get("/industries")
+def list_industries():
+    """List of every industry that's been analyzed, with counts + last date."""
+    analyzed = _load_analyzed()
+    industries = _summarize_industries(analyzed)
+    return {
+        "industries": industries,
+        "total_tickers": len(analyzed),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@router.get("/industries/{slug}")
+def industry_detail(slug: str):
+    """Ticker list for one industry, with snapshot KPIs."""
+    analyzed = _load_analyzed()
+    validation = _load_validation()
+    sec_by_ticker = _load_sec()
+    yf_by_ticker = _load_yf()
+
+    # Find the industry name that maps to this slug
+    industry_name = None
+    matching_rows = []
+    for row in analyzed.values():
+        name = row.get("industry") or "Uncategorized"
+        if _slug(name) == slug:
+            industry_name = name
+            matching_rows.append(row)
+
+    if not matching_rows:
+        raise HTTPException(404, detail=f"No industry with slug {slug!r}")
+
+    tickers = []
+    for row in sorted(matching_rows, key=lambda r: r["ticker"]):
+        t = row["ticker"]
+        ratios = _snapshot_ratios_for(t, row, sec_by_ticker, yf_by_ticker)
+        tickers.append(_ticker_summary(row, validation.get(t), ratios))
+
+    return {
+        "industry": industry_name,
+        "slug": slug,
+        "ticker_count": len(tickers),
+        "tickers": tickers,
+    }
+
+
+@router.get("/tickers/{symbol}")
+def ticker_detail(symbol: str):
+    """Full payload for one ticker: identity, snapshot, blended statements,
+    narrative, validation, classification, price history."""
+    ticker = symbol.upper()
+    analyzed = _load_analyzed()
+    row = analyzed.get(ticker)
+    if not row:
+        raise HTTPException(404, detail=f"No analyzed row for ticker {ticker!r}")
+
+    sec_by_ticker = _load_sec()
+    yf_by_ticker = _load_yf()
+    validation = _load_validation()
+    sec_row = sec_by_ticker.get(ticker)
+    yf_row = yf_by_ticker.get(ticker)
+
+    blended_annual = _blended_annual(sec_row, yf_row) if (sec_row or yf_row) else {
+        "income_statement": [], "balance_sheet": [], "cash_flow": [],
+    }
+    blended_quarterly = _blended_quarterly(sec_row, yf_row) if (sec_row or yf_row) else {
+        "income_statement": [], "balance_sheet": [], "cash_flow": [],
+    }
+    ratios = _snapshot_ratios_for(ticker, row, sec_by_ticker, yf_by_ticker)
+
+    return {
+        "ticker": ticker,
+        "name": row.get("name") or ticker,
+        "sector": row.get("sector") or "",
+        "industry": row.get("industry") or "Uncategorized",
+        "exchange": row.get("exchange") or "",
+        "country": row.get("country") or "",
+        "business_overview": row.get("business_overview") or "",
+        "classification": row.get("classification") or {},
+        "classification_meta": row.get("classification_meta") or {},
+        "snapshot": ratios,
+        "annual": blended_annual,
+        "quarterly": blended_quarterly,
+        "narrative": {
+            "text": row.get("narrative") or "",
+            "model": row.get("narrative_model"),
+            "provider": row.get("narrative_provider"),
+            "sources": row.get("narrative_sources") or [],
+            "rerun_at": row.get("narrative_rerun_at"),
+        },
+        "validation": validation.get(ticker) or {"status": "ok", "issues": []},
+        "analyzed_date": row.get("analyzed_date") or "",
+    }
+
+
+@router.get("/tickers/{symbol}/price-history")
+def ticker_price_history(symbol: str):
+    """Just the price time series — cheap payload for native chart."""
+    ticker = symbol.upper()
+    row = _load_analyzed().get(ticker)
+    if not row:
+        raise HTTPException(404, detail=f"No analyzed row for ticker {ticker!r}")
+    ph = row.get("price_history") or {}
+    return {
+        "ticker": ticker,
+        "period": ph.get("period"),
+        "interval": ph.get("interval"),
+        "data": ph.get("data") or [],
+    }
+
+
+@router.get("/digest/latest")
+def digest_latest():
+    """The most recent daily batch with the LLM-generated summary text.
+
+    Reads from the persisted digest file written by `scripts/daily_digest.py`
+    (Stage 6). When that file doesn't exist yet (e.g. someone's running the
+    API before the first daily_digest run), falls back to composing from
+    the daily-scan log + analyzed.json, omitting `summary_md`."""
+    persisted = _read_json(_paths.digest, None)
+    if persisted:
+        return {
+            "date": persisted.get("date") or "",
+            "industries": persisted.get("industries") or [],
+            "ticker_count": persisted.get("ticker_count") or len(persisted.get("tickers") or []),
+            "summary_md": persisted.get("summary_md") or "",
+            "tickers": persisted.get("tickers") or [],
+            "generated_at": persisted.get("generated_at"),
+        }
+
+    # Fallback: compose from the daily-scan log so the endpoint stays
+    # useful even before the first `daily_digest` run.
+    entries = _read_json(_paths.daily_log, [])
+    if not entries:
+        raise HTTPException(404, detail="No daily-scan log entries and no persisted digest")
+    entry = sorted(entries, key=lambda e: e.get("date", ""))[-1]
+    log_date = entry.get("date") or ""
+    industries = entry.get("industries") or []
+    ticker_symbols = entry.get("tickers") or []
+
+    analyzed = _load_analyzed()
+    validation = _load_validation()
+    sec_by_ticker = _load_sec()
+    yf_by_ticker = _load_yf()
+
+    tickers = []
+    for t in ticker_symbols:
+        row = analyzed.get(t)
+        if not row:
+            continue
+        ratios = _snapshot_ratios_for(t, row, sec_by_ticker, yf_by_ticker)
+        tickers.append(_ticker_summary(row, validation.get(t), ratios))
+
+    return {
+        "date": log_date,
+        "industries": industries,
+        "ticker_count": len(tickers),
+        "summary_md": "",
+        "tickers": tickers,
+        "generated_at": None,
+    }

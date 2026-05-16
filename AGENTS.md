@@ -4,7 +4,7 @@ Instructions for coding agents (Claude Code, Cursor, Aider, etc.) working in thi
 
 ## What this project is
 
-`value-agent` is a multi-stage equity research pipeline plus a FastAPI service. It crawls the NYSE+Nasdaq universe, classifies each company by business model, filters down to candidates that fit a value-investing mandate, runs a daily DeepSeek-narrated Munger-style deep-dive on a rotating subset, renders each result as a Value-Line-style HTML report, validates the underlying data, builds an industry-grouped archive site, and emails an LLM-summarized digest. The archive site is published to a separate git repo for static hosting (e.g. Vercel / Cloudflare Pages).
+`value-agent` is a multi-stage equity research pipeline plus a FastAPI service. It crawls the NYSE+Nasdaq universe, classifies each company by business model, filters down to candidates that fit a value-investing mandate, runs a daily DeepSeek-narrated Munger-style deep-dive on a rotating subset, renders each result as a Value-Line-style HTML report, validates the underlying data, builds an industry-grouped archive site, and emails an LLM-summarized digest. The archive site is published to a separate git repo for static hosting (e.g. Vercel / Cloudflare Pages). The FastAPI app also exposes a read-only JSON API (`/api/...`) that a React Native mobile app (`mobile/`, planned) consumes.
 
 ## Persona for analysis output
 
@@ -84,9 +84,15 @@ When adding a new skill: create `app/prompts/<name>.prompt.md`, then call `load_
 python -m venv venv
 ./venv/bin/pip install -e ".[dev]"      # editable install + pytest
 
-# Run API server
+# Run API server (legacy debug routes + read-only /api for the mobile app)
 ./venv/bin/uvicorn app.main:app --reload
 # → http://localhost:8000/docs
+# Mobile JSON API:
+#   GET /api/industries                          — industry list
+#   GET /api/industries/{slug}                   — ticker list for one industry
+#   GET /api/tickers/{symbol}                    — full ticker payload
+#   GET /api/tickers/{symbol}/price-history      — price time series
+#   GET /api/digest/latest                       — most recent daily-scan batch
 
 # Generate a Value-Line-style HTML report for one ticker
 ./venv/bin/python -m scripts.build_report --ticker QDEL

@@ -31,15 +31,16 @@ import json
 import os
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 from app.tools.email_tools import build_summary_digest_html, send_digest_email
+from app.tools.json_io import atomic_write_json
 from app.tools.llm_router import run_prompt
 from app.tools.paths import (
-    COMPANIES_ANALYZED, COMPANIES_VALIDATION, DAILY_LOG,
+    COMPANIES_ANALYZED, COMPANIES_DIGEST, COMPANIES_VALIDATION, DAILY_LOG,
     DATA_DIR, ENV_FILE,
 )
 from app.tools.report import pick_next_ticker, render_company_report
@@ -257,6 +258,20 @@ def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str
     else:
         summary_md = "_No narratives available for today's batch._"
         print("  summary: (skipped — no narrative content)")
+
+    # Persist a structured digest record so the mobile API can serve it
+    # without re-calling the LLM. Single-record file (just the latest day);
+    # daily-log already records historical batch metadata.
+    industries_list = [i.strip() for i in (industry_label or "").split(",") if i.strip()]
+    atomic_write_json(COMPANIES_DIGEST, {
+        "date": log_date,
+        "industries": industries_list,
+        "ticker_count": len(table_rows),
+        "summary_md": summary_md,
+        "tickers": table_rows,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    })
+    print(f"  wrote {COMPANIES_DIGEST.name}")
 
     return summary_md, table_rows
 
