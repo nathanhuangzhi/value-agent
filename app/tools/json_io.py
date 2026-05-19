@@ -71,3 +71,30 @@ def jsonl_field_set(path: Path, field: str = "ticker") -> set:
             if v is not None:
                 out.add(v)
     return out
+
+
+def latest_by_ticker(rows, *, date_key: str = "analyzed_date") -> dict:
+    """Dedup an iterable of rows to one entry per ticker, keeping the most-
+    recent row by `date_key`. Returns `{ticker: row}`.
+
+    Canonical home for the "latest version of each ticker" dedup pattern —
+    used by every CLI / API surface that operates on the freshest row per
+    ticker. Parameterize `date_key` for sources that key by a different
+    field (e.g. SEC sidecar uses `fetched_at`)."""
+    out: dict = {}
+    for r in rows or []:
+        t = (r or {}).get("ticker")
+        if not t:
+            continue
+        prev = out.get(t)
+        if prev is None or (r.get(date_key, "") > prev.get(date_key, "")):
+            out[t] = r
+    return out
+
+
+def load_latest_by_ticker(path: Path, *, date_key: str = "analyzed_date") -> dict:
+    """Read a JSON array from disk and dedup to one entry per ticker. Returns
+    `{}` when the file doesn't exist. Convenience wrapper around
+    `latest_by_ticker(read_json_array(path), date_key=...)` for the common
+    on-disk pattern."""
+    return latest_by_ticker(read_json_array(path), date_key=date_key)

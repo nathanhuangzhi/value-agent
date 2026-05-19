@@ -94,10 +94,10 @@ def main():
     if report.survivors:
         cat_counts = Counter(s["classification_meta"].get("primary_category") for s in report.survivors)
         sector_counts = Counter(s["sector"] for s in report.survivors)
-        print(f"\nsurvivor breakdown:")
+        print("\nsurvivor breakdown:")
         print(f"  by primary_category: {dict(cat_counts)}")
         print(f"  by sector (top 10): {dict(sector_counts.most_common(10))}")
-        print(f"\nfirst 10 survivors:")
+        print("\nfirst 10 survivors:")
         for s in report.survivors[:10]:
             print(f"  {s['ticker']:6s}  ${s['market_cap']/1e6:>8,.0f}M  "
                   f"{(s['classification_meta'].get('primary_category') or '?'):14s}  {s['name']}")

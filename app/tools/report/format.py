@@ -8,7 +8,6 @@ import html
 import re
 from datetime import datetime
 
-
 NAVY = "#1a3a5c"
 
 
@@ -77,7 +76,7 @@ def _fmt_dividend(rate, decimals=0):
     return f"${rate:.{decimals}f}"
 
 
-def _format_money_compact(n):
+def format_money_compact(n):
     """Variant of `_format_money` for tables / index pages: returns "" (not
     "n/a") when no value, and uses 1 decimal place only at $1B+ (where the
     extra precision is meaningful). For a Value-Line-style table where
@@ -93,7 +92,7 @@ def _format_money_compact(n):
     return f"${n:.0f}"
 
 
-def _status_badge(status):
+def status_badge(status):
     """Inline-styled status pill used in the email digest table and the
     archive index pages. Email clients respect inline styles but strip
     most `<style>` blocks, so all colors live on the element itself."""
@@ -179,7 +178,7 @@ _INLINE_STYLE_REPL = (
 )
 
 
-def _inline_styles(html_in: str) -> str:
+def inline_styles(html_in: str) -> str:
     """Apply inline styles to common markdown tags so the rendered HTML
     survives email clients that strip <style> blocks (Gmail, Outlook)."""
     for pat, sub in _INLINE_STYLE_REPL:
@@ -187,22 +186,11 @@ def _inline_styles(html_in: str) -> str:
     return html_in
 
 
-def latest_by_ticker(rows):
-    """Dedup an iterable of analyzed rows to one entry per ticker, keeping
-    the most-recent `analyzed_date`. Returns {ticker: row}.
-
-    Used by every CLI that operates "on the latest version of each ticker"
-    — build_report, daily_digest, rerun_narratives, build_index — to avoid
-    re-implementing the same dedup loop in each place."""
-    out: dict = {}
-    for r in rows or []:
-        t = (r or {}).get("ticker")
-        if not t:
-            continue
-        prev = out.get(t)
-        if prev is None or (r.get("analyzed_date", "") > prev.get("analyzed_date", "")):
-            out[t] = r
-    return out
+# `latest_by_ticker` lives in `app.tools.json_io` (its canonical home, since
+# it's a generic ticker-dedup, not report-specific). Re-exported here so
+# existing `from app.tools.report.format import latest_by_ticker` imports
+# (and the `app.tools.report` package re-export) keep working.
+from app.tools.json_io import latest_by_ticker  # noqa: E402, F401
 
 
 def pick_next_ticker(by_ticker, current_ticker):

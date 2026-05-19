@@ -41,11 +41,24 @@ export type IndustryDetailResponse = {
 };
 
 export type Snapshot = {
+  // Headline + valuation multiples
   market_cap: number | null;
   ttm_pe: number | null;
-  ttm_pocf: number | null;
-  ps: number | null;
+  static_pe: number | null;
+  ev_revenue: number | null;
   pb: number | null;
+  ps: number | null;
+  p_fcf: number | null;
+  ttm_pocf: number | null;
+  // Health / profitability ratios — stored as decimals (0.25 = 25%)
+  debt_asset: number | null;
+  gross_margin: number | null;
+  op_margin: number | null;
+  net_margin: number | null;
+  roe: number | null;
+  roa: number | null;
+  // Annualized dividend per share in dollars (0.0 for non-payers, null when shares missing)
+  dividend_rate: number | null;
 };
 
 export type Period = {
@@ -128,4 +141,21 @@ export type DigestResponse = {
   /** ISO-8601 timestamp the digest JSON was written, or null if the
    * fallback path served. */
   generated_at: string | null;
+};
+
+/** Compact summary of one past daily-scan batch — used by the home
+ * screen's vertical stack of digest banners. */
+export type RecentDigest = {
+  date: string;
+  industries: string[];
+  /** URL slug of the (first) industry, for navigating to its ticker list. */
+  slug: string | null;
+  ticker_count: number;
+  /** Only populated for the latest entry (matches the persisted digest file). */
+  summary_md: string;
+  is_latest: boolean;
+};
+
+export type RecentDigestsResponse = {
+  digests: RecentDigest[];
 };

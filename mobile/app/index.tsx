@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,41 +10,32 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { api, ApiError } from '@/api/client';
-import { useLatestDigest } from '@/api/hooks';
-import type { IndustrySummary } from '@/api/types';
+import { useIndustries, useRecentDigests } from '@/api/hooks';
 import { DigestBanner } from '@/components/DigestBanner';
+import { useIsTabletLandscape } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, spacing, radii } from '@/theme/colors';
 
 export default function HomeScreen() {
   const c = useColors();
   const router = useRouter();
-  const [industries, setIndustries] = useState<IndustrySummary[] | null>(null);
-  const [totalTickers, setTotalTickers] = useState(0);
+  // Shared cached fetch — the iPad-landscape sidebar uses the same hook,
+  // so we don't double-fire `/api/industries`.
+  const industriesResp = useIndustries();
+  const industries = industriesResp.data?.industries ?? null;
+  const totalTickers = industriesResp.data?.total_tickers ?? 0;
+  const error = industriesResp.error;
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const digest = useLatestDigest();
-
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const resp = await api.listIndustries();
-      setIndustries(resp.industries);
-      setTotalTickers(resp.total_tickers);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : String(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const digests = useRecentDigests();
+  // On iPad-landscape the sidebar already has the industries list, so the
+  // home screen suppresses its own copy to avoid duplication. The digest
+  // banners (which the sidebar can't fit) still render at the top.
+  const isTabletLandscape = useIsTabletLandscape();
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([load(), digest.refresh()]);
+    await Promise.all([industriesResp.refresh(), digests.refresh()]);
     setRefreshing(false);
-  }, [load, digest]);
+  }, [industriesResp, digests]);
 
   if (error && !industries) {
     return (
@@ -52,7 +43,7 @@ export default function HomeScreen() {
         <Text style={[styles.errorTitle, { color: c.negative }]}>Could not reach the API.</Text>
         <Text style={[styles.errorDetail, { color: c.textMuted }]}>{error}</Text>
         <Pressable
-          onPress={load}
+          onPress={industriesResp.refresh}
           style={[styles.retryBtn, { borderColor: c.brand }]}
         >
           <Text style={[styles.retryLabel, { color: c.brand }]}>Retry</Text>
@@ -73,7 +64,10 @@ export default function HomeScreen() {
     <FlatList
       style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.list}
-      data={industries}
+      // On iPad-landscape the sidebar shows the industries list, so the
+      // home screen renders only the digest banners and skips the
+      // duplicate inline list.
+      data={isTabletLandscape ? [] : industries}
       keyExtractor={(i) => i.slug}
       ListHeaderComponent={
         <>
@@ -85,14 +79,16 @@ export default function HomeScreen() {
               {industries.length} {industries.length === 1 ? 'industry' : 'industries'} · {totalTickers} tickers
             </Text>
           </View>
-          {/* Digest banner: hidden until the digest hook resolves; null
-              when there's no data (no daily-scan log entries yet). */}
-          {digest.data ? <DigestBanner digest={digest.data} /> : null}
-          <View style={styles.industriesEyebrow}>
-            <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
-              INDUSTRIES
-            </Text>
-          </View>
+          {digests.data?.digests.map((d) => (
+            <DigestBanner key={d.date} digest={d} />
+          ))}
+          {!isTabletLandscape && (
+            <View style={styles.industriesEyebrow}>
+              <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
+                INDUSTRIES
+              </Text>
+            </View>
+          )}
         </>
       }
       refreshControl={

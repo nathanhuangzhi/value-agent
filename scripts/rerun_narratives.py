@@ -31,10 +31,10 @@ from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
-from app.tools.json_io import atomic_write_json
+from app.tools.json_io import atomic_write_json, load_latest_by_ticker
 from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_VALIDATION, DATA_DIR, ENV_FILE
-from app.tools.report import pick_next_ticker, render_company_report
 from app.workflow import run_value_agent
+from scripts.build_report import render_one
 
 
 def main():
@@ -72,7 +72,7 @@ def main():
     if missing:
         sys.exit(f"Not in {COMPANIES_ANALYZED.name}: {missing}")
 
-    print(f"=== rerun_narratives ===")
+    print("=== rerun_narratives ===")
     print(f"  targets:  {len(targets)}  ({', '.join(targets[:5])}{', ...' if len(targets) > 5 else ''})")
     print(f"  workers:  {args.workers}")
     print()
@@ -115,7 +115,7 @@ def main():
                   f"({(result.get('usage') or {}).get('total_tokens', '?')} tok)")
 
     print()
-    print(f"=== narratives done ===")
+    print("=== narratives done ===")
     print(f"  succeeded: {completed - len(errors)}/{len(targets)}")
     print(f"  total cost: ${total_cost:.4f}")
     if errors:
@@ -128,12 +128,8 @@ def main():
         return
 
     # Rebuild HTML so the rendered reports reflect the new narratives.
-    print(f"\n=== rebuild HTML ===")
-    fresh_latest: dict = {}
-    for r in json.loads(COMPANIES_ANALYZED.read_text()):
-        t = r.get("ticker")
-        if t and (t not in fresh_latest or r.get("analyzed_date", "") > fresh_latest[t].get("analyzed_date", "")):
-            fresh_latest[t] = r
+    print("\n=== rebuild HTML ===")
+    fresh_latest = load_latest_by_ticker(COMPANIES_ANALYZED)
     validation: dict = {}
     if COMPANIES_VALIDATION.exists():
         validation = {r["ticker"]: r for r in json.loads(COMPANIES_VALIDATION.read_text()) if r.get("ticker")}
@@ -143,15 +139,10 @@ def main():
     for ticker in targets:
         if ticker in error_tickers:
             continue
-        row = fresh_latest.get(ticker)
-        if not row:
-            continue
-        v = validation.get(ticker)
-        nxt = pick_next_ticker(fresh_latest, ticker)
-        path = reports_dir / f"{ticker}.html"
-        path.write_text(
-            render_company_report(row, validation=v, next_ticker=nxt),
-            encoding="utf-8",
+        render_one(
+            ticker,
+            analyzed_by_ticker=fresh_latest,
+            validation_by_ticker=validation,
         )
     print(f"  rebuilt {len(targets) - len(error_tickers)} HTML reports → {reports_dir}/")
 

@@ -37,13 +37,17 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from app.tools.email_tools import build_summary_digest_html, send_digest_email
-from app.tools.json_io import atomic_write_json
+from app.tools.json_io import atomic_write_json, load_latest_by_ticker
 from app.tools.llm_router import run_prompt
 from app.tools.paths import (
-    COMPANIES_ANALYZED, COMPANIES_DIGEST, COMPANIES_VALIDATION, DAILY_LOG,
-    DATA_DIR, ENV_FILE,
+    COMPANIES_ANALYZED,
+    COMPANIES_DIGEST,
+    COMPANIES_VALIDATION,
+    DAILY_LOG,
+    DATA_DIR,
+    ENV_FILE,
 )
-from app.tools.report import pick_next_ticker, render_company_report
+from scripts.build_report import render_one
 
 
 def _latest_log_entry(target_date: str | None = None) -> dict | None:
@@ -62,21 +66,10 @@ def _latest_log_entry(target_date: str | None = None) -> dict | None:
     return sorted(entries, key=lambda e: e.get("date", ""))[-1]
 
 
-def _load_analyzed_by_ticker() -> dict:
-    """Map ticker → latest analyzed row from companies_analyzed.json."""
-    if not COMPANIES_ANALYZED.exists():
-        return {}
-    out: dict = {}
-    for row in json.loads(COMPANIES_ANALYZED.read_text()):
-        t = row.get("ticker")
-        if not t:
-            continue
-        if t not in out or row.get("analyzed_date", "") > out[t].get("analyzed_date", ""):
-            out[t] = row
-    return out
-
-
 def _load_validation_by_ticker() -> dict:
+    """Validation rows are already unique-per-ticker on disk (validate_companies
+    overwrites in place), so a plain dict comprehension suffices — no
+    date-key dedup needed."""
     if not COMPANIES_VALIDATION.exists():
         return {}
     return {r["ticker"]: r for r in json.loads(COMPANIES_VALIDATION.read_text()) if r.get("ticker")}
@@ -91,32 +84,31 @@ def _run_stage(name: str, args: list[str]):
 
 
 def _build_reports(tickers: list[str], strict: bool) -> list[Path]:
-    """In-process report rendering for each ticker. Faster than subprocessing
-    build_report.py once per ticker and gives the orchestrator direct access
-    to the validation status for the strict-mode filter."""
-    analyzed = _load_analyzed_by_ticker()
+    """In-process report rendering for each ticker. Driven through
+    `scripts.build_report.render_one` so the orchestrator and the
+    single-ticker CLI share one render path."""
+    analyzed = load_latest_by_ticker(COMPANIES_ANALYZED)
     validation = _load_validation_by_ticker()
-    reports_dir = DATA_DIR / "reports"
-    reports_dir.mkdir(parents=True, exist_ok=True)
     out: list[Path] = []
     skipped: list[str] = []
     for t in tickers:
-        row = analyzed.get(t)
-        if not row:
+        if t not in analyzed:
             print(f"  {t}: no analyzed row — skipping")
             skipped.append(t)
             continue
         v = validation.get(t)
-        if strict and v and v.get("status") == "error":
+        path = render_one(
+            t,
+            analyzed_by_ticker=analyzed,
+            validation_by_ticker=validation,
+            strict=strict,
+        )
+        if path is None:
+            # render_one returns None only when ticker missing (handled above)
+            # or strict-mode validation error — that's the only remaining path.
             print(f"  {t}: validation status=error — skipping (--strict)")
             skipped.append(t)
             continue
-        nxt = pick_next_ticker(analyzed, t)
-        path = reports_dir / f"{t}.html"
-        path.write_text(
-            render_company_report(row, validation=v, next_ticker=nxt),
-            encoding="utf-8",
-        )
         status_tag = f"  [validation: {v['status']}]" if v else ""
         print(f"  {t}: wrote {path.name}  ({path.stat().st_size/1024:.0f} KB){status_tag}")
         out.append(path)
@@ -196,6 +188,11 @@ def main():
     # ---- 6. LLM-synthesised summary + one-pager digest ----
     summary_md, table_rows = _build_digest_summary(tickers, log_date, industry_label)
 
+    # ---- 6.5. Bake the /api/* JSON tree the mobile app reads from. The
+    # publish step picks it up automatically because it lives under
+    # data/reports/api/ alongside the HTML.
+    _run_stage("bake_api", ["-m", "scripts.bake_api"])
+
     # ---- 7. Publish to git repo BEFORE emailing ----
     # Order matters: the digest email links to <archive>/<TICKER>.html. If we
     # email first and the publish fails, recipients click links to files that
@@ -216,8 +213,8 @@ def main():
 def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str | None):
     """Stage 6: gather narratives + assemble table rows, call the
     digest_summary LLM prompt. Returns `(summary_md, table_rows)`."""
-    print(f"\n=== Stage: digest_summary ===")
-    analyzed = _load_analyzed_by_ticker()
+    print("\n=== Stage: digest_summary ===")
+    analyzed = load_latest_by_ticker(COMPANIES_ANALYZED)
     validation = _load_validation_by_ticker()
 
     narrative_blocks: list[str] = []
@@ -285,7 +282,7 @@ def _send_digest(table_rows: list[dict], summary_md: str, log_date: str,
     if not archive_url:
         print("  ⚠ REPORT_BASE_URL not set — ticker links will be plain text")
 
-    print(f"\n=== Stage: email_digest ===")
+    print("\n=== Stage: email_digest ===")
     subject = subject_override or f"Nathan's Daily Equity Digest - {log_date}"
     digest_html = build_summary_digest_html(
         rows=table_rows,
@@ -307,13 +304,14 @@ def _send_digest(table_rows: list[dict], summary_md: str, log_date: str,
 
     gmail_user = os.getenv("GMAIL_USER")
     gmail_pw = os.getenv("GMAIL_APP_PASSWORD")
-    recipient = os.getenv("EMAIL_RECIPIENT") or gmail_user
     if not gmail_user or not gmail_pw:
         sys.exit(
             "GMAIL_USER and GMAIL_APP_PASSWORD must be set in .env "
             "(use --dry-run to build without sending). "
             "Create an App Password at https://myaccount.google.com/apppasswords"
         )
+    # Defaults to GMAIL_USER which is guaranteed non-None by the check above.
+    recipient = os.getenv("EMAIL_RECIPIENT") or gmail_user
     send_digest_email(
         digest_html, subject=subject,
         sender=gmail_user, recipient=recipient, app_password=gmail_pw,
@@ -329,7 +327,7 @@ def _publish(report_paths: list[Path], log_date: str, industry_label: str | None
     """
     import shutil
 
-    print(f"\n=== Stage: publish ===")
+    print("\n=== Stage: publish ===")
     if not publish_dir.exists():
         sys.exit(f"--publish-dir {publish_dir} does not exist. "
                  f"Clone your reports repo there first.")
@@ -347,6 +345,18 @@ def _publish(report_paths: list[Path], log_date: str, industry_label: str | None
         shutil.copy2(html_path, publish_dir / html_path.name)
         copied += 1
     print(f"  copied {copied} HTML files → {publish_dir}/")
+
+    # Copy the baked `api/` JSON tree so the mobile app can fetch from the
+    # same archive host. Replaced wholesale each run because dead tickers
+    # / industries should disappear, not linger.
+    api_src = src_dir / "api"
+    if api_src.exists():
+        api_dst = publish_dir / "api"
+        if api_dst.exists():
+            shutil.rmtree(api_dst)
+        shutil.copytree(api_src, api_dst)
+        json_count = sum(1 for _ in api_dst.rglob("*.json"))
+        print(f"  copied {json_count} JSON files → {api_dst}/")
 
     commit_msg = (
         f"Daily update {log_date}: {industry_label}" if industry_label

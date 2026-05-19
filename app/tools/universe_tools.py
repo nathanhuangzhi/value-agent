@@ -1,6 +1,7 @@
 """Fetch the universe of US-listed tickers from SEC EDGAR."""
 
 import os
+
 import requests
 
 EDGAR_TICKERS_URL = "https://www.sec.gov/files/company_tickers_exchange.json"

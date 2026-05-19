@@ -24,18 +24,30 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.tools.json_io import load_latest_by_ticker
 from app.tools.paths import (
-    COMPANIES_ANALYZED, COMPANIES_SEC, COMPANIES_VALIDATION, COMPANIES_YFINANCE, DATA_DIR,
+    COMPANIES_ANALYZED,
+    COMPANIES_SEC,
+    COMPANIES_VALIDATION,
+    COMPANIES_YFINANCE,
+    DATA_DIR,
 )
+
 # Color palette + shared formatters: single source of truth.
 from app.tools.report.format import (
-    NAVY, CREAM, AMBER, RULE, TEXT, MUTED,
-    _format_money_compact as _format_money,
-    _status_badge,
+    AMBER,
+    CREAM,
+    MUTED,
+    NAVY,
+    RULE,
+    TEXT,
+    format_money_compact,
+    status_badge,
 )
 from app.tools.report.ratios import compute_snapshot_ratios
 from app.tools.report.sec_adapter import (
-    load_sec_by_ticker, sec_to_yfinance_quarterly,
+    load_sec_by_ticker,
+    sec_to_yfinance_quarterly,
 )
 
 
@@ -51,15 +63,7 @@ def _collect_rows(reports_dir: Path) -> list[dict]:
     and adds TTM ratios (P/E, P/OCF, P/S, P/B) computed from the blended
     SEC + yfinance quarterly statements + the latest monthly close.
     Skips files starting with `_` and the index pages themselves."""
-    analyzed: dict = {}
-    if COMPANIES_ANALYZED.exists():
-        for r in json.loads(COMPANIES_ANALYZED.read_text()):
-            t = r.get("ticker")
-            if not t:
-                continue
-            prev = analyzed.get(t)
-            if prev is None or r.get("analyzed_date", "") > prev.get("analyzed_date", ""):
-                analyzed[t] = r
+    analyzed = load_latest_by_ticker(COMPANIES_ANALYZED)
 
     validation: dict = {}
     if COMPANIES_VALIDATION.exists():
@@ -259,7 +263,7 @@ def _render_industry_page(industry_name: str, rows: list[dict], now: datetime) -
     tbody_lines = []
     for r in rows:
         mcap = r["market_cap"]
-        mcap_display = html.escape(_format_money(mcap)) if mcap else ""
+        mcap_display = html.escape(format_money_compact(mcap)) if mcap else ""
         mcap_sort = f"{mcap:.0f}" if isinstance(mcap, (int, float)) and mcap else ""
         pe_disp, pe_sort = _fmt_ratio(r.get("ttm_pe"))
         pocf_disp, pocf_sort = _fmt_ratio(r.get("ttm_pocf"))
@@ -276,7 +280,7 @@ def _render_industry_page(industry_name: str, rows: list[dict], now: datetime) -
             f"<td data-sort='{ps_sort}' style='text-align:right;font-family:Menlo,Consolas,monospace;'>{ps_disp}</td>"
             f"<td data-sort='{pb_sort}' style='text-align:right;font-family:Menlo,Consolas,monospace;'>{pb_disp}</td>"
             f"<td>{html.escape(r['analyzed_date'])}</td>"
-            f"<td>{_status_badge(r['status'])}</td>"
+            f"<td>{status_badge(r['status'])}</td>"
             f"</tr>"
         )
     tbody = "\n".join(tbody_lines)
@@ -377,7 +381,7 @@ def main():
 
     print(f"wrote {index_path}  ({index_path.stat().st_size/1024:.1f} KB, "
           f"{len(industries_summary)} industries)")
-    for ind, path in zip(industries_summary, industry_files):
+    for ind, path in zip(industries_summary, industry_files, strict=True):
         print(f"  {ind['slug']}.html  ({path.stat().st_size/1024:.0f} KB, {ind['ticker_count']} tickers)")
 
 

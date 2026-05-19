@@ -245,23 +245,50 @@ def _compute_valuation_history_monthly(inc_q, bs_q, inc_annual, bs_annual, price
     return out
 
 
-def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_history):
-    """Compute the headline valuation ratios used by the per-ticker
-    snapshot KPI grid AND the industry-index table. Returns a dict:
-    `{market_cap, ttm_pe, ttm_pocf, ps, pb}` — any field is None when
-    inputs are missing or the denominator would be zero.
+def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_history,
+                             inc_annual=None):
+    """Compute the headline KPIs used by the per-ticker snapshot grid AND
+    the industry-index table. Returns a dict with 15 fields — any field
+    is None when inputs are missing or the denominator would be zero.
 
     Both the report snapshot and the industry table should call this so
     the two views never disagree on TTM math. The input shape is the
     same blended-periods list that `sec_to_yfinance_annual/quarterly`
-    produces."""
+    produces.
+
+    `inc_annual` is optional — when supplied, also computes Static P/E
+    (mcap / latest annual NI). When omitted, Static P/E is None.
+    """
+    # --- TTM rolling sums (strict: require all 4 quarters to have data) ---
     mcap = _recomputed_mcap(price_history, inc_quarterly)
     ttm_rev = _strict_ttm_sum(inc_quarterly, ["Total Revenue", "Operating Revenue"])
-    ttm_ni = _strict_ttm_sum(inc_quarterly, ["Net Income", "Net Income Common Stockholders"])
+    ttm_gp = _strict_ttm_sum(inc_quarterly, ["Gross Profit"])
+    ttm_op = _strict_ttm_sum(inc_quarterly, ["Operating Income",
+                                              "Total Operating Income As Reported"])
+    ttm_ni = _strict_ttm_sum(inc_quarterly, ["Net Income",
+                                              "Net Income Common Stockholders"])
     ttm_ocf = _strict_ttm_sum(cf_quarterly, ["Cash Flow From Continuing Operating Activities",
                                               "Operating Cash Flow"])
+    ttm_fcf = _strict_ttm_sum(cf_quarterly, ["Free Cash Flow"])
+
+    # --- Point-in-time balance sheet items ---
     latest_bv = _latest_value(bs_quarterly, ["Common Stock Equity", "Stockholders Equity",
                                               "Total Equity Gross Minority Interest"])
+    latest_cash = _latest_value(bs_quarterly, ["Cash And Cash Equivalents",
+                                                "Cash Cash Equivalents And Short Term Investments"])
+    latest_debt = _latest_value(bs_quarterly, ["Total Debt", "Long Term Debt"])
+    latest_assets = _latest_value(bs_quarterly, ["Total Assets"])
+    latest_shares = _latest_value(inc_quarterly, ["Diluted Average Shares",
+                                                   "Basic Average Shares"])
+    latest_annual_ni = _latest_value(inc_annual or [], ["Net Income",
+                                                         "Net Income Common Stockholders"])
+
+    dividend_rate = _ttm_dividend_per_share(cf_quarterly, latest_shares)
+
+    # Enterprise Value: mcap + debt − cash. Cash defaults to 0 when missing
+    # so we still get an EV for debt-only filers; debt is required because
+    # without a debt number EV ≈ mcap (which we already have as a separate KPI).
+    ev = (mcap + latest_debt - (latest_cash or 0)) if (mcap is not None and latest_debt is not None) else None
 
     def _div_safe(num, den):
         if num is None or den is None or den == 0:
@@ -269,11 +296,24 @@ def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_his
         return num / den
 
     return {
-        "market_cap": mcap,
-        "ttm_pe": _div_safe(mcap, ttm_ni),
-        "ttm_pocf": _div_safe(mcap, ttm_ocf),
-        "ps": _div_safe(mcap, ttm_rev),
-        "pb": _div_safe(mcap, latest_bv),
+        # mcap + 7 valuation multiples
+        "market_cap":   mcap,
+        "ttm_pe":       _div_safe(mcap, ttm_ni),
+        "static_pe":    _div_safe(mcap, latest_annual_ni),
+        "ev_revenue":   _div_safe(ev, ttm_rev),
+        "pb":           _div_safe(mcap, latest_bv),
+        "ps":           _div_safe(mcap, ttm_rev),
+        "p_fcf":        _div_safe(mcap, ttm_fcf),
+        "ttm_pocf":     _div_safe(mcap, ttm_ocf),
+        # 6 health / profitability ratios (returned as decimals, not %)
+        "debt_asset":   _div_safe(latest_debt, latest_assets),
+        "gross_margin": _div_safe(ttm_gp, ttm_rev),
+        "op_margin":    _div_safe(ttm_op, ttm_rev),
+        "net_margin":   _div_safe(ttm_ni, ttm_rev),
+        "roe":          _div_safe(ttm_ni, latest_bv),
+        "roa":          _div_safe(ttm_ni, latest_assets),
+        # income to shareholders
+        "dividend_rate": dividend_rate,
     }
 
 

@@ -5,26 +5,19 @@ the response against a Pydantic schema, and retries on validation failure.
 """
 
 import json
-import os
 import time
 from typing import Literal
 
 import httpx
-from openai import OpenAI
-from openai import APIError, APITimeoutError, RateLimitError
+from openai import APIError, APITimeoutError, OpenAI, RateLimitError
 from pydantic import BaseModel, ValidationError
 
-_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-_MAX_VALIDATION_RETRIES = 2
+from app.tools.llm_router import build_deepseek_client
 
-# DeepSeek has been observed to leave TCP connections in ESTAB state without
-# sending response data — the openai SDK's flat timeout doesn't always cover
-# this. We pass an explicit httpx client with separate connect/read/write
-# timeouts so a stalled read trips an APITimeoutError within 30 seconds.
-_CONNECT_TIMEOUT_S = 10.0
-_READ_TIMEOUT_S = 30.0
-_WRITE_TIMEOUT_S = 10.0
-_POOL_TIMEOUT_S = 5.0
+_MAX_VALIDATION_RETRIES = 2
+# 30s read timeout is right for JSON-mode classification (no streaming, short
+# output). The narrator uses 180s in `llm_router._call_deepseek`.
+_READ_TIMEOUT_S = 30
 _MAX_TRANSPORT_RETRIES = 2
 
 
@@ -62,22 +55,8 @@ def _client() -> OpenAI:
     global _classify_client
     if _classify_client is not None:
         return _classify_client
-    key = os.getenv("DEEPSEEK_API_KEY")
-    if not key:
-        raise RuntimeError("DEEPSEEK_API_KEY not set in environment.")
-    http_client = httpx.Client(
-        timeout=httpx.Timeout(
-            connect=_CONNECT_TIMEOUT_S,
-            read=_READ_TIMEOUT_S,
-            write=_WRITE_TIMEOUT_S,
-            pool=_POOL_TIMEOUT_S,
-        ),
-        limits=httpx.Limits(max_connections=8, max_keepalive_connections=2),
-    )
-    _classify_client = OpenAI(
-        api_key=key,
-        base_url=_DEEPSEEK_BASE_URL,
-        http_client=http_client,
+    _classify_client = build_deepseek_client(
+        read_timeout_s=_READ_TIMEOUT_S,
         max_retries=_MAX_TRANSPORT_RETRIES,
     )
     return _classify_client

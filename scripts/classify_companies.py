@@ -23,15 +23,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from app.core.prompt_manager import load_prompt
+from app.tools.classification_tools import classify_company
 from app.tools.json_io import atomic_write_json, read_json_array, read_jsonl
 from app.tools.paths import (
-    COMPANIES_JSONL,
-    COMPANIES_CLASSIFIED,
-    ENV_FILE,
     CLASSIFY_FAILURES,
     CLASSIFY_PROBES,
+    COMPANIES_CLASSIFIED,
+    COMPANIES_JSONL,
+    ENV_FILE,
 )
-from app.tools.classification_tools import classify_company
 
 load_dotenv(ENV_FILE)
 

@@ -92,7 +92,7 @@ def client(fake_data):
 # ---------- /api/industries ----------
 
 def test_list_industries_groups_by_industry(client):
-    resp = client.get("/api/industries")
+    resp = client.get("/api/industries.json")
     assert resp.status_code == 200
     body = resp.json()
     names = sorted(i["name"] for i in body["industries"])
@@ -108,7 +108,7 @@ def test_list_industries_groups_by_industry(client):
 def test_list_industries_sorts_newest_first(client):
     """Industries sorted by `latest_analyzed` desc, so the most-recent
     daily-scan industry appears at the top of the mobile home screen."""
-    resp = client.get("/api/industries")
+    resp = client.get("/api/industries.json")
     industries = resp.json()["industries"]
     # Medical Devices analyzed 2026-05-09; Consumer Electronics 2026-04-01
     assert industries[0]["name"] == "Medical Devices"
@@ -124,7 +124,7 @@ def test_list_industries_returns_empty_when_no_data(tmp_path, monkeypatch):
         daily_log=tmp_path / "nope.json",
     )
     monkeypatch.setattr(routes, "_paths", paths)
-    resp = TestClient(app).get("/api/industries")
+    resp = TestClient(app).get("/api/industries.json")
     assert resp.status_code == 200
     assert resp.json()["industries"] == []
     assert resp.json()["total_tickers"] == 0
@@ -133,7 +133,7 @@ def test_list_industries_returns_empty_when_no_data(tmp_path, monkeypatch):
 # ---------- /api/industries/{slug} ----------
 
 def test_industry_detail_returns_tickers_alphabetical(client):
-    resp = client.get("/api/industries/medical-devices")
+    resp = client.get("/api/industries/medical-devices.json")
     assert resp.status_code == 200
     body = resp.json()
     assert body["industry"] == "Medical Devices"
@@ -144,7 +144,7 @@ def test_industry_detail_returns_tickers_alphabetical(client):
 
 
 def test_industry_detail_includes_validation_status(client):
-    body = client.get("/api/industries/medical-devices").json()
+    body = client.get("/api/industries/medical-devices.json").json()
     by_t = {t["ticker"]: t for t in body["tickers"]}
     assert by_t["QDEL"]["status"] == "ok"
     assert by_t["INGN"]["status"] == "warn"
@@ -153,7 +153,7 @@ def test_industry_detail_includes_validation_status(client):
 def test_industry_detail_includes_snapshot_keys(client):
     """Each ticker row should carry the same snapshot KPI keys the mobile
     list view expects to render (market_cap, ttm_pe, ps, pb, ttm_pocf)."""
-    body = client.get("/api/industries/medical-devices").json()
+    body = client.get("/api/industries/medical-devices.json").json()
     row = body["tickers"][0]
     for key in ("ticker", "name", "sector", "industry", "market_cap",
                 "ttm_pe", "ttm_pocf", "ps", "pb", "analyzed_date", "status"):
@@ -161,14 +161,14 @@ def test_industry_detail_includes_snapshot_keys(client):
 
 
 def test_industry_detail_404_for_unknown_slug(client):
-    resp = client.get("/api/industries/does-not-exist")
+    resp = client.get("/api/industries/does-not-exist.json")
     assert resp.status_code == 404
 
 
 # ---------- /api/tickers/{symbol} ----------
 
 def test_ticker_detail_returns_full_payload(client):
-    resp = client.get("/api/tickers/QDEL")
+    resp = client.get("/api/tickers/QDEL.json")
     assert resp.status_code == 200
     body = resp.json()
     assert body["ticker"] == "QDEL"
@@ -188,20 +188,20 @@ def test_ticker_detail_returns_full_payload(client):
 
 def test_ticker_detail_case_insensitive(client):
     """Mobile may send `qdel` lowercase — should still resolve."""
-    resp = client.get("/api/tickers/qdel")
+    resp = client.get("/api/tickers/qdel.json")
     assert resp.status_code == 200
     assert resp.json()["ticker"] == "QDEL"
 
 
 def test_ticker_detail_404_for_unknown_ticker(client):
-    resp = client.get("/api/tickers/NOPE")
+    resp = client.get("/api/tickers/NOPE.json")
     assert resp.status_code == 404
 
 
 def test_ticker_detail_defaults_validation_to_ok_when_missing(client):
     """A ticker that exists but has no validation entry should still
     return a validation block with status=ok rather than 404."""
-    body = client.get("/api/tickers/AAPL").json()
+    body = client.get("/api/tickers/AAPL.json").json()
     assert body["validation"]["status"] == "ok"
     assert body["validation"]["issues"] == []
 
@@ -209,7 +209,7 @@ def test_ticker_detail_defaults_validation_to_ok_when_missing(client):
 # ---------- /api/tickers/{symbol}/price-history ----------
 
 def test_price_history_returns_time_series(client):
-    resp = client.get("/api/tickers/QDEL/price-history")
+    resp = client.get("/api/tickers/QDEL/price-history.json")
     assert resp.status_code == 200
     body = resp.json()
     assert body["ticker"] == "QDEL"
@@ -220,19 +220,19 @@ def test_price_history_returns_time_series(client):
 
 
 def test_price_history_returns_empty_data_for_ticker_without_history(client):
-    body = client.get("/api/tickers/INGN/price-history").json()
+    body = client.get("/api/tickers/INGN/price-history.json").json()
     assert body["data"] == []
 
 
 def test_price_history_404_for_unknown_ticker(client):
-    resp = client.get("/api/tickers/NOPE/price-history")
+    resp = client.get("/api/tickers/NOPE/price-history.json")
     assert resp.status_code == 404
 
 
 # ---------- /api/digest/latest ----------
 
 def test_digest_latest_returns_today_batch(client):
-    resp = client.get("/api/digest/latest")
+    resp = client.get("/api/digest/latest.json")
     assert resp.status_code == 200
     body = resp.json()
     assert body["date"] == "2026-05-09"
@@ -258,7 +258,7 @@ def test_digest_latest_prefers_persisted_digest_when_present(client, fake_data):
         ],
         "generated_at": "2026-05-16T06:30:00+00:00",
     }))
-    body = TestClient(app).get("/api/digest/latest").json()
+    body = TestClient(app).get("/api/digest/latest.json").json()
     assert body["date"] == "2026-05-16"
     assert body["summary_md"] == "Diagnostics companies face pressure..."
     assert body["ticker_count"] == 2
@@ -269,11 +269,11 @@ def test_digest_latest_404_when_no_log_entries(tmp_path, monkeypatch):
     paths = routes._DataPaths(
         analyzed=tmp_path / "a.json", sec=tmp_path / "a.json",
         yfinance=tmp_path / "a.json", validation=tmp_path / "a.json",
-        daily_log=tmp_path / "a.json",
+        daily_log=tmp_path / "a.json", digest=tmp_path / "a.json",
     )
     paths.daily_log.write_text("[]")
     monkeypatch.setattr(routes, "_paths", paths)
-    resp = TestClient(app).get("/api/digest/latest")
+    resp = TestClient(app).get("/api/digest/latest.json")
     assert resp.status_code == 404
 
 
@@ -285,9 +285,68 @@ def test_digest_skips_tickers_without_analyzed_row(client, fake_data):
         {"date": "2026-05-09", "industries": ["Medical Devices"],
          "tickers": ["QDEL", "INGN", "GHOST"]},
     ]))
-    body = TestClient(app).get("/api/digest/latest").json()
+    body = TestClient(app).get("/api/digest/latest.json").json()
     assert body["ticker_count"] == 2
     assert "GHOST" not in [t["ticker"] for t in body["tickers"]]
+
+
+# ---------- /api/digests/recent ----------
+
+def test_digests_recent_returns_one_per_log_entry(client, fake_data):
+    """One banner per past daily-scan batch, sorted newest-first."""
+    fake_data.daily_log.write_text(json.dumps([
+        {"date": "2026-05-09", "industries": ["Medical Devices"], "tickers": ["QDEL", "INGN"]},
+        {"date": "2026-05-13", "industries": ["Software - Application"], "tickers": ["AAPL"]},
+    ]))
+    body = TestClient(app).get("/api/digests/recent.json").json()
+    assert len(body["digests"]) == 2
+    assert body["digests"][0]["date"] == "2026-05-13"  # newest first
+    assert body["digests"][0]["is_latest"] is True
+    assert body["digests"][1]["date"] == "2026-05-09"
+    assert body["digests"][1]["is_latest"] is False
+
+
+def test_digests_recent_only_latest_has_summary_md(client, fake_data):
+    """The persisted digest summary attaches to whichever entry has the
+    same date; older entries get empty `summary_md`."""
+    fake_data.daily_log.write_text(json.dumps([
+        {"date": "2026-05-09", "industries": ["Medical Devices"], "tickers": ["QDEL"]},
+        {"date": "2026-05-13", "industries": ["Software"], "tickers": ["AAPL"]},
+    ]))
+    fake_data.digest.write_text(json.dumps({
+        "date": "2026-05-13", "industries": ["Software"], "ticker_count": 1,
+        "summary_md": "Software boom continues.", "tickers": [],
+    }))
+    body = TestClient(app).get("/api/digests/recent.json").json()
+    assert body["digests"][0]["summary_md"] == "Software boom continues."
+    assert body["digests"][1]["summary_md"] == ""
+
+
+def test_digests_recent_includes_slug_for_industry_navigation(client):
+    """Each digest carries the slug of its (first) industry so the
+    mobile banner can navigate to /industry/<slug> directly."""
+    body = client.get("/api/digests/recent.json").json()
+    assert body["digests"][0]["slug"] == "medical-devices"
+
+
+def test_digests_recent_caps_at_limit_param(client, fake_data):
+    fake_data.daily_log.write_text(json.dumps([
+        {"date": f"2026-05-{d:02d}", "industries": ["X"], "tickers": ["QDEL"]}
+        for d in range(1, 11)
+    ]))
+    body = TestClient(app).get("/api/digests/recent.json?limit=3").json()
+    assert len(body["digests"]) == 3
+
+
+def test_digests_recent_returns_empty_when_no_log(tmp_path, monkeypatch):
+    paths = routes._DataPaths(
+        analyzed=tmp_path / "a.json", sec=tmp_path / "a.json",
+        yfinance=tmp_path / "a.json", validation=tmp_path / "a.json",
+        daily_log=tmp_path / "a.json", digest=tmp_path / "a.json",
+    )
+    paths.daily_log.write_text("[]")
+    monkeypatch.setattr(routes, "_paths", paths)
+    assert TestClient(app).get("/api/digests/recent.json").json() == {"digests": []}
 
 
 # ---------- CORS ----------
@@ -295,6 +354,6 @@ def test_digest_skips_tickers_without_analyzed_row(client, fake_data):
 def test_cors_header_present_for_get(client):
     """Mobile clients (and any web origin) need CORS for cross-origin
     fetches. Verify the middleware is wired."""
-    resp = client.get("/api/industries", headers={"Origin": "https://example.com"})
+    resp = client.get("/api/industries.json", headers={"Origin": "https://example.com"})
     assert resp.status_code == 200
     assert resp.headers.get("access-control-allow-origin") == "*"

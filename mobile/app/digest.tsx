@@ -20,17 +20,23 @@ import { useNavigation } from 'expo-router';
 
 import { useLatestDigest } from '@/api/hooks';
 import { TickerRow } from '@/components/TickerRow';
+import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 
 
 export default function DigestScreen() {
   const c = useColors();
   const navigation = useNavigation();
+  const device = useDeviceClass();
   const digest = useLatestDigest();
 
   useEffect(() => {
-    if (digest.data) navigation.setOptions({ title: "Today's Digest" });
-  }, [digest.data, navigation]);
+    // Skip on iPad-landscape: the screen renders inside SplitLayout's
+    // Slot (no Stack header to write into).
+    if (digest.data && device !== 'tablet-landscape') {
+      navigation.setOptions({ title: "Today's Digest" });
+    }
+  }, [digest.data, navigation, device]);
 
   if (digest.error && !digest.data) {
     return (

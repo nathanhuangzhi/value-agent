@@ -11,6 +11,7 @@ import type {
   IndustryDetailResponse,
   IndustryListResponse,
   PriceHistoryResponse,
+  RecentDigestsResponse,
   TickerDetail,
 } from './types';
 
@@ -41,15 +42,26 @@ async function get<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+// Every endpoint now resolves to a static `.json` file. In prod the files
+// live on a CDN (Vercel), baked once a day by `scripts/bake_api.py`. In
+// local dev the same FastAPI routes serve them with the same paths, so
+// the client code is identical against either backend.
 export const api = {
-  listIndustries: () => get<IndustryListResponse>('/industries'),
+  listIndustries: () => get<IndustryListResponse>('/industries.json'),
   industryDetail: (slug: string) =>
-    get<IndustryDetailResponse>(`/industries/${encodeURIComponent(slug)}`),
+    get<IndustryDetailResponse>(`/industries/${encodeURIComponent(slug)}.json`),
   tickerDetail: (symbol: string) =>
-    get<TickerDetail>(`/tickers/${encodeURIComponent(symbol.toUpperCase())}`),
+    get<TickerDetail>(`/tickers/${encodeURIComponent(symbol.toUpperCase())}.json`),
   priceHistory: (symbol: string) =>
-    get<PriceHistoryResponse>(`/tickers/${encodeURIComponent(symbol.toUpperCase())}/price-history`),
-  latestDigest: () => get<DigestResponse>('/digest/latest'),
+    get<PriceHistoryResponse>(`/tickers/${encodeURIComponent(symbol.toUpperCase())}/price-history.json`),
+  latestDigest: () => get<DigestResponse>('/digest/latest.json'),
+  // The baked `recent.json` always contains `RECENT_DIGESTS_LIMIT` (20)
+  // entries — the `limit` arg slices client-side so a future bake-size
+  // change doesn't break call sites.
+  recentDigests: (limit: number = 10) =>
+    get<RecentDigestsResponse>('/digests/recent.json').then((r) => ({
+      digests: (r.digests ?? []).slice(0, limit),
+    })),
 };
 
 export { ApiError, BASE_URL };

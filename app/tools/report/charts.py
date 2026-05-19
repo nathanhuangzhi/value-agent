@@ -29,7 +29,12 @@ plt.rcParams["font.sans-serif"] = [
 plt.rcParams["axes.unicode_minus"] = False
 
 from app.tools.report.format import (  # noqa: E402
-    NAVY, AMBER, GREEN, RULE, TEXT, MUTED,
+    AMBER,
+    GREEN,
+    MUTED,
+    NAVY,
+    RULE,
+    TEXT,
 )
 
 
@@ -105,7 +110,7 @@ def _chart_valuation_monthly(val_history, price_history=None, ticker=None):
     # Top-left: stock price (last 5y, 1-year ticks)
     ax = axes[0][0]
     if price_pts:
-        pd, py = zip(*price_pts)
+        pd, py = zip(*price_pts, strict=False)
         ax.fill_between(pd, py, min(py), color=NAVY, alpha=0.08)
         ax.plot(pd, py, color=NAVY, linewidth=1.8, alpha=0.9)
         ax.set_xlim(pd[0], pd[-1])
@@ -123,9 +128,9 @@ def _chart_valuation_monthly(val_history, price_history=None, ticker=None):
     for (r, c), title, key, color in val_panels:
         ax = axes[r][c]
         ys = [v.get(key) for v in val_history]
-        valid = [(d, y) for d, y in zip(val_dates, ys) if y is not None]
+        valid = [(d, y) for d, y in zip(val_dates, ys, strict=False) if y is not None]
         if valid:
-            vd, vy = zip(*valid)
+            vd, vy = zip(*valid, strict=False)
             ax.fill_between(vd, vy, min(vy), color=color, alpha=0.08)
             ax.plot(vd, vy, color=color, linewidth=1.8, alpha=0.9)
             ax.set_xlim(vd[0], vd[-1])

@@ -6,7 +6,7 @@ import pytest
 
 from app.tools.email_tools import (
     _linkify_tickers,
-    _status_badge,
+    status_badge,
     build_summary_digest_html,
 )
 
@@ -20,10 +20,10 @@ def _row(ticker, *, name=None, sector="Healthcare", industry="Medical Devices",
     }
 
 
-# ============ _status_badge ============
+# ============ status_badge ============
 
 def test_status_badge_unknown_status_falls_back_gracefully():
-    out = _status_badge("weird")
+    out = status_badge("weird")
     assert "WEIRD" in out
     assert "<span" in out
 
@@ -31,7 +31,7 @@ def test_status_badge_unknown_status_falls_back_gracefully():
 def test_status_badge_known_statuses_have_distinct_colors():
     seen = set()
     for s in ("ok", "info", "warn", "error"):
-        out = _status_badge(s)
+        out = status_badge(s)
         assert s.upper() in out
         # Each status uses a distinct background hex
         color = out.split("background:")[1].split(";")[0]
@@ -40,7 +40,7 @@ def test_status_badge_known_statuses_have_distinct_colors():
 
 
 def test_status_badge_none_treated_as_ok():
-    assert "OK" in _status_badge(None)
+    assert "OK" in status_badge(None)
 
 
 # ============ _linkify_tickers ============

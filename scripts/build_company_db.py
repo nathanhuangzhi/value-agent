@@ -25,14 +25,13 @@ from app.tools.paths import COMPANIES_JSONL
 from app.tools.profile_tools import fetch_company_profile
 from app.tools.universe_tools import fetch_us_listed_tickers
 
-
 # Per-worker retry on YFRateLimitError. Exponential backoff with jitter.
 _RETRY_DELAYS_S = [5, 15, 45, 120]
 
 
 def fetch_with_backoff(ticker: str) -> tuple[str, dict | None]:
     """Returns (status, profile) where status is 'ok' / 'empty' / 'throttled'."""
-    for attempt, delay in enumerate([0] + _RETRY_DELAYS_S):
+    for delay in [0] + _RETRY_DELAYS_S:
         if delay:
             time.sleep(delay + random.uniform(0, delay * 0.25))
         try:
@@ -83,7 +82,7 @@ def main():
                 print(f"  !! {ticker}: {e!r}")
                 continue
 
-            if status == "ok":
+            if status == "ok" and profile is not None:
                 profile.setdefault("name", row["name"])
                 profile["cik"] = row["cik"]
                 out.write(json.dumps(profile, ensure_ascii=False) + "\n")

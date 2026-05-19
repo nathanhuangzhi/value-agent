@@ -7,7 +7,7 @@ the next-largest industry is added, and so on, until the cumulative count is
 """
 
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 
 
 def group_by_industry(rows: list[dict]) -> dict[str, list[dict]]:

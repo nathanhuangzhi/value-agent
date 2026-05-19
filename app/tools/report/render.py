@@ -9,25 +9,35 @@ import re
 
 from markdown_it import MarkdownIt
 
+from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE
+from app.tools.report.charts import _chart_valuation_monthly
 from app.tools.report.format import (
-    NAVY, AMBER, RULE, TEXT, MUTED,
-    _format_money, _fmt_num, _fmt_pct, _fmt_dividend,
-    _img, _img_flush, _div, _inline_styles,
+    AMBER,
+    MUTED,
+    NAVY,
+    RULE,
+    TEXT,
+    _div,
+    _fmt_dividend,
+    _fmt_num,
+    _fmt_pct,
+    _format_money,
+    _img_flush,
+    inline_styles,
 )
 from app.tools.report.ratios import (
-    _latest_value, _recomputed_mcap,
+    _compute_valuation_history_monthly,
+    _latest_value,
+    _recomputed_mcap,
     _strict_ttm_sum,
     _ttm_dividend_per_share,
-    _compute_valuation_history_monthly,
 )
-from app.tools.report.charts import _chart_valuation_monthly
-from app.tools.report.tables import _render_combined_data_table
 from app.tools.report.sec_adapter import (
     load_sec_by_ticker,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
 )
-from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE
+from app.tools.report.tables import _render_combined_data_table
 
 _SEC_DATA: dict | None = None
 _YF_DATA: dict | None = None
@@ -479,7 +489,7 @@ def _render_narrative(md_text, *, latest_source_date: str | None = None):
     # Narrative**`.
     md_text = _NARRATIVE_TITLE_RE.sub("", md_text, count=1)
     rendered = _MD.render(md_text)
-    rendered = _inline_styles(rendered)
+    rendered = inline_styles(rendered)
     date_line = ""
     if latest_source_date:
         date_line = (

@@ -25,7 +25,6 @@ Output shape (per statement, annual or quarterly):
 
 from __future__ import annotations
 
-
 # Map SEC metric keys → yfinance item labels. The label is what the
 # renderer's _pick_first() looks up.
 SEC_TO_YFINANCE_INCOME = {
@@ -202,7 +201,7 @@ def _to_period_list(merged: dict, source_map: dict, mapping: dict,
     None, the key is used as-is (after str())."""
     if period_keys is None:
         keys: set = set()
-        for metric in (mapping.keys()):
+        for metric in (mapping):
             keys.update((merged.get(metric) or {}).keys())
         if derived_total_debt:
             for k in ("long_term_debt", "short_term_debt", "debt_total_legacy", "total_assets"):

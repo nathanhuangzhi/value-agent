@@ -32,3 +32,18 @@ export function formatDate(iso: string | null | undefined): string {
   // Truncate ISO datetime to date if needed (e.g. 2026-05-09T18:00:00Z → 2026-05-09)
   return iso.slice(0, 10);
 }
+
+/**
+ * Format a raw stock price for a chart tooltip / KPI label. Unlike
+ * `formatMoney`, which abbreviates large dollar amounts to "$1.2B",
+ * this keeps the full dollar value with decimals scaled to magnitude:
+ *   >= $100  → no decimals ($1,234)
+ *   >= $10   → one decimal  ($87.4)
+ *   <  $10   → two decimals ($5.23)
+ */
+export function formatStockPrice(n: number | null | undefined): string {
+  if (n == null || !isFinite(n)) return '—';
+  if (n >= 100) return `$${Math.round(n).toLocaleString()}`;
+  if (n >= 10) return `$${n.toFixed(1)}`;
+  return `$${n.toFixed(2)}`;
+}

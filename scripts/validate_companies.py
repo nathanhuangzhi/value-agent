@@ -16,24 +16,9 @@ import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from app.tools.json_io import atomic_write_json
+from app.tools.json_io import atomic_write_json, load_latest_by_ticker
 from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_SEC, COMPANIES_VALIDATION
 from app.tools.validation import validate_ticker, worst_severity
-
-
-def _load_latest_by_ticker(path: Path, date_key: str = "analyzed_date") -> dict:
-    """Load a JSON array, dedup by ticker keeping the most-recent row."""
-    if not path.exists():
-        return {}
-    out: dict = {}
-    for row in json.loads(path.read_text()):
-        t = row.get("ticker")
-        if not t:
-            continue
-        prev = out.get(t)
-        if not prev or row.get(date_key, "") > prev.get(date_key, ""):
-            out[t] = row
-    return out
 
 
 def main():
@@ -44,8 +29,8 @@ def main():
                     help="print every warn/error issue to stdout")
     args = ap.parse_args()
 
-    sec = _load_latest_by_ticker(COMPANIES_SEC, date_key="fetched_at")
-    analyzed = _load_latest_by_ticker(COMPANIES_ANALYZED, date_key="analyzed_date")
+    sec = load_latest_by_ticker(COMPANIES_SEC, date_key="fetched_at")
+    analyzed = load_latest_by_ticker(COMPANIES_ANALYZED, date_key="analyzed_date")
 
     targets = sorted(set(sec) | set(analyzed))
     if args.ticker:

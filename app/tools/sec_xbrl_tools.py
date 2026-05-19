@@ -27,8 +27,8 @@ free XBRL API (`data.sec.gov/api/xbrl/companyfacts/...`). Handles:
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from datetime import date
-from typing import Sequence
 
 import requests
 
@@ -91,19 +91,19 @@ def _period_span_days(record: dict) -> int | None:
         return None
 
 
-def _is_annual_period(record: dict) -> bool:
+def is_annual_period(record: dict) -> bool:
     """True if start→end spans ~one fiscal year (accommodates 52/53-week years)."""
     span = _period_span_days(record)
     return span is not None and 350 <= span <= 380
 
 
-def _is_quarterly_period(record: dict) -> bool:
+def is_quarterly_period(record: dict) -> bool:
     """True if start→end spans ~one fiscal quarter."""
     span = _period_span_days(record)
     return span is not None and 80 <= span <= 100
 
 
-def _is_instant_at_fy_end(record: dict) -> bool:
+def is_instant_at_fy_end(record: dict) -> bool:
     """True for balance-sheet 'instant' records (no start date) where the
     end date is plausibly a fiscal year-end. Annual XBRL instants come from
     10-K filings; the extractor's form-prefix filter handles that, so all
@@ -111,7 +111,7 @@ def _is_instant_at_fy_end(record: dict) -> bool:
     return not record.get("start") and bool(record.get("end"))
 
 
-def _is_instant_any(record: dict) -> bool:
+def is_instant_any(record: dict) -> bool:
     """Instant records without a fiscal-year-end constraint — used for
     quarterly balance-sheet snapshots (which come from 10-Q filings as
     well as 10-K)."""
@@ -123,7 +123,7 @@ def extract_period_values(
     concepts: Sequence[str],
     *,
     unit: str = "USD",
-    period_filter=_is_annual_period,
+    period_filter=is_annual_period,
     form_prefix: str = "10-K",
 ) -> dict[int, dict]:
     """Merge values across `concepts`, keyed by period-end year. Keeps the
@@ -252,7 +252,7 @@ def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str 
             form = r.get("form", "")
             if not (form.startswith("10-Q") or form.startswith("10-K")):
                 continue
-            if not _is_quarterly_period(r):
+            if not is_quarterly_period(r):
                 continue
             end = r.get("end", "")
             if not end:
@@ -271,6 +271,275 @@ def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str 
                     "form": r.get("form"),
                 }
     return by_period
+
+
+# ---------------------------------------------------------------------------
+# Metric extractor — concept fallback tables + a one-call helper that returns
+# the full {annual, quarterly} bundle for a CIK. Previously lived in
+# `scripts/fetch_sec_annual.py`; moved here so any other tool can pull the
+# same shape without depending on the CLI script.
+# ---------------------------------------------------------------------------
+
+INCOME_METRICS: dict[str, list[str]] = {
+    "revenue": [
+        "Revenues",
+        "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "RevenueFromContractWithCustomerIncludingAssessedTax",
+        "SalesRevenueNet",
+        "SalesRevenueGoodsNet",
+    ],
+    "gross_profit": ["GrossProfit"],
+    "cost_of_revenue": [
+        "CostOfRevenue",
+        "CostOfGoodsAndServicesSold",
+        "CostOfGoodsSold",
+        "CostOfServices",
+        "CostOfGoodsAndServiceExcludingDepreciationDepletionAndAmortization",
+    ],
+    "operating_income": ["OperatingIncomeLoss"],
+    "net_income": ["NetIncomeLoss"],
+    "rd_expense": [
+        "ResearchAndDevelopmentExpense",
+        "ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost",
+    ],
+    "sga_expense": ["SellingGeneralAndAdministrativeExpense"],
+    "selling_marketing_expense": ["SellingAndMarketingExpense"],
+    "general_admin_expense": ["GeneralAndAdministrativeExpense"],
+}
+
+# Diluted shares use the "shares" unit. Many small-cap / loss-making filers
+# tag a single weighted-average count under
+# `WeightedAverageNumberOfShareOutstandingBasicAndDiluted` — for loss years,
+# basic = diluted by anti-dilution rule, so this concept legitimately covers
+# both. Without it as a fallback we miss ~10-year gaps for AEMD, CATX, CLPT,
+# CTSO, LAB, and many others.
+SHARES_METRICS: dict[str, list[str]] = {
+    "diluted_shares": [
+        "WeightedAverageNumberOfDilutedSharesOutstanding",
+        "WeightedAverageNumberOfShareOutstandingBasicAndDiluted",
+        "WeightedAverageNumberOfSharesOutstandingBasic",
+    ],
+}
+
+# Loss-making filers commonly report `EarningsPerShareBasicAndDiluted`
+# instead of separate basic/diluted (anti-dilution rule means they're equal
+# in loss years anyway).
+EPS_METRICS: dict[str, list[str]] = {
+    "diluted_eps": [
+        "EarningsPerShareDiluted",
+        "EarningsPerShareBasicAndDiluted",
+        "IncomeLossFromContinuingOperationsPerDilutedShare",
+    ],
+}
+
+CASH_FLOW_METRICS: dict[str, list[str]] = {
+    "operating_cf": ["NetCashProvidedByUsedInOperatingActivities"],
+    "capex": [
+        "PaymentsToAcquirePropertyPlantAndEquipment",
+        "PaymentsToAcquireProductiveAssets",
+        "PaymentsToAcquireMachineryAndEquipment",
+        "PurchaseOfPropertyPlantAndEquipment",
+    ],
+}
+
+BALANCE_SHEET_METRICS: dict[str, list[str]] = {
+    "cash": [
+        "CashAndCashEquivalentsAtCarryingValue",
+        "Cash",
+        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsIncludingDisposalGroupAndDiscontinuedOperations",
+    ],
+    # Two debt buckets. Concepts here are *unambiguously* one or the other —
+    # ambiguous totals like `LongTermDebt` or `ConvertibleDebt` (which can
+    # include the current portion) are intentionally excluded to avoid
+    # double-counting against the current-portion concepts below.
+    "long_term_debt": [
+        "LongTermDebtNoncurrent",
+        "LongTermDebtAndCapitalLeaseObligationsNoncurrent",
+        "LongTermNotesPayable",
+        "LongTermLoansPayable",
+        "ConvertibleDebtNoncurrent",
+        "SecuredLongTermDebt",
+        "ConvertibleLongTermNotesPayable",
+    ],
+    "short_term_debt": [
+        "DebtCurrent",
+        "ShortTermBorrowings",
+        "LongTermDebtCurrent",
+        "NotesPayableCurrent",
+        "ConvertibleNotesPayableCurrent",
+        "ConvertibleDebtCurrent",
+        "LoansPayableCurrent",
+        "SecuredDebtCurrent",
+        "LongTermDebtAndCapitalLeaseObligationsCurrent",
+    ],
+    # Fallback: ambiguous totals used when a filer reports debt as one
+    # number (no current/noncurrent split). Adapter only uses these when
+    # neither unambiguous bucket has a value for that period.
+    "debt_total_legacy": [
+        "LongTermDebt",
+        "LongTermDebtAndCapitalLeaseObligations",
+        "ConvertibleDebt",
+        "ConvertibleNotesPayable",
+        "NotesPayable",
+        "LoansPayable",
+    ],
+    "total_assets": ["Assets"],
+    "stockholders_equity": [
+        "StockholdersEquity",
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+    ],
+    "goodwill": ["Goodwill"],
+    "ppe_net": ["PropertyPlantAndEquipmentNet"],
+    "inventory": ["InventoryNet"],
+    "receivables": ["AccountsReceivableNetCurrent", "ReceivablesNetCurrent"],
+}
+
+
+def rescale_shares_filed_in_thousands(period_data: dict) -> None:
+    """Some filers (ECOR, OM, TNON in our universe) report
+    `WeightedAverageNumberOfDilutedSharesOutstanding` in thousands rather
+    than in units, leaving the XBRL value 1000× too small. The bug surfaces
+    as "Diluted Shares (M) = 0.0" in the report and broken P/E ratios.
+
+    Detection: for each period where Net Income, Diluted EPS, and Diluted
+    Shares are all populated, the implied share count is `|NI| / |EPS|`.
+    If that implied value is 500-2000× the reported value, the reported
+    figure is almost certainly in thousands — rescale by 1000.
+
+    Mutates `period_data["diluted_shares"]` in place. Safe to run on annual
+    or quarterly dicts. Idempotent (won't re-scale already-correct values
+    because the ratio check guards it)."""
+    ni = period_data.get("net_income") or {}
+    eps = period_data.get("diluted_eps") or {}
+    ds = period_data.get("diluted_shares") or {}
+    if not ds:
+        return
+    for key, entry in ds.items():
+        if not isinstance(entry, dict):
+            continue
+        shares = entry.get("val")
+        if not shares or shares <= 0:
+            continue
+        ni_e = ni.get(key) if isinstance(ni.get(key), dict) else None
+        eps_e = eps.get(key) if isinstance(eps.get(key), dict) else None
+        if ni_e is None or eps_e is None:
+            continue
+        ni_v = ni_e.get("val")
+        eps_v = eps_e.get("val")
+        if ni_v is None or eps_v is None or abs(eps_v) < 0.05:
+            continue
+        implied = abs(ni_v / eps_v)
+        if implied <= 0:
+            continue
+        ratio = implied / shares
+        if 500 <= ratio <= 2000:
+            entry["val"] = shares * 1000
+
+
+def _extract_all_annual(facts: dict) -> dict:
+    """Pull every metric for annual (FY) records from 10-K filings.
+    Income statement, cash flow, EPS, shares = period records (~365 days).
+    Balance sheet items = instant records (no start date)."""
+    out: dict[str, dict] = {}
+    for name, concepts in INCOME_METRICS.items():
+        out[name] = extract_period_values(facts, concepts, unit="USD",
+                                          period_filter=is_annual_period, form_prefix="10-K")
+    for name, concepts in SHARES_METRICS.items():
+        out[name] = extract_period_values(facts, concepts, unit="shares",
+                                          period_filter=is_annual_period, form_prefix="10-K")
+    for name, concepts in EPS_METRICS.items():
+        out[name] = extract_period_values(facts, concepts, unit="USD/shares",
+                                          period_filter=is_annual_period, form_prefix="10-K")
+    for name, concepts in CASH_FLOW_METRICS.items():
+        out[name] = extract_period_values(facts, concepts, unit="USD",
+                                          period_filter=is_annual_period, form_prefix="10-K")
+    for name, concepts in BALANCE_SHEET_METRICS.items():
+        out[name] = extract_period_values(facts, concepts, unit="USD",
+                                          period_filter=is_instant_at_fy_end, form_prefix="10-K")
+    return out
+
+
+def _extract_all_quarterly(facts: dict) -> dict:
+    """Pull every metric for quarterly records (10-Q + 10-K). Income concepts
+    use 90-day periods; cash-flow concepts use YTD-differencing (issuers
+    typically file CF cumulative — Q1=90d, H1=180d, 9M=270d, annual=365d).
+    Balance sheet items use instants (point-in-time at quarter end)."""
+    out: dict = {}
+    for name, concepts in INCOME_METRICS.items():
+        out[name] = extract_quarterly_values(facts, concepts, unit="USD")
+    for name, concepts in CASH_FLOW_METRICS.items():
+        out[name] = extract_quarterly_cash_flow(facts, concepts, unit="USD")
+    for name, concepts in SHARES_METRICS.items():
+        out[name] = extract_quarterly_values(facts, concepts, unit="shares")
+    for name, concepts in EPS_METRICS.items():
+        out[name] = extract_quarterly_values(facts, concepts, unit="USD/shares")
+
+    # Balance sheet items at quarter-end: instants from 10-Q / 10-K. Pulled
+    # inline because the standard `extract_*` helpers require a start date.
+    usgaap = facts.get("us-gaap", {}) if facts else {}
+    for name, concepts in BALANCE_SHEET_METRICS.items():
+        bs_data: dict[str, dict] = {}
+        bs_sort_key: dict[str, tuple] = {}
+        for concept in concepts:
+            for r in usgaap.get(concept, {}).get("units", {}).get("USD", []):
+                form = r.get("form", "")
+                if not (form.startswith("10-Q") or form.startswith("10-K")):
+                    continue
+                if not is_instant_any(r):
+                    continue
+                end = r.get("end", "")
+                if not end:
+                    continue
+                sort_key = (r.get("filed", ""), float(r["val"]))
+                if end not in bs_sort_key or sort_key > bs_sort_key[end]:
+                    bs_sort_key[end] = sort_key
+                    bs_data[end] = {
+                        "val": float(r["val"]),
+                        "end": r.get("end"),
+                        "filed": r.get("filed"),
+                        "concept": concept,
+                        "fy": r.get("fy"),
+                        "fp": r.get("fp"),
+                        "form": r.get("form"),
+                    }
+        out[name] = bs_data
+    return out
+
+
+def build_sec_row(ticker: str, cik: int, facts: dict) -> dict:
+    """Compose one row of `companies_sec.json` for a given ticker.
+
+    Args:
+      ticker: stock symbol (kept verbatim in the row)
+      cik: SEC CIK number for the entity
+      facts: the dict returned by `fetch_companyfacts(cik)` (NOT None)
+
+    Returns a dict with keys: ticker, cik, entity_name, fetched_at, source,
+    annual, quarterly, mna_flagged_years. Shares are auto-rescaled when a
+    filer reports them in thousands."""
+    from datetime import datetime, timezone
+
+    raw_facts = facts.get("facts", {}) if facts else {}
+    annual = _extract_all_annual(raw_facts)
+    quarterly = _extract_all_quarterly(raw_facts)
+
+    rescale_shares_filed_in_thousands(annual)
+    rescale_shares_filed_in_thousands(quarterly)
+
+    revenue_by_year = {y: v["val"] for y, v in annual.get("revenue", {}).items()}
+    flagged_years = detect_mna_jumps(revenue_by_year, ratio_threshold=2.0)
+
+    return {
+        "ticker": ticker,
+        "cik": int(cik),
+        "entity_name": facts.get("entityName"),
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": "SEC EDGAR XBRL companyfacts",
+        "annual": annual,
+        "quarterly": quarterly,
+        "mna_flagged_years": flagged_years,
+    }
 
 
 def detect_mna_jumps(values_by_year: dict[int, float], *, ratio_threshold: float = 2.0) -> list[int]:

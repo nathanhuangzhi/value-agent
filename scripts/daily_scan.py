@@ -140,6 +140,8 @@ def main():
             todays_idx = len(log) - 1
             atomic_write_json(args.log, log)
     else:
+        # is_resume==True implies todays_idx is not None; assert for the type checker.
+        assert todays_idx is not None
         todays_entry = log[todays_idx]
         industries = todays_entry["industries"]
 
@@ -206,7 +208,11 @@ def main():
             tok_str = f", {usage.get('total_tokens')} tokens" if usage.get("total_tokens") else ""
             print(f"[{i}/{len(todo)}] {analyzed_row['ticker']} {analyzed_row.get('name')}{tok_str}{cost_str}")
 
-    todays_entry["tickers"] = sorted({*todays_entry.get("tickers", []), *(r["ticker"] for r in todo)})
+    # Re-assert for the type checker — todays_idx was set above by either
+    # the new-day or resume branch.
+    assert todays_idx is not None
+    existing_tickers: list = list(todays_entry.get("tickers") or [])
+    todays_entry["tickers"] = sorted({*existing_tickers, *(r["ticker"] for r in todo)})
     todays_entry["count"] = len(todays_entry["tickers"])
     log[todays_idx] = todays_entry
     atomic_write_json(args.log, log)
@@ -220,7 +226,7 @@ def main():
     if cost_known:
         print(f"  est. cost: ${total_cost:.4f} (using approximate rates in app/tools/llm_router.py)")
     else:
-        print(f"  est. cost: unavailable (no pricing entry for the model)")
+        print("  est. cost: unavailable (no pricing entry for the model)")
 
 
 if __name__ == "__main__":

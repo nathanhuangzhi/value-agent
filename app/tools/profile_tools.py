@@ -1,6 +1,7 @@
 """Fetch a single company's profile (name, sector, industry, market cap, business overview) via yfinance."""
 
 from datetime import datetime, timezone
+
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 

@@ -9,10 +9,10 @@ import pytest
 
 from app.tools.sec_xbrl_tools import (
     _fiscal_year_from_end,
-    _is_annual_period,
-    _is_quarterly_period,
-    _is_instant_at_fy_end,
-    _is_instant_any,
+    is_annual_period,
+    is_quarterly_period,
+    is_instant_at_fy_end,
+    is_instant_any,
     extract_period_values,
     extract_quarterly_cash_flow,
     extract_quarterly_values,
@@ -48,46 +48,46 @@ def test_fiscal_year_returns_none_for_unparseable():
     assert _fiscal_year_from_end(None) is None
 
 
-# ===== _is_annual_period / _is_quarterly_period / _is_instant_at_fy_end =====
+# ===== is_annual_period / is_quarterly_period / is_instant_at_fy_end =====
 
 def test_annual_period_recognizes_calendar_year():
-    assert _is_annual_period({"start": "2024-01-01", "end": "2024-12-31"})
+    assert is_annual_period({"start": "2024-01-01", "end": "2024-12-31"})
 
 
 def test_annual_period_recognizes_52_week_fiscal_year():
     # Many companies use a 52- or 53-week fiscal year that doesn't align with calendar.
-    assert _is_annual_period({"start": "2024-01-29", "end": "2025-01-26"})
+    assert is_annual_period({"start": "2024-01-29", "end": "2025-01-26"})
 
 
 def test_annual_period_rejects_quarter():
-    assert not _is_annual_period({"start": "2024-01-01", "end": "2024-03-31"})
+    assert not is_annual_period({"start": "2024-01-01", "end": "2024-03-31"})
 
 
 def test_annual_period_rejects_instant_record():
     # Instant records (balance-sheet items) have no `start`.
-    assert not _is_annual_period({"end": "2024-12-31"})
+    assert not is_annual_period({"end": "2024-12-31"})
 
 
 def test_annual_period_rejects_malformed_dates():
-    assert not _is_annual_period({"start": "not-a-date", "end": "2024-12-31"})
+    assert not is_annual_period({"start": "not-a-date", "end": "2024-12-31"})
 
 
 def test_quarterly_period_recognizes_typical_quarter():
-    assert _is_quarterly_period({"start": "2024-01-01", "end": "2024-03-31"})
+    assert is_quarterly_period({"start": "2024-01-01", "end": "2024-03-31"})
 
 
 def test_quarterly_period_rejects_full_year():
-    assert not _is_quarterly_period({"start": "2024-01-01", "end": "2024-12-31"})
+    assert not is_quarterly_period({"start": "2024-01-01", "end": "2024-12-31"})
 
 
 def test_instant_recognizes_balance_sheet_record():
     # No `start` → it's a point-in-time snapshot.
-    assert _is_instant_at_fy_end({"end": "2024-12-31"})
-    assert _is_instant_any({"end": "2024-09-30"})
+    assert is_instant_at_fy_end({"end": "2024-12-31"})
+    assert is_instant_any({"end": "2024-09-30"})
 
 
 def test_instant_rejects_period_record():
-    assert not _is_instant_at_fy_end({"start": "2024-01-01", "end": "2024-12-31"})
+    assert not is_instant_at_fy_end({"start": "2024-01-01", "end": "2024-12-31"})
 
 
 # ===== extract_period_values =====
@@ -112,7 +112,7 @@ def test_extract_period_values_filters_to_annual_records():
         "Revenues": [
             # Annual record
             {"start": "2023-01-01", "end": "2023-12-31", "val": 1000.0, "filed": "2024-02-01", "fy": 2023, "form": "10-K"},
-            # Quarterly record (should be excluded under default _is_annual_period)
+            # Quarterly record (should be excluded under default is_annual_period)
             {"start": "2023-01-01", "end": "2023-03-31", "val": 250.0, "filed": "2023-05-01", "fy": 2023, "form": "10-K"},
         ],
     })
@@ -153,7 +153,7 @@ def test_extract_period_values_keys_52week_january_ends_to_prior_fy():
              "filed": "2023-02-23", "fy": 2022, "form": "10-K"},
         ],
     }, unit="USD")
-    result = extract_period_values(facts, ["LongTermDebt"], period_filter=_is_instant_at_fy_end)
+    result = extract_period_values(facts, ["LongTermDebt"], period_filter=is_instant_at_fy_end)
     # The small pre-merger value lands under FY2021, the post-merger value under FY2022.
     assert result[2021]["val"] == 300_000.0
     assert result[2022]["val"] == 2_648_900_000.0
@@ -212,7 +212,7 @@ def test_extract_period_values_with_instant_filter_for_balance_sheet():
         ],
     })
     result = extract_period_values(
-        facts, ["Assets"], period_filter=_is_instant_at_fy_end,
+        facts, ["Assets"], period_filter=is_instant_at_fy_end,
     )
     assert result[2023]["val"] == 500.0
     assert result[2024]["val"] == 600.0

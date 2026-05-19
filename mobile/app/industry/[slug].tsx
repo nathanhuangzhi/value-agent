@@ -12,11 +12,13 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { api, ApiError } from '@/api/client';
 import type { IndustryDetailResponse } from '@/api/types';
 import { TickerRow } from '@/components/TickerRow';
+import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 
 export default function IndustryScreen() {
   const c = useColors();
   const navigation = useNavigation();
+  const device = useDeviceClass();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [data, setData] = useState<IndustryDetailResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,11 +30,15 @@ export default function IndustryScreen() {
     try {
       const resp = await api.industryDetail(slug);
       setData(resp);
-      navigation.setOptions({ title: resp.industry });
+      // Skip on iPad-landscape: the screen renders inside SplitLayout's
+      // Slot (no Stack header to write into).
+      if (device !== 'tablet-landscape') {
+        navigation.setOptions({ title: resp.industry });
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : String(e));
     }
-  }, [slug, navigation]);
+  }, [slug, navigation, device]);
 
   useEffect(() => {
     load();

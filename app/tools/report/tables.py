@@ -4,8 +4,15 @@ table, plus the column-extraction helper."""
 from __future__ import annotations
 
 from app.tools.report.format import (
-    NAVY, RULE, TEXT, MUTED, AMBER,
-    _pick_first, _div, _fmt_pct, _fy_label, _quarter_label,
+    AMBER,
+    MUTED,
+    NAVY,
+    RULE,
+    TEXT,
+    _div,
+    _fy_label,
+    _pick_first,
+    _quarter_label,
 )
 from app.tools.report.ratios import (
     _latest_value_at_or_before,

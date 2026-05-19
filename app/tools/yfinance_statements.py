@@ -19,12 +19,11 @@ mapping accepts both via an ordered fallback list per metric.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import math
+from datetime import datetime, timezone
 
 import pandas as pd
 import yfinance as yf
-
 
 # ----- yfinance row label → SEC metric key. First non-NaN label wins. -----
 

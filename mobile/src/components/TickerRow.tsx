@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 
 import type { TickerRow as TickerRowData } from '@/api/types';
 import { useColors, fontSize, spacing } from '@/theme/colors';
@@ -9,9 +9,23 @@ import { StatusBadge } from './StatusBadge';
 export function TickerRow({ row }: { row: TickerRowData }) {
   const c = useColors();
   const router = useRouter();
+  const segments = useSegments();
+  // If this row is somehow rendered while already on a ticker screen
+  // (today: only via SplitLayout on iPad-landscape), swap the URL rather
+  // than pushing so Back continues to return to the industry/digest the
+  // user came from instead of walking through prior tickers.
+  const isOnTicker = segments[0] === 'ticker';
+  const go = () => {
+    const target = `/ticker/${row.ticker}` as const;
+    if (isOnTicker) {
+      router.replace(target);
+    } else {
+      router.push(target);
+    }
+  };
   return (
     <Pressable
-      onPress={() => router.push(`/ticker/${row.ticker}`)}
+      onPress={go}
       style={({ pressed }) => [
         styles.row,
         {

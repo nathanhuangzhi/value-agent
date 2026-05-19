@@ -24,6 +24,7 @@ import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 
 import type { PricePoint } from '@/api/types';
 import { useColors, fontSize, spacing } from '@/theme/colors';
+import { formatStockPrice } from '@/utils/format';
 
 const PADDING = { top: 16, right: 48, bottom: 28, left: 12 };
 const CHART_HEIGHT = 200;
@@ -54,13 +55,6 @@ function yearsBetween(startISO: string, endISO: string): number {
   const start = new Date(startISO);
   const end = new Date(endISO);
   return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-}
-
-
-function formatPrice(n: number): string {
-  if (n >= 100) return `$${n.toFixed(0)}`;
-  if (n >= 10) return `$${n.toFixed(1)}`;
-  return `$${n.toFixed(2)}`;
 }
 
 
@@ -196,7 +190,7 @@ export function PriceChart({ data }: { data: PricePoint[] }) {
             {formatDateLabel(tip.date)}
           </Text>
           <Text style={[styles.tipPrice, { color: c.textPrimary }]}>
-            {formatPrice(tip.close)}
+            {formatStockPrice(tip.close)}
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
@@ -256,7 +250,7 @@ export function PriceChart({ data }: { data: PricePoint[] }) {
               fontSize={fontSize.xs}
               fill={c.textMuted}
             >
-              {formatPrice(max)}
+              {formatStockPrice(max)}
             </SvgText>
             <SvgText
               x={width - PADDING.right + 6}
@@ -264,7 +258,7 @@ export function PriceChart({ data }: { data: PricePoint[] }) {
               fontSize={fontSize.xs}
               fill={c.textMuted}
             >
-              {formatPrice(min)}
+              {formatStockPrice(min)}
             </SvgText>
 
             {/* X-axis year labels — tick density adapts to the data span

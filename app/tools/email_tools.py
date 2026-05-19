@@ -26,10 +26,14 @@ from markdown_it import MarkdownIt
 # avoid drift between the per-ticker reports, the email digest, and the
 # archive index pages.
 from app.tools.report.format import (
-    NAVY, AMBER, RULE, TEXT, MUTED,
-    _format_money_compact as _format_money,
-    _inline_styles,
-    _status_badge,
+    AMBER,
+    MUTED,
+    NAVY,
+    RULE,
+    TEXT,
+    format_money_compact,
+    inline_styles,
+    status_badge,
 )
 
 _MD = MarkdownIt("commonmark", {"html": False, "linkify": True})
@@ -74,7 +78,7 @@ def build_summary_digest_html(
       title: used both as the `<title>` and as the H1 in the header band.
       industry, log_date: shown as chips in the header subtitle.
     """
-    summary_html = _inline_styles(_MD.render(summary_md or ""))
+    summary_html = inline_styles(_MD.render(summary_md or ""))
     if archive_url:
         summary_html = _linkify_tickers(summary_html, [r["ticker"] for r in rows], archive_url)
 
@@ -118,9 +122,9 @@ def build_summary_digest_html(
             f"{html_lib.escape(r.get('industry') or '')}</td>"
             f"<td style='padding:7px 10px;border-bottom:1px solid {RULE};font-size:13px;"
             f"text-align:right;font-family:Menlo,Consolas,monospace;color:{TEXT};'>"
-            f"{html_lib.escape(_format_money(r.get('market_cap')))}</td>"
+            f"{html_lib.escape(format_money_compact(r.get('market_cap')))}</td>"
             f"<td style='padding:7px 10px;border-bottom:1px solid {RULE};text-align:center;'>"
-            f"{_status_badge(r.get('status'))}</td>"
+            f"{status_badge(r.get('status'))}</td>"
             f"</tr>"
         )
 

@@ -10,25 +10,40 @@ import {
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import { useTickerDetail, usePriceHistory } from '@/api/hooks';
+import { BusinessOverview } from '@/components/BusinessOverview';
+import { HistoricalTable } from '@/components/HistoricalTable';
 import { KPIGrid } from '@/components/KPIGrid';
-import { PriceChart } from '@/components/PriceChart';
 import { Section } from '@/components/Section';
 import { StatusBadge } from '@/components/StatusBadge';
+import { ValuationGrid } from '@/components/ValuationGrid';
+import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, spacing, radii } from '@/theme/colors';
 import { formatDate, formatMoney } from '@/utils/format';
 
 export default function TickerScreen() {
   const c = useColors();
   const navigation = useNavigation();
+  const device = useDeviceClass();
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
+  // On iPad-landscape the screen is rendered inside the SplitLayout's
+  // right pane (no Stack header), but it still benefits from being
+  // centered with a comfortable max-width so the eye doesn't scan
+  // across 800+ pt of statement text.
+  const contentMaxWidth = device === 'tablet-landscape' ? 900
+                        : device === 'tablet'           ? 760
+                        : undefined;
 
   const ticker = useTickerDetail(symbol);
   const priceHistory = usePriceHistory(symbol);
 
-  // Update the nav title once the ticker payload arrives.
+  // Update the nav title once the ticker payload arrives. Skipped on
+  // iPad-landscape where the screen renders inside SplitLayout's Slot
+  // (no Stack header to write into).
   useEffect(() => {
-    if (ticker.data) navigation.setOptions({ title: ticker.data.ticker });
-  }, [ticker.data, navigation]);
+    if (ticker.data && device !== 'tablet-landscape') {
+      navigation.setOptions({ title: ticker.data.ticker });
+    }
+  }, [ticker.data, navigation, device]);
 
   async function refreshAll() {
     await Promise.all([ticker.refresh(), priceHistory.refresh()]);
@@ -56,7 +71,12 @@ export default function TickerScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: c.background }}
-      contentContainerStyle={styles.scroll}
+      contentContainerStyle={[
+        styles.scroll,
+        // Center the content with a max-width on iPad so a wide screen
+        // doesn't sprawl statement text across 1000+ pt of horizontal space.
+        contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={ticker.loading || priceHistory.loading}
@@ -72,7 +92,16 @@ export default function TickerScreen() {
             {data.name}
           </Text>
           <Text style={[styles.meta, { color: c.textMuted }]}>
-            {data.ticker} · {data.exchange}{data.sector ? ` · ${data.sector}` : ''}
+            {[
+              data.ticker,
+              data.exchange,
+              data.sector && data.industry
+                ? `${data.sector} / ${data.industry}`
+                : data.sector || data.industry,
+              data.country,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
         <View style={styles.headerRight}>
@@ -83,7 +112,73 @@ export default function TickerScreen() {
         </View>
       </View>
 
-      {/* Validation banner (only on warn / error) */}
+      {/* Business overview — matches the web's bullet-list shape: a
+          "What it does" summary plus 9 categorical attributes from the
+          Stage 2 classifier. Lives at the top because it's the
+          "what is this company" framing the reader needs before any
+          numbers make sense. */}
+      <Section title="Business Overview">
+        <BusinessOverview
+          classification={data.classification}
+          meta={data.classification_meta}
+        />
+      </Section>
+
+      {/* Snapshot KPI grid */}
+      <Section title="Snapshot">
+        <KPIGrid snapshot={data.snapshot} />
+      </Section>
+
+      {/* 2×2 grid: stock price + static P/E + static P/S + P/B. Mirrors
+          the web report's valuation panel. Each chart is interactive on
+          tap — same data the historical-table "Valuation Multiples"
+          rows are computed from, visualized over time. */}
+      <Section title="Stock Price & Valuation">
+        {priceHistory.data ? (
+          <ValuationGrid
+            annual={data.annual}
+            quarterly={data.quarterly}
+            priceHistory={priceHistory.data.data}
+          />
+        ) : priceHistory.loading ? (
+          <View style={styles.chartLoading}>
+            <ActivityIndicator color={c.brand} />
+          </View>
+        ) : (
+          <Text style={{ color: c.textMuted, fontSize: fontSize.sm }}>
+            {priceHistory.error ?? '(no price data)'}
+          </Text>
+        )}
+      </Section>
+
+      {/* Historical statements: annual + quarterly in one scroll,
+          default-anchored to the most recent quarter on the right.
+          Price history is passed in so the table can compute Static P/E,
+          Static P/S, and P/B for each period (price × diluted shares ÷
+          annual baseline). */}
+      <Section title="Historical Data (annual + quarterly)">
+        <HistoricalTable
+          statements={data.annual}
+          quarterly={data.quarterly}
+          priceHistory={priceHistory.data?.data}
+        />
+      </Section>
+
+      {/* Investment narrative */}
+      <Section title="Investment Narrative">
+        {latestSourceDate ? (
+          <Text style={[styles.metaSmall, { color: c.textMuted, marginBottom: spacing.sm }]}>
+            Most recent source: {latestSourceDate}
+          </Text>
+        ) : null}
+        <Text style={[styles.body, { color: c.textPrimary }]}>
+          {data.narrative.text || '(no narrative available)'}
+        </Text>
+      </Section>
+
+      {/* Validation banner — moved to the BOTTOM of the page. Same data
+          quality info but framed as an end-of-report caveat rather than
+          a top-of-page interruption. Only rendered on warn / error. */}
       {(data.validation.status === 'warn' || data.validation.status === 'error') && (
         <View
           style={[
@@ -117,50 +212,11 @@ export default function TickerScreen() {
         </View>
       )}
 
-      {/* Full available price history (downsampled for long series).
-          Range label inside the chart header reflects the actual span. */}
-      <Section title="Price History">
-        {priceHistory.data ? (
-          <PriceChart data={priceHistory.data.data} />
-        ) : priceHistory.loading ? (
-          <View style={styles.chartLoading}>
-            <ActivityIndicator color={c.brand} />
-          </View>
-        ) : (
-          <Text style={{ color: c.textMuted, fontSize: fontSize.sm }}>
-            {priceHistory.error ?? '(no price data)'}
-          </Text>
-        )}
-      </Section>
-
-      {/* Snapshot KPI grid */}
-      <Section title="Snapshot">
-        <KPIGrid snapshot={data.snapshot} />
-      </Section>
-
-      {/* Business overview */}
-      {data.classification_meta?.logic_summary ? (
-        <Section title="Business">
-          <Text style={[styles.body, { color: c.textPrimary }]}>
-            {data.classification_meta.logic_summary}
-          </Text>
-        </Section>
-      ) : null}
-
-      {/* Investment narrative */}
-      <Section title="Investment Narrative">
-        {latestSourceDate ? (
-          <Text style={[styles.metaSmall, { color: c.textMuted, marginBottom: spacing.sm }]}>
-            Most recent source: {latestSourceDate}
-          </Text>
-        ) : null}
-        <Text style={[styles.body, { color: c.textPrimary }]}>
-          {data.narrative.text || '(no narrative available)'}
-        </Text>
-      </Section>
-
-      {/* Footer */}
+      {/* Footer — disclaimer (matches the web) + analyzed-date stamp. */}
       <View style={[styles.footer, { borderTopColor: c.border }]}>
+        <Text style={[styles.disclaimer, { color: c.textMuted }]}>
+          For research and educational purposes only. Not investment advice.
+        </Text>
         <Text style={[styles.metaSmall, { color: c.textMuted }]}>
           Analyzed {formatDate(data.analyzed_date)} · {data.narrative.model || 'unknown model'}
         </Text>
@@ -216,6 +272,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  disclaimer: {
+    fontSize: fontSize.xs,
+    fontStyle: 'italic',
+    marginBottom: 4,
   },
   chartLoading: {
     height: 200,

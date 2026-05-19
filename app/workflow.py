@@ -1,9 +1,14 @@
-from dotenv import load_dotenv
+import logging
 
 from app.tools.llm_router import run_prompt
 from app.tools.search_tools import get_market_commentary
 
-load_dotenv()
+# Note: `.env` is loaded by the entry-point scripts (`scripts/*.py`) via
+# `load_dotenv(ENV_FILE)`, not here — this module is a library, and
+# calling `load_dotenv()` at import time with no path would resolve
+# against whatever CWD the importer happens to have (broken under cron).
+
+logger = logging.getLogger(__name__)
 
 
 def run_value_agent(ticker: str) -> dict:
@@ -31,10 +36,10 @@ def run_value_agent(ticker: str) -> dict:
     """
     ticker = ticker.upper()
     try:
-        print(f"--- SCOUT: Searching for {ticker} context ---")
+        logger.info("scout: searching for %s context", ticker)
         narrative_sources = get_market_commentary(ticker)
 
-        print(f"--- BRAIN: Processing {ticker} analysis ---")
+        logger.info("brain: processing %s analysis", ticker)
         result = run_prompt(
             "analysis",
             ticker=ticker,
@@ -56,7 +61,7 @@ def run_value_agent(ticker: str) -> dict:
         }
 
     except Exception as e:
-        print(f"❌ Analysis Workflow Error: {str(e)}")
+        logger.exception("analysis workflow error for %s", ticker)
         return {
             "narrative": None,
             "narrative_model": None,
