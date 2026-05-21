@@ -145,6 +145,7 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
             "pb": None, "ps": None, "p_fcf": None, "ttm_pocf": None,
             "debt_asset": None, "gross_margin": None, "op_margin": None,
             "net_margin": None, "roe": None, "roa": None, "dividend_rate": None,
+            "latest_q_ni": None, "latest_q_ocf": None,
         }
     q = _blended_quarterly(sec_row, yf_row)
     a = _blended_annual(sec_row, yf_row)
@@ -156,7 +157,28 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
     # Prefer the recomputed mcap (price × diluted shares), fall back to
     # the Stage-1 stored value if we couldn't recompute.
     out["market_cap"] = out.get("market_cap") or analyzed_row.get("market_cap")
+    out["latest_q_ni"] = _latest_q_value(
+        q["income_statement"], ["Net Income", "Net Income Common Stockholders"]
+    )
+    out["latest_q_ocf"] = _latest_q_value(
+        q["cash_flow"],
+        ["Cash Flow From Continuing Operating Activities", "Operating Cash Flow"],
+    )
     return out
+
+
+def _latest_q_value(periods: list[dict], names: list[str]) -> float | None:
+    """Return the most recent period's value for the first matching item
+    name. Periods come pre-sorted ascending by date from the SEC adapter,
+    so the last entry is the latest quarter."""
+    if not periods:
+        return None
+    items = periods[-1].get("items") or {}
+    for name in names:
+        v = items.get(name)
+        if v is not None:
+            return v
+    return None
 
 
 def _summarize_industries(analyzed: dict) -> list[dict]:
@@ -191,6 +213,8 @@ def _ticker_summary(analyzed_row: dict, validation_row: dict | None,
         "ttm_pocf": ratios.get("ttm_pocf"),
         "ps": ratios.get("ps"),
         "pb": ratios.get("pb"),
+        "latest_q_ni": ratios.get("latest_q_ni"),
+        "latest_q_ocf": ratios.get("latest_q_ocf"),
         "analyzed_date": analyzed_row.get("analyzed_date") or "",
         "status": (validation_row or {}).get("status") or "ok",
     }

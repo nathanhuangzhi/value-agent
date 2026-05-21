@@ -29,6 +29,8 @@ export type TickerRow = {
   ttm_pocf: number | null;
   ps: number | null;
   pb: number | null;
+  latest_q_ni: number | null;
+  latest_q_ocf: number | null;
   analyzed_date: string;
   status: ValidationStatus;
 };

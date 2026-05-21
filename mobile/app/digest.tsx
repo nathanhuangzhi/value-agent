@@ -19,7 +19,7 @@ import {
 import { useNavigation } from 'expo-router';
 
 import { useLatestDigest } from '@/api/hooks';
-import { TickerRow } from '@/components/TickerRow';
+import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 
@@ -67,35 +67,38 @@ export default function DigestScreen() {
         <RefreshControl refreshing={digest.loading} onRefresh={digest.refresh} tintColor={c.brand} />
       }
       ListHeaderComponent={
-        <View style={styles.header}>
-          <Text style={[styles.subheading, { color: c.textMuted }]}>
-            {data.date} · {industriesLabel} · {data.ticker_count} tickers
-          </Text>
+        <View>
+          <View style={styles.header}>
+            <Text style={[styles.subheading, { color: c.textMuted }]}>
+              {data.date} · {industriesLabel} · {data.ticker_count} tickers
+            </Text>
 
-          {data.summary_md ? (
-            <View style={styles.storiesBlock}>
-              <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
-                STORIES OF THE DAY
-              </Text>
-              <Text style={[styles.summary, { color: c.textPrimary }]}>
-                {data.summary_md.replace(/[*_`]+/g, '').trim()}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.storiesBlock}>
-              <Text style={[styles.note, { color: c.textMuted }]}>
-                No LLM summary yet — run{' '}
-                <Text style={{ fontWeight: '600' }}>
-                  python -m scripts.daily_digest --dry-run
-                </Text>{' '}
-                to generate one.
-              </Text>
-            </View>
-          )}
+            {data.summary_md ? (
+              <View style={styles.storiesBlock}>
+                <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
+                  STORIES OF THE DAY
+                </Text>
+                <Text style={[styles.summary, { color: c.textPrimary }]}>
+                  {data.summary_md.replace(/[*_`]+/g, '').trim()}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.storiesBlock}>
+                <Text style={[styles.note, { color: c.textMuted }]}>
+                  No LLM summary yet — run{' '}
+                  <Text style={{ fontWeight: '600' }}>
+                    python -m scripts.daily_digest --dry-run
+                  </Text>{' '}
+                  to generate one.
+                </Text>
+              </View>
+            )}
 
-          <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand, marginTop: spacing.xl }]}>
-            ALL COMPANIES
-          </Text>
+            <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand, marginTop: spacing.xl }]}>
+              ALL COMPANIES
+            </Text>
+          </View>
+          <TickerRowHeader />
         </View>
       }
     />

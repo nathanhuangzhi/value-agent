@@ -11,7 +11,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import { api, ApiError } from '@/api/client';
 import type { IndustryDetailResponse } from '@/api/types';
-import { TickerRow } from '@/components/TickerRow';
+import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 
@@ -72,12 +72,16 @@ export default function IndustryScreen() {
       data={data.tickers}
       keyExtractor={(t) => t.ticker}
       ListHeaderComponent={
-        <View style={styles.header}>
-          <Text style={[styles.subheading, { color: c.textMuted }]}>
-            {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
-          </Text>
+        <View>
+          <View style={styles.header}>
+            <Text style={[styles.subheading, { color: c.textMuted }]}>
+              {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
+            </Text>
+          </View>
+          <TickerRowHeader />
         </View>
       }
+      stickyHeaderIndices={[0]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
       }
