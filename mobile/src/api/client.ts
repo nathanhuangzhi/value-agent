@@ -29,10 +29,15 @@ class ApiError extends Error {
 }
 
 async function get<T>(path: string): Promise<T> {
-  const url = `${BASE_URL}/api${path}`;
+  // iOS's NSURLSession disk cache ignores Vercel's `must-revalidate` and
+  // serves stale snapshots of the baked JSON. Bust it with a per-request
+  // query param + `cache: 'no-store'` so the user always sees the latest
+  // bake without restarting the app.
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `${BASE_URL}/api${path}${sep}_=${Date.now()}`;
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(url, { cache: 'no-store' });
   } catch (e) {
     throw new ApiError(0, `Network error reaching ${url}: ${e}`);
   }

@@ -36,6 +36,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from app.api.routes import _snapshot_ratios_for, _ticker_summary, _load_sec, _load_yf
 from app.tools.email_tools import build_summary_digest_html, send_digest_email
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
 from app.tools.llm_router import run_prompt
@@ -217,6 +218,11 @@ def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str
     analyzed = load_latest_by_ticker(COMPANIES_ANALYZED)
     validation = _load_validation_by_ticker()
 
+    # Reuse the API's row shape so the mobile app sees the same fields
+    # whether it reads /api/digest/latest.json or /api/industries/<slug>.json.
+    sec_by_ticker = _load_sec()
+    yf_by_ticker = _load_yf()
+
     narrative_blocks: list[str] = []
     table_rows: list[dict] = []
     for ticker in tickers:
@@ -228,14 +234,8 @@ def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str
             narrative_blocks.append(
                 f"### {ticker} — {row.get('name') or ''}\n{narrative}"
             )
-        table_rows.append({
-            "ticker": ticker,
-            "name": row.get("name") or ticker,
-            "sector": row.get("sector") or "",
-            "industry": row.get("industry") or "",
-            "market_cap": row.get("market_cap"),
-            "status": (validation.get(ticker) or {}).get("status") or "ok",
-        })
+        ratios = _snapshot_ratios_for(ticker, row, sec_by_ticker, yf_by_ticker)
+        table_rows.append(_ticker_summary(row, validation.get(ticker), ratios))
 
     if not table_rows:
         sys.exit("No table rows assembled — every ticker missing from analyzed.json?")
