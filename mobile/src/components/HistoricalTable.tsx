@@ -23,7 +23,7 @@
  *     from the most recent balance sheet, deduped by category
  */
 import { useCallback, useMemo, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import type { Period, PricePoint, Statements } from '@/api/types';
 import { useColors, fontSize, spacing } from '@/theme/colors';
@@ -36,6 +36,13 @@ const CELL_WIDTH = 70;
 const ROW_HEIGHT = 30;
 const HEADER_HEIGHT = 28;
 const SECTION_HEADER_HEIGHT = 26;
+// Fraction of the screen height the table is allowed to occupy. The inner
+// body scrolls vertically so the period-header row stays pinned at top
+// while the user scans down through metric rows. Capped so the table
+// doesn't dominate huge iPad screens.
+const TABLE_HEIGHT_RATIO = 0.65;
+const TABLE_HEIGHT_MAX = 640;
+const TABLE_HEIGHT_MIN = 360;
 
 // YoY thresholds — match `_yoy_cell_style` in Python
 const YOY_GREEN = 0.20;
@@ -281,6 +288,11 @@ type Props = {
 export function HistoricalTable({ statements, quarterly, priceHistory }: Props) {
   const c = useColors();
   const scrollRef = useRef<ScrollView>(null);
+  const { height: screenH } = useWindowDimensions();
+  // Drives both the data ScrollView's contentOffset.y and the matching
+  // upward translation of the label column, keeping the two visually
+  // synced as the user scrolls through metric rows.
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const annualPeriods = statements.income_statement.slice(-MAX_ANNUAL);
   const quarterlyPeriods = quarterly.income_statement.slice(-MAX_QUARTERLY);
@@ -608,30 +620,50 @@ export function HistoricalTable({ statements, quarterly, priceHistory }: Props) 
 
   // ====== Render ======
 
+  const tableHeight = Math.max(
+    TABLE_HEIGHT_MIN,
+    Math.min(TABLE_HEIGHT_MAX, screenH * TABLE_HEIGHT_RATIO),
+  );
+  const bodyHeight = tableHeight - HEADER_HEIGHT;
+  const totalBodyContentHeight =
+    sections.reduce((sum, s) => sum + SECTION_HEADER_HEIGHT + s.rows.length * ROW_HEIGHT, 0);
+
   return (
     <View>
-      <View style={[styles.tableWrap, { borderColor: c.border }]}>
+      <View style={[styles.tableWrap, { borderColor: c.border, height: tableHeight }]}>
         {/* ===== Frozen left column ===== */}
         <View style={[styles.labelCol, { borderRightColor: c.border, width: LABEL_WIDTH }]}>
           <View style={[styles.headerCell, { borderBottomColor: c.border, height: HEADER_HEIGHT }]}>
             <Text style={[styles.headerText, { color: c.textMuted }]}>METRIC</Text>
           </View>
-          {sections.map((section) => (
-            <View key={section.title}>
-              <View style={[styles.sectionHeader, { height: SECTION_HEADER_HEIGHT, borderBottomColor: c.border, backgroundColor: c.surface }]}>
-                <Text style={[styles.sectionHeaderText, { color: c.brand }]} numberOfLines={1}>
-                  {section.title.toUpperCase()}
-                </Text>
-              </View>
-              {section.rows.map((row) => (
-                <View key={row.label} style={[styles.labelCell, { height: ROW_HEIGHT }]}>
-                  <Text style={[styles.labelText, { color: c.textPrimary }]} numberOfLines={1}>
-                    {row.label}
-                  </Text>
+          {/* Labels live inside a clipped window translated by scrollY so
+              they track the data body's vertical scroll without needing a
+              second ScrollView (which iOS won't let us drive natively). */}
+          <View style={[styles.labelBodyWindow, { height: bodyHeight }]}>
+            <Animated.View
+              style={{
+                height: totalBodyContentHeight,
+                transform: [{ translateY: Animated.multiply(scrollY, -1) }],
+              }}
+            >
+              {sections.map((section) => (
+                <View key={section.title}>
+                  <View style={[styles.sectionHeader, { height: SECTION_HEADER_HEIGHT, borderBottomColor: c.border, backgroundColor: c.surface }]}>
+                    <Text style={[styles.sectionHeaderText, { color: c.brand }]} numberOfLines={1}>
+                      {section.title.toUpperCase()}
+                    </Text>
+                  </View>
+                  {section.rows.map((row) => (
+                    <View key={row.label} style={[styles.labelCell, { height: ROW_HEIGHT }]}>
+                      <Text style={[styles.labelText, { color: c.textPrimary }]} numberOfLines={1}>
+                        {row.label}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
               ))}
-            </View>
-          ))}
+            </Animated.View>
+          </View>
         </View>
 
         {/* ===== Scrollable right area ===== */}
@@ -658,78 +690,88 @@ export function HistoricalTable({ statements, quarterly, priceHistory }: Props) 
               ))}
             </View>
 
-            {sections.map((section) => (
-              <View key={section.title}>
-                <View
-                  style={[
-                    styles.sectionHeaderSpacer,
-                    {
-                      height: SECTION_HEADER_HEIGHT,
-                      width: CELL_WIDTH * columns.length,
-                      backgroundColor: c.surface,
-                      borderBottomColor: c.border,
-                    },
-                  ]}
-                />
-                {section.rows.map((row) => (
-                  <View key={row.label} style={[styles.valueRow, { height: ROW_HEIGHT }]}>
-                    {columns.map((col, idx) => {
-                      let text = '—';
-                      let yoy: number | null = null;
-                      let source: string | undefined;
+            <Animated.ScrollView
+              style={{ height: bodyHeight }}
+              showsVerticalScrollIndicator
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                { useNativeDriver: true },
+              )}
+              scrollEventThrottle={16}
+            >
+              {sections.map((section) => (
+                <View key={section.title}>
+                  <View
+                    style={[
+                      styles.sectionHeaderSpacer,
+                      {
+                        height: SECTION_HEADER_HEIGHT,
+                        width: CELL_WIDTH * columns.length,
+                        backgroundColor: c.surface,
+                        borderBottomColor: c.border,
+                      },
+                    ]}
+                  />
+                  {section.rows.map((row) => (
+                    <View key={row.label} style={[styles.valueRow, { height: ROW_HEIGHT }]}>
+                      {columns.map((col, idx) => {
+                        let text = '—';
+                        let yoy: number | null = null;
+                        let source: string | undefined;
 
-                      if (row.kind === 'raw') {
-                        const r = resolveRawCell(row, col);
-                        text = formatCell(r.value, row);
-                        yoy = yoyForRawRow(row, col, idx);
-                        source = r.source;
-                      } else if (row.kind === 'ratio') {
-                        const r = resolveRatioCell(row, col);
-                        text = row.format === 'percent'
-                          ? formatMargin(r.num, r.den)
-                          : formatPerShare(r.num, r.den);
-                        yoy = yoyForRatioRow(row, col, idx);
-                      } else {
-                        // valuation
-                        text = resolveValuationCell(row, col);
-                      }
+                        if (row.kind === 'raw') {
+                          const r = resolveRawCell(row, col);
+                          text = formatCell(r.value, row);
+                          yoy = yoyForRawRow(row, col, idx);
+                          source = r.source;
+                        } else if (row.kind === 'ratio') {
+                          const r = resolveRatioCell(row, col);
+                          text = row.format === 'percent'
+                            ? formatMargin(r.num, r.den)
+                            : formatPerShare(r.num, r.den);
+                          yoy = yoyForRatioRow(row, col, idx);
+                        } else {
+                          // valuation
+                          text = resolveValuationCell(row, col);
+                        }
 
-                      const isYfinance = source === 'yfinance';
-                      const tint = yoyTint(yoy);
-                      return (
-                        <View
-                          // Must include `col.kind` because an annual
-                          // fiscal-year-end and the matching Q4 end on
-                          // the same calendar date would otherwise share
-                          // a key.
-                          key={`${col.kind}-${col.period}`}
-                          style={[
-                            styles.cell,
-                            {
-                              width: CELL_WIDTH,
-                              height: ROW_HEIGHT,
-                              backgroundColor: tint,
-                            },
-                            idx === dividerIdx && { borderLeftWidth: 2, borderLeftColor: c.border },
-                          ]}
-                        >
-                          <Text
+                        const isYfinance = source === 'yfinance';
+                        const tint = yoyTint(yoy);
+                        return (
+                          <View
+                            // Must include `col.kind` because an annual
+                            // fiscal-year-end and the matching Q4 end on
+                            // the same calendar date would otherwise share
+                            // a key.
+                            key={`${col.kind}-${col.period}`}
                             style={[
-                              styles.cellText,
-                              { color: c.textPrimary },
-                              isYfinance && { fontStyle: 'italic', opacity: 0.85 },
+                              styles.cell,
+                              {
+                                width: CELL_WIDTH,
+                                height: ROW_HEIGHT,
+                                backgroundColor: tint,
+                              },
+                              idx === dividerIdx && { borderLeftWidth: 2, borderLeftColor: c.border },
                             ]}
-                            numberOfLines={1}
                           >
-                            {text}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                ))}
-              </View>
-            ))}
+                            <Text
+                              style={[
+                                styles.cellText,
+                                { color: c.textPrimary },
+                                isYfinance && { fontStyle: 'italic', opacity: 0.85 },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {text}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </Animated.ScrollView>
           </View>
         </ScrollView>
       </View>
@@ -764,6 +806,9 @@ const styles = StyleSheet.create({
   },
   labelCol: {
     borderRightWidth: StyleSheet.hairlineWidth,
+  },
+  labelBodyWindow: {
+    overflow: 'hidden',
   },
   headerCell: {
     paddingHorizontal: spacing.sm,
