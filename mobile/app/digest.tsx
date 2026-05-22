@@ -10,8 +10,8 @@
 import { useEffect } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
   View,
@@ -58,49 +58,48 @@ export default function DigestScreen() {
   const industriesLabel = data.industries.join(', ') || 'Mixed';
 
   return (
-    <FlatList
+    <SectionList
       style={{ backgroundColor: c.background }}
-      data={data.tickers}
+      sections={[{ data: data.tickers, key: 'all' }]}
       keyExtractor={(t) => t.ticker}
       renderItem={({ item }) => <TickerRow row={item} />}
       refreshControl={
         <RefreshControl refreshing={digest.loading} onRefresh={digest.refresh} tintColor={c.brand} />
       }
       ListHeaderComponent={
-        <View>
-          <View style={styles.header}>
-            <Text style={[styles.subheading, { color: c.textMuted }]}>
-              {data.date} · {industriesLabel} · {data.ticker_count} tickers
-            </Text>
+        <View style={styles.header}>
+          <Text style={[styles.subheading, { color: c.textMuted }]}>
+            {data.date} · {industriesLabel} · {data.ticker_count} tickers
+          </Text>
 
-            {data.summary_md ? (
-              <View style={styles.storiesBlock}>
-                <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
-                  STORIES OF THE DAY
-                </Text>
-                <Text style={[styles.summary, { color: c.textPrimary }]}>
-                  {data.summary_md.replace(/[*_`]+/g, '').trim()}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.storiesBlock}>
-                <Text style={[styles.note, { color: c.textMuted }]}>
-                  No LLM summary yet — run{' '}
-                  <Text style={{ fontWeight: '600' }}>
-                    python -m scripts.daily_digest --dry-run
-                  </Text>{' '}
-                  to generate one.
-                </Text>
-              </View>
-            )}
+          {data.summary_md ? (
+            <View style={styles.storiesBlock}>
+              <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
+                STORIES OF THE DAY
+              </Text>
+              <Text style={[styles.summary, { color: c.textPrimary }]}>
+                {data.summary_md.replace(/[*_`]+/g, '').trim()}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.storiesBlock}>
+              <Text style={[styles.note, { color: c.textMuted }]}>
+                No LLM summary yet — run{' '}
+                <Text style={{ fontWeight: '600' }}>
+                  python -m scripts.daily_digest --dry-run
+                </Text>{' '}
+                to generate one.
+              </Text>
+            </View>
+          )}
 
-            <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand, marginTop: spacing.xl }]}>
-              ALL COMPANIES
-            </Text>
-          </View>
-          <TickerRowHeader />
+          <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand, marginTop: spacing.xl }]}>
+            ALL COMPANIES
+          </Text>
         </View>
       }
+      renderSectionHeader={() => <TickerRowHeader />}
+      stickySectionHeadersEnabled
     />
   );
 }
