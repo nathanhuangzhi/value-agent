@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -44,15 +45,27 @@ export default function TickerScreen() {
   // Sticky FY/Q overlay state — all hooks must be called unconditionally
   // before any early returns to satisfy the Rules of Hooks.
   const tableScrollX = useRef(new Animated.Value(0)).current;
-  const pageScrollY = useRef(new Animated.Value(0)).current;
-  const [tableTopY, setTableTopY] = useState<number | null>(null);
-  const [tableHeight, setTableHeight] = useState<number | null>(null);
+  const tableTopRef = useRef<number | null>(null);
+  const tableHeightRef = useRef<number | null>(null);
+  const [showStickyOverlay, setShowStickyOverlay] = useState(false);
   const tableColumns = useMemo(
     () =>
       ticker.data
         ? computeHistoricalTableColumns(ticker.data.annual, ticker.data.quarterly)
         : { columns: [], dividerIdx: 0 },
     [ticker.data],
+  );
+
+  const onPageScroll = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      const top = tableTopRef.current;
+      const h = tableHeightRef.current;
+      if (top == null || h == null) return;
+      const y = e.nativeEvent.contentOffset.y;
+      const show = y > top && y < top + h - HISTORICAL_TABLE_HEADER_HEIGHT;
+      setShowStickyOverlay((prev) => (prev === show ? prev : show));
+    },
+    [],
   );
 
   // Update the nav title once the ticker payload arrives. Skipped on
@@ -87,23 +100,9 @@ export default function TickerScreen() {
   const data = ticker.data;
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
 
-  const stickyOpacity =
-    tableTopY != null && tableHeight != null
-      ? pageScrollY.interpolate({
-          inputRange: [
-            tableTopY - 1,
-            tableTopY,
-            tableTopY + tableHeight - HISTORICAL_TABLE_HEADER_HEIGHT,
-            tableTopY + tableHeight - HISTORICAL_TABLE_HEADER_HEIGHT + 1,
-          ],
-          outputRange: [0, 1, 1, 0],
-          extrapolate: 'clamp',
-        })
-      : 0;
-
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-    <Animated.ScrollView
+    <ScrollView
       style={{ backgroundColor: c.background }}
       contentContainerStyle={[
         styles.scroll,
@@ -118,15 +117,8 @@ export default function TickerScreen() {
           tintColor={c.brand}
         />
       }
-      onScroll={Animated.event(
-        [{ nativeEvent: { contentOffset: { y: pageScrollY } } }],
-        {
-          useNativeDriver: false,
-          listener: (e: { nativeEvent: { contentOffset: { y: number } } }) =>
-            console.log('[page scroll] y=', e.nativeEvent.contentOffset.y, 'tableTopY=', tableTopY, 'tableHeight=', tableHeight),
-        },
-      )}
-      scrollEventThrottle={16}
+      onScroll={onPageScroll}
+      scrollEventThrottle={32}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -199,21 +191,21 @@ export default function TickerScreen() {
           Price history is passed in so the table can compute Static P/E,
           Static P/S, and P/B for each period (price × diluted shares ÷
           annual baseline). */}
-      <Section title="Historical Data (annual + quarterly)">
-        <View
-          onLayout={(e) => {
-            setTableTopY(e.nativeEvent.layout.y);
-            setTableHeight(e.nativeEvent.layout.height);
-          }}
-        >
+      <View
+        onLayout={(e) => {
+          tableTopRef.current = e.nativeEvent.layout.y;
+          tableHeightRef.current = e.nativeEvent.layout.height;
+        }}
+      >
+        <Section title="Historical Data (annual + quarterly)">
           <HistoricalTable
             statements={data.annual}
             quarterly={data.quarterly}
             priceHistory={priceHistory.data?.data}
             externalScrollX={tableScrollX}
           />
-        </View>
-      </Section>
+        </Section>
+      </View>
 
       {/* Investment narrative */}
       <Section title="Investment Narrative">
@@ -272,25 +264,24 @@ export default function TickerScreen() {
           Analyzed {formatDate(data.analyzed_date)} · {data.narrative.model || 'unknown model'}
         </Text>
       </View>
-    </Animated.ScrollView>
+    </ScrollView>
 
       {/* Floating FY/Q period-header overlay. Pinned at the top of the
-          screen while the historical table is on-screen, fades out when
-          the user has scrolled past it. translateX is driven by the
-          table's horizontal scroll so the visible periods stay synced. */}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.stickyOverlay,
-          { opacity: stickyOpacity, backgroundColor: c.background },
-        ]}
-      >
-        <HistoricalTablePeriodHeader
-          columns={tableColumns.columns}
-          dividerIdx={tableColumns.dividerIdx}
-          scrollX={tableScrollX}
-        />
-      </Animated.View>
+          screen while the historical table is on-screen. translateX is
+          driven by the table's horizontal scroll so the visible periods
+          stay synced. */}
+      {showStickyOverlay && (
+        <View
+          pointerEvents="none"
+          style={[styles.stickyOverlay, { backgroundColor: c.background }]}
+        >
+          <HistoricalTablePeriodHeader
+            columns={tableColumns.columns}
+            dividerIdx={tableColumns.dividerIdx}
+            scrollX={tableScrollX}
+          />
+        </View>
+      )}
     </View>
   );
 }
