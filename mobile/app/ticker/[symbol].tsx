@@ -41,6 +41,20 @@ export default function TickerScreen() {
   const ticker = useTickerDetail(symbol);
   const priceHistory = usePriceHistory(symbol);
 
+  // Sticky FY/Q overlay state — all hooks must be called unconditionally
+  // before any early returns to satisfy the Rules of Hooks.
+  const tableScrollX = useRef(new Animated.Value(0)).current;
+  const pageScrollY = useRef(new Animated.Value(0)).current;
+  const [tableTopY, setTableTopY] = useState<number | null>(null);
+  const [tableHeight, setTableHeight] = useState<number | null>(null);
+  const tableColumns = useMemo(
+    () =>
+      ticker.data
+        ? computeHistoricalTableColumns(ticker.data.annual, ticker.data.quarterly)
+        : { columns: [], dividerIdx: 0 },
+    [ticker.data],
+  );
+
   // Update the nav title once the ticker payload arrives. Skipped on
   // iPad-landscape where the screen renders inside SplitLayout's Slot
   // (no Stack header to write into).
@@ -73,17 +87,6 @@ export default function TickerScreen() {
   const data = ticker.data;
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
 
-  // Sticky FY/Q overlay: tracks the page's vertical scroll and the
-  // historical table's horizontal scroll, then shows itself pinned at
-  // the screen top while the table is within the viewport.
-  const tableColumns = useMemo(
-    () => computeHistoricalTableColumns(data.annual, data.quarterly),
-    [data.annual, data.quarterly],
-  );
-  const tableScrollX = useRef(new Animated.Value(0)).current;
-  const pageScrollY = useRef(new Animated.Value(0)).current;
-  const [tableTopY, setTableTopY] = useState<number | null>(null);
-  const [tableHeight, setTableHeight] = useState<number | null>(null);
   const stickyOpacity =
     tableTopY != null && tableHeight != null
       ? pageScrollY.interpolate({
@@ -96,7 +99,7 @@ export default function TickerScreen() {
           outputRange: [0, 1, 1, 0],
           extrapolate: 'clamp',
         })
-      : new Animated.Value(0);
+      : 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
