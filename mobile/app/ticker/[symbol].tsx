@@ -2,15 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  PanResponder,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 
-import { useTickerDetail, usePriceHistory } from '@/api/hooks';
+import { useIndustryDetail, useTickerDetail, usePriceHistory } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
 import {
   HISTORICAL_TABLE_HEADER_HEIGHT,
@@ -26,9 +27,16 @@ import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, spacing, radii } from '@/theme/colors';
 import { formatDate, formatMoney } from '@/utils/format';
 
+function slugify(s: string | null | undefined): string {
+  if (!s) return 'uncategorized';
+  const out = s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return out || 'uncategorized';
+}
+
 export default function TickerScreen() {
   const c = useColors();
   const navigation = useNavigation();
+  const router = useRouter();
   const device = useDeviceClass();
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   // On iPad-landscape the screen is rendered inside the SplitLayout's
@@ -41,6 +49,20 @@ export default function TickerScreen() {
 
   const ticker = useTickerDetail(symbol);
   const priceHistory = usePriceHistory(symbol);
+  // Sibling-ticker navigation: fetch the industry's ticker list so left/right
+  // swipe gestures can jump to the prev/next company in the same industry.
+  const industrySlug = ticker.data ? slugify(ticker.data.industry) : undefined;
+  const industryDetail = useIndustryDetail(industrySlug);
+  const { prevTicker, nextTicker } = useMemo(() => {
+    const list = industryDetail.data?.tickers ?? [];
+    const cur = (symbol || '').toUpperCase();
+    const idx = list.findIndex((t) => t.ticker === cur);
+    if (idx < 0) return { prevTicker: null, nextTicker: null };
+    return {
+      prevTicker: idx > 0 ? list[idx - 1].ticker : null,
+      nextTicker: idx < list.length - 1 ? list[idx + 1].ticker : null,
+    };
+  }, [industryDetail.data, symbol]);
 
   // Sticky FY/Q overlay state — all hooks must be called unconditionally
   // before any early returns to satisfy the Rules of Hooks.
@@ -67,6 +89,35 @@ export default function TickerScreen() {
     },
     [],
   );
+
+  // Refs keep the gesture handler reading the latest prev/next without
+  // tearing down the PanResponder on every re-render.
+  const prevTickerRef = useRef<string | null>(null);
+  const nextTickerRef = useRef<string | null>(null);
+  prevTickerRef.current = prevTicker;
+  nextTickerRef.current = nextTicker;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => {
+        // Only claim the gesture for clear horizontal swipes so the
+        // vertical page scroll and the table's horizontal scroll keep
+        // working. Require horizontal travel ≥ 2× vertical and ≥ 20pt.
+        return Math.abs(g.dx) > Math.abs(g.dy) * 2 && Math.abs(g.dx) > 20;
+      },
+      onPanResponderRelease: (_, g) => {
+        const SWIPE_DISTANCE = 60;
+        const SWIPE_VELOCITY = 0.3;
+        const left = g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
+        const right = g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
+        if (left && prevTickerRef.current) {
+          router.replace(`/ticker/${prevTickerRef.current}` as const);
+        } else if (right && nextTickerRef.current) {
+          router.replace(`/ticker/${nextTickerRef.current}` as const);
+        }
+      },
+    }),
+  ).current;
 
   // Update the nav title once the ticker payload arrives. Skipped on
   // iPad-landscape where the screen renders inside SplitLayout's Slot
@@ -101,7 +152,10 @@ export default function TickerScreen() {
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.background }}>
+    <View
+      style={{ flex: 1, backgroundColor: c.background }}
+      {...panResponder.panHandlers}
+    >
     <ScrollView
       style={{ backgroundColor: c.background }}
       contentContainerStyle={[
