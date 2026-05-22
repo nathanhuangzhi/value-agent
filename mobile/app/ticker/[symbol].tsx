@@ -12,7 +12,12 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 
-import { useIndustryDetail, useTickerDetail, usePriceHistory } from '@/api/hooks';
+import {
+  prefetchTickerDetail,
+  useIndustryDetail,
+  useTickerDetail,
+  usePriceHistory,
+} from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
 import {
   HISTORICAL_TABLE_HEADER_HEIGHT,
@@ -97,6 +102,14 @@ export default function TickerScreen() {
   const nextTickerRef = useRef<string | null>(null);
   prevTickerRef.current = prevTicker;
   nextTickerRef.current = nextTicker;
+
+  // Warm the SWR caches for the neighbouring tickers so a swipe renders
+  // instantly from cache instead of flashing a loading spinner. Best-effort
+  // — failures are swallowed by `prefetchTickerDetail`.
+  useEffect(() => {
+    if (prevTicker) prefetchTickerDetail(prevTicker);
+    if (nextTicker) prefetchTickerDetail(nextTicker);
+  }, [prevTicker, nextTicker]);
 
   const { width: screenWidth } = useWindowDimensions();
   const swipeX = useRef(new Animated.Value(0)).current;
