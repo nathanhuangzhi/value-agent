@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -11,7 +11,12 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import { useTickerDetail, usePriceHistory } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
-import { HistoricalTable } from '@/components/HistoricalTable';
+import {
+  HISTORICAL_TABLE_HEADER_HEIGHT,
+  HistoricalTable,
+  HistoricalTablePeriodHeader,
+  computeHistoricalTableColumns,
+} from '@/components/HistoricalTable';
 import { KPIGrid } from '@/components/KPIGrid';
 import { Section } from '@/components/Section';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -68,8 +73,34 @@ export default function TickerScreen() {
   const data = ticker.data;
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
 
+  // Sticky FY/Q overlay: tracks the page's vertical scroll and the
+  // historical table's horizontal scroll, then shows itself pinned at
+  // the screen top while the table is within the viewport.
+  const tableColumns = useMemo(
+    () => computeHistoricalTableColumns(data.annual, data.quarterly),
+    [data.annual, data.quarterly],
+  );
+  const tableScrollX = useRef(new Animated.Value(0)).current;
+  const pageScrollY = useRef(new Animated.Value(0)).current;
+  const [tableTopY, setTableTopY] = useState<number | null>(null);
+  const [tableHeight, setTableHeight] = useState<number | null>(null);
+  const stickyOpacity =
+    tableTopY != null && tableHeight != null
+      ? pageScrollY.interpolate({
+          inputRange: [
+            tableTopY - 1,
+            tableTopY,
+            tableTopY + tableHeight - HISTORICAL_TABLE_HEADER_HEIGHT,
+            tableTopY + tableHeight - HISTORICAL_TABLE_HEADER_HEIGHT + 1,
+          ],
+          outputRange: [0, 1, 1, 0],
+          extrapolate: 'clamp',
+        })
+      : new Animated.Value(0);
+
   return (
-    <ScrollView
+    <View style={{ flex: 1, backgroundColor: c.background }}>
+    <Animated.ScrollView
       style={{ backgroundColor: c.background }}
       contentContainerStyle={[
         styles.scroll,
@@ -84,6 +115,11 @@ export default function TickerScreen() {
           tintColor={c.brand}
         />
       }
+      onScroll={Animated.event(
+        [{ nativeEvent: { contentOffset: { y: pageScrollY } } }],
+        { useNativeDriver: true },
+      )}
+      scrollEventThrottle={16}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -157,11 +193,19 @@ export default function TickerScreen() {
           Static P/S, and P/B for each period (price × diluted shares ÷
           annual baseline). */}
       <Section title="Historical Data (annual + quarterly)">
-        <HistoricalTable
-          statements={data.annual}
-          quarterly={data.quarterly}
-          priceHistory={priceHistory.data?.data}
-        />
+        <View
+          onLayout={(e) => {
+            setTableTopY(e.nativeEvent.layout.y);
+            setTableHeight(e.nativeEvent.layout.height);
+          }}
+        >
+          <HistoricalTable
+            statements={data.annual}
+            quarterly={data.quarterly}
+            priceHistory={priceHistory.data?.data}
+            externalScrollX={tableScrollX}
+          />
+        </View>
       </Section>
 
       {/* Investment narrative */}
@@ -221,7 +265,26 @@ export default function TickerScreen() {
           Analyzed {formatDate(data.analyzed_date)} · {data.narrative.model || 'unknown model'}
         </Text>
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
+
+      {/* Floating FY/Q period-header overlay. Pinned at the top of the
+          screen while the historical table is on-screen, fades out when
+          the user has scrolled past it. translateX is driven by the
+          table's horizontal scroll so the visible periods stay synced. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.stickyOverlay,
+          { opacity: stickyOpacity, backgroundColor: c.background },
+        ]}
+      >
+        <HistoricalTablePeriodHeader
+          columns={tableColumns.columns}
+          dividerIdx={tableColumns.dividerIdx}
+          scrollX={tableScrollX}
+        />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -284,4 +347,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  stickyOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
 });

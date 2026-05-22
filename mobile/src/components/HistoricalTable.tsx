@@ -23,7 +23,7 @@
  *     from the most recent balance sheet, deduped by category
  */
 import { useCallback, useMemo, useRef } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Period, PricePoint, Statements } from '@/api/types';
 import { useColors, fontSize, spacing } from '@/theme/colors';
@@ -36,15 +36,13 @@ const CELL_WIDTH = 70;
 const ROW_HEIGHT = 30;
 const HEADER_HEIGHT = 28;
 const SECTION_HEADER_HEIGHT = 26;
-// Fraction of the screen height the table is allowed to occupy. The inner
-// body scrolls vertically so the period-header row stays pinned at top
-// while the user scans down through metric rows. Capped so the table
-// doesn't dominate huge iPad screens. The inner scroll indicator is
-// hidden (see `showsVerticalScrollIndicator={false}` below) so the user
-// sees only the page-level scrollbar.
-const TABLE_HEIGHT_RATIO = 0.85;
-const TABLE_HEIGHT_MAX = 900;
-const TABLE_HEIGHT_MIN = 420;
+
+// Exposed so the parent screen (ticker page) can render an overlay
+// version of the FY/Q row that sticks to the screen top when scrolled
+// past the natural table position.
+export const HISTORICAL_TABLE_HEADER_HEIGHT = HEADER_HEIGHT;
+export const HISTORICAL_TABLE_LABEL_WIDTH = LABEL_WIDTH;
+export const HISTORICAL_TABLE_CELL_WIDTH = CELL_WIDTH;
 
 // YoY thresholds — match `_yoy_cell_style` in Python
 const YOY_GREEN = 0.20;
@@ -284,17 +282,17 @@ type Props = {
   statements: Statements;
   quarterly: Statements;
   priceHistory?: PricePoint[];
+  /** When provided, the table's body horizontal-scroll position feeds
+   * into this Animated.Value via Animated.event. The ticker page uses
+   * it to drive a sticky FY/Q overlay's translateX so the overlay
+   * tracks horizontal panning. */
+  externalScrollX?: Animated.Value;
 };
 
 
-export function HistoricalTable({ statements, quarterly, priceHistory }: Props) {
+export function HistoricalTable({ statements, quarterly, priceHistory, externalScrollX }: Props) {
   const c = useColors();
   const scrollRef = useRef<ScrollView>(null);
-  const { height: screenH } = useWindowDimensions();
-  // Drives both the data ScrollView's contentOffset.y and the matching
-  // upward translation of the label column, keeping the two visually
-  // synced as the user scrolls through metric rows.
-  const scrollY = useRef(new Animated.Value(0)).current;
 
   const annualPeriods = statements.income_statement.slice(-MAX_ANNUAL);
   const quarterlyPeriods = quarterly.income_statement.slice(-MAX_QUARTERLY);
@@ -622,59 +620,48 @@ export function HistoricalTable({ statements, quarterly, priceHistory }: Props) 
 
   // ====== Render ======
 
-  const tableHeight = Math.max(
-    TABLE_HEIGHT_MIN,
-    Math.min(TABLE_HEIGHT_MAX, screenH * TABLE_HEIGHT_RATIO),
-  );
-  const bodyHeight = tableHeight - HEADER_HEIGHT;
-  const totalBodyContentHeight =
-    sections.reduce((sum, s) => sum + SECTION_HEADER_HEIGHT + s.rows.length * ROW_HEIGHT, 0);
-
   return (
     <View>
-      <View style={[styles.tableWrap, { borderColor: c.border, height: tableHeight }]}>
+      <View style={[styles.tableWrap, { borderColor: c.border }]}>
         {/* ===== Frozen left column ===== */}
         <View style={[styles.labelCol, { borderRightColor: c.border, width: LABEL_WIDTH }]}>
           <View style={[styles.headerCell, { borderBottomColor: c.border, height: HEADER_HEIGHT }]}>
             <Text style={[styles.headerText, { color: c.textMuted }]}>METRIC</Text>
           </View>
-          {/* Labels live inside a clipped window translated by scrollY so
-              they track the data body's vertical scroll without needing a
-              second ScrollView (which iOS won't let us drive natively). */}
-          <View style={[styles.labelBodyWindow, { height: bodyHeight }]}>
-            <Animated.View
-              style={{
-                height: totalBodyContentHeight,
-                transform: [{ translateY: Animated.multiply(scrollY, -1) }],
-              }}
-            >
-              {sections.map((section) => (
-                <View key={section.title}>
-                  <View style={[styles.sectionHeader, { height: SECTION_HEADER_HEIGHT, borderBottomColor: c.border, backgroundColor: c.surface }]}>
-                    <Text style={[styles.sectionHeaderText, { color: c.brand }]} numberOfLines={1}>
-                      {section.title.toUpperCase()}
-                    </Text>
-                  </View>
-                  {section.rows.map((row) => (
-                    <View key={row.label} style={[styles.labelCell, { height: ROW_HEIGHT }]}>
-                      <Text style={[styles.labelText, { color: c.textPrimary }]} numberOfLines={1}>
-                        {row.label}
-                      </Text>
-                    </View>
-                  ))}
+          {sections.map((section) => (
+            <View key={section.title}>
+              <View style={[styles.sectionHeader, { height: SECTION_HEADER_HEIGHT, borderBottomColor: c.border, backgroundColor: c.surface }]}>
+                <Text style={[styles.sectionHeaderText, { color: c.brand }]} numberOfLines={1}>
+                  {section.title.toUpperCase()}
+                </Text>
+              </View>
+              {section.rows.map((row) => (
+                <View key={row.label} style={[styles.labelCell, { height: ROW_HEIGHT }]}>
+                  <Text style={[styles.labelText, { color: c.textPrimary }]} numberOfLines={1}>
+                    {row.label}
+                  </Text>
                 </View>
               ))}
-            </Animated.View>
-          </View>
+            </View>
+          ))}
         </View>
 
-        {/* ===== Scrollable right area ===== */}
+        {/* ===== Horizontally scrollable right area ===== */}
         <ScrollView
           ref={scrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           bounces
           onContentSizeChange={onContentSizeChange}
+          onScroll={
+            externalScrollX
+              ? Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: externalScrollX } } }],
+                  { useNativeDriver: false },
+                )
+              : undefined
+          }
+          scrollEventThrottle={externalScrollX ? 16 : undefined}
         >
           <View>
             <View style={[styles.periodHeaderRow, { borderBottomColor: c.border, height: HEADER_HEIGHT }]}>
@@ -692,88 +679,78 @@ export function HistoricalTable({ statements, quarterly, priceHistory }: Props) 
               ))}
             </View>
 
-            <Animated.ScrollView
-              style={{ height: bodyHeight }}
-              showsVerticalScrollIndicator={false}
-              onScroll={Animated.event(
-                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                { useNativeDriver: true },
-              )}
-              scrollEventThrottle={16}
-            >
-              {sections.map((section) => (
-                <View key={section.title}>
-                  <View
-                    style={[
-                      styles.sectionHeaderSpacer,
-                      {
-                        height: SECTION_HEADER_HEIGHT,
-                        width: CELL_WIDTH * columns.length,
-                        backgroundColor: c.surface,
-                        borderBottomColor: c.border,
-                      },
-                    ]}
-                  />
-                  {section.rows.map((row) => (
-                    <View key={row.label} style={[styles.valueRow, { height: ROW_HEIGHT }]}>
-                      {columns.map((col, idx) => {
-                        let text = '—';
-                        let yoy: number | null = null;
-                        let source: string | undefined;
+            {sections.map((section) => (
+              <View key={section.title}>
+                <View
+                  style={[
+                    styles.sectionHeaderSpacer,
+                    {
+                      height: SECTION_HEADER_HEIGHT,
+                      width: CELL_WIDTH * columns.length,
+                      backgroundColor: c.surface,
+                      borderBottomColor: c.border,
+                    },
+                  ]}
+                />
+                {section.rows.map((row) => (
+                  <View key={row.label} style={[styles.valueRow, { height: ROW_HEIGHT }]}>
+                    {columns.map((col, idx) => {
+                      let text = '—';
+                      let yoy: number | null = null;
+                      let source: string | undefined;
 
-                        if (row.kind === 'raw') {
-                          const r = resolveRawCell(row, col);
-                          text = formatCell(r.value, row);
-                          yoy = yoyForRawRow(row, col, idx);
-                          source = r.source;
-                        } else if (row.kind === 'ratio') {
-                          const r = resolveRatioCell(row, col);
-                          text = row.format === 'percent'
-                            ? formatMargin(r.num, r.den)
-                            : formatPerShare(r.num, r.den);
-                          yoy = yoyForRatioRow(row, col, idx);
-                        } else {
-                          // valuation
-                          text = resolveValuationCell(row, col);
-                        }
+                      if (row.kind === 'raw') {
+                        const r = resolveRawCell(row, col);
+                        text = formatCell(r.value, row);
+                        yoy = yoyForRawRow(row, col, idx);
+                        source = r.source;
+                      } else if (row.kind === 'ratio') {
+                        const r = resolveRatioCell(row, col);
+                        text = row.format === 'percent'
+                          ? formatMargin(r.num, r.den)
+                          : formatPerShare(r.num, r.den);
+                        yoy = yoyForRatioRow(row, col, idx);
+                      } else {
+                        // valuation
+                        text = resolveValuationCell(row, col);
+                      }
 
-                        const isYfinance = source === 'yfinance';
-                        const tint = yoyTint(yoy);
-                        return (
-                          <View
-                            // Must include `col.kind` because an annual
-                            // fiscal-year-end and the matching Q4 end on
-                            // the same calendar date would otherwise share
-                            // a key.
-                            key={`${col.kind}-${col.period}`}
+                      const isYfinance = source === 'yfinance';
+                      const tint = yoyTint(yoy);
+                      return (
+                        <View
+                          // Must include `col.kind` because an annual
+                          // fiscal-year-end and the matching Q4 end on
+                          // the same calendar date would otherwise share
+                          // a key.
+                          key={`${col.kind}-${col.period}`}
+                          style={[
+                            styles.cell,
+                            {
+                              width: CELL_WIDTH,
+                              height: ROW_HEIGHT,
+                              backgroundColor: tint,
+                            },
+                            idx === dividerIdx && { borderLeftWidth: 2, borderLeftColor: c.border },
+                          ]}
+                        >
+                          <Text
                             style={[
-                              styles.cell,
-                              {
-                                width: CELL_WIDTH,
-                                height: ROW_HEIGHT,
-                                backgroundColor: tint,
-                              },
-                              idx === dividerIdx && { borderLeftWidth: 2, borderLeftColor: c.border },
+                              styles.cellText,
+                              { color: c.textPrimary },
+                              isYfinance && { fontStyle: 'italic', opacity: 0.85 },
                             ]}
+                            numberOfLines={1}
                           >
-                            <Text
-                              style={[
-                                styles.cellText,
-                                { color: c.textPrimary },
-                                isYfinance && { fontStyle: 'italic', opacity: 0.85 },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {text}
-                            </Text>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  ))}
-                </View>
-              ))}
-            </Animated.ScrollView>
+                            {text}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
         </ScrollView>
       </View>
@@ -799,6 +776,131 @@ function byPeriod(periods: Period[]): Map<string, Period> {
 }
 
 
+/**
+ * Compute the columns the table renders, plus the divider index between
+ * annual and quarterly periods. Exposed so the ticker page can render a
+ * stand-alone sticky period-header overlay that mirrors the table.
+ */
+export function computeHistoricalTableColumns(
+  statements: Statements,
+  quarterly: Statements,
+): { columns: Column[]; dividerIdx: number } {
+  const annualPeriods = statements.income_statement.slice(-MAX_ANNUAL);
+  const quarterlyPeriods = quarterly.income_statement.slice(-MAX_QUARTERLY);
+  return {
+    columns: [
+      ...annualPeriods.map<Column>((p) => ({
+        kind: 'annual',
+        period: p.period,
+        label: fyLabel(p.period),
+      })),
+      ...quarterlyPeriods.map<Column>((p) => ({
+        kind: 'quarterly',
+        period: p.period,
+        label: quarterLabel(p.period),
+      })),
+    ],
+    dividerIdx: annualPeriods.length,
+  };
+}
+
+
+/**
+ * Renders just the [METRIC label cell + FY/Q period row] portion of the
+ * historical table. Designed for the ticker page to position absolutely
+ * at the top of the screen as the user scrolls past the natural table.
+ *
+ * The FY/Q row sits inside a clipped window whose contents are
+ * horizontally translated by `-scrollX` so the visible period labels
+ * stay in sync with whatever periods the body table has panned to.
+ */
+export function HistoricalTablePeriodHeader({
+  columns,
+  dividerIdx,
+  scrollX,
+}: {
+  columns: Column[];
+  dividerIdx: number;
+  scrollX: Animated.Value;
+}) {
+  const c = useColors();
+  const totalWidth = CELL_WIDTH * columns.length;
+  return (
+    <View style={[stickyStyles.row, { backgroundColor: c.background }]}>
+      <View
+        style={[
+          stickyStyles.metricCell,
+          {
+            width: LABEL_WIDTH,
+            height: HEADER_HEIGHT,
+            borderRightColor: c.border,
+            borderBottomColor: c.border,
+            backgroundColor: c.background,
+          },
+        ]}
+      >
+        <Text style={[styles.headerText, { color: c.textMuted }]}>METRIC</Text>
+      </View>
+      <View
+        style={[
+          stickyStyles.periodWindow,
+          {
+            height: HEADER_HEIGHT,
+            borderBottomColor: c.border,
+            backgroundColor: c.background,
+          },
+        ]}
+      >
+        <Animated.View
+          style={{
+            flexDirection: 'row',
+            width: totalWidth,
+            height: HEADER_HEIGHT,
+            transform: [{ translateX: Animated.multiply(scrollX, -1) }],
+          }}
+        >
+          {columns.map((col, idx) => (
+            <View
+              key={`${col.kind}-${col.period}`}
+              style={[
+                styles.cell,
+                { width: CELL_WIDTH, height: HEADER_HEIGHT },
+                idx === dividerIdx && {
+                  borderLeftWidth: 2,
+                  borderLeftColor: c.border,
+                },
+              ]}
+            >
+              <Text style={[styles.headerText, { color: c.textMuted }]}>
+                {col.label}
+              </Text>
+            </View>
+          ))}
+        </Animated.View>
+      </View>
+    </View>
+  );
+}
+
+
+const stickyStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+  },
+  metricCell: {
+    paddingHorizontal: spacing.sm,
+    justifyContent: 'center',
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  periodWindow: {
+    flex: 1,
+    overflow: 'hidden',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+});
+
+
 const styles = StyleSheet.create({
   tableWrap: {
     flexDirection: 'row',
@@ -808,9 +910,6 @@ const styles = StyleSheet.create({
   },
   labelCol: {
     borderRightWidth: StyleSheet.hairlineWidth,
-  },
-  labelBodyWindow: {
-    overflow: 'hidden',
   },
   headerCell: {
     paddingHorizontal: spacing.sm,
