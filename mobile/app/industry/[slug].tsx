@@ -66,29 +66,27 @@ export default function IndustryScreen() {
     );
   }
 
-  // SectionList lets us pin the column header (renderSectionHeader) while
-  // the "N tickers" subheading scrolls away with the list contents. The
-  // FlatList equivalent (`stickyHeaderIndices` on a ListHeaderComponent)
-  // is unreliable across iOS versions.
+  // The column-header row is rendered as a sibling above the SectionList
+  // (not as ListHeaderComponent / renderSectionHeader) so it is guaranteed
+  // to stay visible regardless of how iOS handles sticky headers — those
+  // turned out flaky across versions during testing.
   return (
-    <SectionList
-      style={{ backgroundColor: c.background }}
-      sections={[{ data: data.tickers, key: 'all' }]}
-      keyExtractor={(t) => t.ticker}
-      ListHeaderComponent={
-        <View style={styles.header}>
-          <Text style={[styles.subheading, { color: c.textMuted }]}>
-            {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
-          </Text>
-        </View>
-      }
-      renderSectionHeader={() => <TickerRowHeader />}
-      stickySectionHeadersEnabled
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
-      }
-      renderItem={({ item }) => <TickerRow row={item} />}
-    />
+    <View style={{ flex: 1, backgroundColor: c.background }}>
+      <View style={styles.header}>
+        <Text style={[styles.subheading, { color: c.textMuted }]}>
+          {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
+        </Text>
+      </View>
+      <TickerRowHeader />
+      <SectionList
+        sections={[{ data: data.tickers, key: 'all' }]}
+        keyExtractor={(t) => t.ticker}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
+        }
+        renderItem={({ item }) => <TickerRow row={item} />}
+      />
+    </View>
   );
 }
 
