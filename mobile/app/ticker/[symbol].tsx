@@ -1,4 +1,5 @@
 import {
+  Profiler,
   useCallback,
   useEffect,
   useMemo,
@@ -51,6 +52,7 @@ function slugify(s: string | null | undefined): string {
 let pendingSlideDir = 0;
 
 export default function TickerScreen() {
+  console.log('[swipe-debug] FN START at', Date.now());
   const c = useColors();
   const navigation = useNavigation();
   const router = useRouter();
@@ -150,6 +152,14 @@ export default function TickerScreen() {
     const initialX = dir !== 0 ? -dir * screenWidth : 0;
     console.log('[swipe-debug] INIT swipeX startX=', initialX, 'dir=', dir, 'at', Date.now());
     const v = new Animated.Value(initialX);
+    let lastLogged = -Infinity;
+    v.addListener(({ value }) => {
+      const now = Date.now();
+      if (now - lastLogged > 40) {
+        console.log('[swipe-debug] swipeX value=', Math.round(value), 'at', now);
+        lastLogged = now;
+      }
+    });
     if (dir !== 0) {
       Animated.timing(v, {
         toValue: 0,
@@ -246,6 +256,18 @@ export default function TickerScreen() {
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
 
   return (
+    <Profiler
+      id="ticker"
+      onRender={(_, phase, actualDuration, baseDuration) =>
+        console.log(
+          '[swipe-debug] PROFILER',
+          phase,
+          'actual=', Math.round(actualDuration), 'ms',
+          'base=', Math.round(baseDuration), 'ms',
+          'at', Date.now(),
+        )
+      }
+    >
     <View
       style={{ flex: 1, backgroundColor: c.background }}
       {...panResponder.panHandlers}
@@ -442,6 +464,7 @@ export default function TickerScreen() {
         </Animated.View>
       )}
     </View>
+    </Profiler>
   );
 }
 
