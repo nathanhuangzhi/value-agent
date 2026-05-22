@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
   View,
@@ -66,22 +66,24 @@ export default function IndustryScreen() {
     );
   }
 
+  // SectionList lets us pin the column header (renderSectionHeader) while
+  // the "N tickers" subheading scrolls away with the list contents. The
+  // FlatList equivalent (`stickyHeaderIndices` on a ListHeaderComponent)
+  // is unreliable across iOS versions.
   return (
-    <FlatList
+    <SectionList
       style={{ backgroundColor: c.background }}
-      data={data.tickers}
+      sections={[{ data: data.tickers, key: 'all' }]}
       keyExtractor={(t) => t.ticker}
       ListHeaderComponent={
-        <View>
-          <View style={styles.header}>
-            <Text style={[styles.subheading, { color: c.textMuted }]}>
-              {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
-            </Text>
-          </View>
-          <TickerRowHeader />
+        <View style={styles.header}>
+          <Text style={[styles.subheading, { color: c.textMuted }]}>
+            {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
+          </Text>
         </View>
       }
-      stickyHeaderIndices={[0]}
+      renderSectionHeader={() => <TickerRowHeader />}
+      stickySectionHeadersEnabled
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
       }
