@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -134,13 +141,12 @@ export default function TickerScreen() {
           swipeX.setValue(g.dx);
         },
         onPanResponderRelease: (_, g) => {
-          const SWIPE_DISTANCE = 100;
-          const SWIPE_VELOCITY = 0.4;
+          const SWIPE_DISTANCE = 80;
+          const SWIPE_VELOCITY = 0.35;
           const left = g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
           const right = g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
-          // User-facing mapping: left swipe (page slides off left) = NEXT
-          // ticker; right swipe (page slides off right) = PREVIOUS ticker.
-          // Mirrors how carousels / Stories / Tinder feel.
+          // User-facing mapping: left swipe = NEXT ticker; right swipe =
+          // PREVIOUS ticker. Mirrors carousels / Stories / Tinder.
           const target =
             left && nextTickerRef.current
               ? { dir: -1 as const, ticker: nextTickerRef.current }
@@ -148,16 +154,13 @@ export default function TickerScreen() {
                 ? { dir: +1 as const, ticker: prevTickerRef.current }
                 : null;
           if (target) {
-            Animated.timing(swipeX, {
-              toValue: target.dir * screenWidth,
-              duration: 180,
-              useNativeDriver: true,
-            }).start(() => {
-              // Remember which side the new ticker should slide IN from
-              // (opposite of where the old one went out).
-              incomingSlideDirRef.current = target.dir;
-              router.replace(`/ticker/${target.ticker}` as const);
-            });
+            // Don't animate the slide-out — that was eating ~180ms of
+            // visible blank space between the two tickers. Navigate
+            // immediately; the useEffect on `symbol` slides the new
+            // ticker in from the opposite side as a single short
+            // animation, so the perceived transition is half as long.
+            incomingSlideDirRef.current = target.dir;
+            router.replace(`/ticker/${target.ticker}` as const);
           } else {
             // Didn't pass threshold — spring back to center.
             Animated.spring(swipeX, {
@@ -178,19 +181,20 @@ export default function TickerScreen() {
     [screenWidth, swipeX, router],
   );
 
-  // Whenever `symbol` changes, either slide the page in from the opposite
-  // side of the prior swipe (post-gesture) or just snap to center (any
-  // other navigation — back button, deep link, first mount).
-  useEffect(() => {
+  // Whenever `symbol` changes, either slide the new page in from the
+  // opposite side of the prior swipe (post-gesture) or snap to center
+  // for any other navigation (back button, deep link, first mount).
+  // useLayoutEffect runs synchronously before the next paint so the new
+  // content never flashes at the prior drag position.
+  useLayoutEffect(() => {
     const outDir = incomingSlideDirRef.current;
     if (outDir !== 0) {
       incomingSlideDirRef.current = 0;
       swipeX.setValue(-outDir * screenWidth);
-      Animated.spring(swipeX, {
+      Animated.timing(swipeX, {
         toValue: 0,
+        duration: 180,
         useNativeDriver: true,
-        bounciness: 0,
-        speed: 16,
       }).start();
     } else {
       swipeX.setValue(0);
