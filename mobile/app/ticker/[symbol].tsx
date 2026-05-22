@@ -120,7 +120,11 @@ export default function TickerScreen() {
       }
       onScroll={Animated.event(
         [{ nativeEvent: { contentOffset: { y: pageScrollY } } }],
-        { useNativeDriver: true },
+        {
+          useNativeDriver: false,
+          listener: (e: { nativeEvent: { contentOffset: { y: number } } }) =>
+            console.log('[page scroll] y=', e.nativeEvent.contentOffset.y, 'tableTopY=', tableTopY, 'tableHeight=', tableHeight),
+        },
       )}
       scrollEventThrottle={16}
     >
