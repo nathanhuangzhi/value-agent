@@ -114,9 +114,26 @@ export default function TickerScreen() {
   // instantly from cache instead of flashing a loading spinner. Best-effort
   // — failures are swallowed by `prefetchTickerDetail`.
   useEffect(() => {
-    if (prevTicker) prefetchTickerDetail(prevTicker);
-    if (nextTicker) prefetchTickerDetail(nextTicker);
-  }, [prevTicker, nextTicker]);
+    console.log('[swipe-debug] symbol=', symbol, 'prev=', prevTicker, 'next=', nextTicker, 'industryLoading=', industryDetail.loading);
+    if (prevTicker) {
+      console.log('[swipe-debug] prefetching prev:', prevTicker, 'at', Date.now());
+      prefetchTickerDetail(prevTicker);
+    }
+    if (nextTicker) {
+      console.log('[swipe-debug] prefetching next:', nextTicker, 'at', Date.now());
+      prefetchTickerDetail(nextTicker);
+    }
+  }, [prevTicker, nextTicker, symbol, industryDetail.loading]);
+
+  // Log every render with current data state.
+  console.log(
+    '[swipe-debug] RENDER symbol=', symbol,
+    'tickerData?', ticker.data ? 'YES' : 'no',
+    'tickerLoading=', ticker.loading,
+    'priceData?', priceHistory.data ? 'YES' : 'no',
+    'priceLoading=', priceHistory.loading,
+    'at', Date.now(),
+  );
 
   const { width: screenWidth } = useWindowDimensions();
   const swipeX = useRef(new Animated.Value(0)).current;
@@ -154,11 +171,7 @@ export default function TickerScreen() {
                 ? { dir: +1 as const, ticker: prevTickerRef.current }
                 : null;
           if (target) {
-            // Don't animate the slide-out — that was eating ~180ms of
-            // visible blank space between the two tickers. Navigate
-            // immediately; the useEffect on `symbol` slides the new
-            // ticker in from the opposite side as a single short
-            // animation, so the perceived transition is half as long.
+            console.log('[swipe-debug] RELEASE → router.replace to', target.ticker, 'dir=', target.dir, 'at', Date.now());
             incomingSlideDirRef.current = target.dir;
             router.replace(`/ticker/${target.ticker}` as const);
           } else {
@@ -188,6 +201,7 @@ export default function TickerScreen() {
   // content never flashes at the prior drag position.
   useLayoutEffect(() => {
     const outDir = incomingSlideDirRef.current;
+    console.log('[swipe-debug] LAYOUT EFFECT symbol=', symbol, 'outDir=', outDir, 'at', Date.now());
     if (outDir !== 0) {
       incomingSlideDirRef.current = 0;
       swipeX.setValue(-outDir * screenWidth);
@@ -195,7 +209,7 @@ export default function TickerScreen() {
         toValue: 0,
         duration: 180,
         useNativeDriver: true,
-      }).start();
+      }).start(() => console.log('[swipe-debug] slide-in complete at', Date.now()));
     } else {
       swipeX.setValue(0);
     }
