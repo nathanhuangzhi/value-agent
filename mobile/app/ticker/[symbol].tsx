@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -141,7 +140,25 @@ export default function TickerScreen() {
   );
 
   const { width: screenWidth } = useWindowDimensions();
-  const swipeX = useRef(new Animated.Value(0)).current;
+  // Initial swipeX is computed once per mount. When the previous screen's
+  // swipe set `pendingSlideDir`, the new instance starts off-screen on
+  // the OPPOSITE side and queues a slide-in to centre — applied at the
+  // first paint, so there's no flash of new content at translateX=0.
+  const [swipeX] = useState(() => {
+    const dir = pendingSlideDir;
+    pendingSlideDir = 0;
+    const initialX = dir !== 0 ? -dir * screenWidth : 0;
+    console.log('[swipe-debug] INIT swipeX startX=', initialX, 'dir=', dir, 'at', Date.now());
+    const v = new Animated.Value(initialX);
+    if (dir !== 0) {
+      Animated.timing(v, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start(() => console.log('[swipe-debug] slide-in complete at', Date.now()));
+    }
+    return v;
+  });
 
   const panResponder = useMemo(
     () =>
@@ -195,26 +212,6 @@ export default function TickerScreen() {
     [screenWidth, swipeX, router],
   );
 
-  // Whenever `symbol` changes, either slide the new page in from the
-  // opposite side of the prior swipe (post-gesture) or snap to center
-  // for any other navigation (back button, deep link, first mount).
-  // useLayoutEffect runs synchronously before the next paint so the new
-  // content never flashes at the prior drag position.
-  useLayoutEffect(() => {
-    const outDir = pendingSlideDir;
-    console.log('[swipe-debug] LAYOUT EFFECT symbol=', symbol, 'outDir=', outDir, 'at', Date.now());
-    pendingSlideDir = 0;
-    if (outDir !== 0) {
-      swipeX.setValue(-outDir * screenWidth);
-      Animated.timing(swipeX, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }).start(() => console.log('[swipe-debug] slide-in complete at', Date.now()));
-    } else {
-      swipeX.setValue(0);
-    }
-  }, [symbol, screenWidth, swipeX]);
 
   // Update the nav title once the ticker payload arrives. Skipped on
   // iPad-landscape where the screen renders inside SplitLayout's Slot
