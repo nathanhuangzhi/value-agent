@@ -100,9 +100,11 @@ export default function TickerScreen() {
 
   const { width: screenWidth } = useWindowDimensions();
   const swipeX = useRef(new Animated.Value(0)).current;
-  // Re-create the responder when screenWidth changes so the off-screen
-  // target tracks rotation. Empty deps would also work since
-  // useWindowDimensions only triggers when width actually changes.
+  // Carry the just-completed swipe direction across the router.replace so
+  // the next render can slide the new ticker IN from the opposite side
+  // (instead of snapping to center and briefly flashing the old content).
+  const incomingSlideDirRef = useRef(0);
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -121,15 +123,16 @@ export default function TickerScreen() {
         onPanResponderRelease: (_, g) => {
           const SWIPE_DISTANCE = 100;
           const SWIPE_VELOCITY = 0.4;
-          const left =
-            g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
-          const right =
-            g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
+          const left = g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
+          const right = g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
+          // User-facing mapping: left swipe (page slides off left) = NEXT
+          // ticker; right swipe (page slides off right) = PREVIOUS ticker.
+          // Mirrors how carousels / Stories / Tinder feel.
           const target =
-            left && prevTickerRef.current
-              ? { dir: -1 as const, ticker: prevTickerRef.current }
-              : right && nextTickerRef.current
-                ? { dir: 1 as const, ticker: nextTickerRef.current }
+            left && nextTickerRef.current
+              ? { dir: -1 as const, ticker: nextTickerRef.current }
+              : right && prevTickerRef.current
+                ? { dir: +1 as const, ticker: prevTickerRef.current }
                 : null;
           if (target) {
             Animated.timing(swipeX, {
@@ -137,8 +140,10 @@ export default function TickerScreen() {
               duration: 180,
               useNativeDriver: true,
             }).start(() => {
+              // Remember which side the new ticker should slide IN from
+              // (opposite of where the old one went out).
+              incomingSlideDirRef.current = target.dir;
               router.replace(`/ticker/${target.ticker}` as const);
-              swipeX.setValue(0);
             });
           } else {
             // Didn't pass threshold — spring back to center.
@@ -159,6 +164,25 @@ export default function TickerScreen() {
       }),
     [screenWidth, swipeX, router],
   );
+
+  // Whenever `symbol` changes, either slide the page in from the opposite
+  // side of the prior swipe (post-gesture) or just snap to center (any
+  // other navigation — back button, deep link, first mount).
+  useEffect(() => {
+    const outDir = incomingSlideDirRef.current;
+    if (outDir !== 0) {
+      incomingSlideDirRef.current = 0;
+      swipeX.setValue(-outDir * screenWidth);
+      Animated.spring(swipeX, {
+        toValue: 0,
+        useNativeDriver: true,
+        bounciness: 0,
+        speed: 16,
+      }).start();
+    } else {
+      swipeX.setValue(0);
+    }
+  }, [symbol, screenWidth, swipeX]);
 
   // Update the nav title once the ticker payload arrives. Skipped on
   // iPad-landscape where the screen renders inside SplitLayout's Slot
