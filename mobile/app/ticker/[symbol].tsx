@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
@@ -97,27 +98,67 @@ export default function TickerScreen() {
   prevTickerRef.current = prevTicker;
   nextTickerRef.current = nextTicker;
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => {
-        // Only claim the gesture for clear horizontal swipes so the
-        // vertical page scroll and the table's horizontal scroll keep
-        // working. Require horizontal travel ≥ 2× vertical and ≥ 20pt.
-        return Math.abs(g.dx) > Math.abs(g.dy) * 2 && Math.abs(g.dx) > 20;
-      },
-      onPanResponderRelease: (_, g) => {
-        const SWIPE_DISTANCE = 60;
-        const SWIPE_VELOCITY = 0.3;
-        const left = g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
-        const right = g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
-        if (left && prevTickerRef.current) {
-          router.replace(`/ticker/${prevTickerRef.current}` as const);
-        } else if (right && nextTickerRef.current) {
-          router.replace(`/ticker/${nextTickerRef.current}` as const);
-        }
-      },
-    }),
-  ).current;
+  const { width: screenWidth } = useWindowDimensions();
+  const swipeX = useRef(new Animated.Value(0)).current;
+  // Re-create the responder when screenWidth changes so the off-screen
+  // target tracks rotation. Empty deps would also work since
+  // useWindowDimensions only triggers when width actually changes.
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) => {
+          // Only claim the gesture for clearly horizontal drags so vertical
+          // page scroll and the table's horizontal pan keep working.
+          return Math.abs(g.dx) > Math.abs(g.dy) * 2 && Math.abs(g.dx) > 10;
+        },
+        onPanResponderGrant: () => {
+          swipeX.setOffset(0);
+          swipeX.setValue(0);
+        },
+        onPanResponderMove: (_, g) => {
+          swipeX.setValue(g.dx);
+        },
+        onPanResponderRelease: (_, g) => {
+          const SWIPE_DISTANCE = 100;
+          const SWIPE_VELOCITY = 0.4;
+          const left =
+            g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
+          const right =
+            g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
+          const target =
+            left && prevTickerRef.current
+              ? { dir: -1 as const, ticker: prevTickerRef.current }
+              : right && nextTickerRef.current
+                ? { dir: 1 as const, ticker: nextTickerRef.current }
+                : null;
+          if (target) {
+            Animated.timing(swipeX, {
+              toValue: target.dir * screenWidth,
+              duration: 180,
+              useNativeDriver: true,
+            }).start(() => {
+              router.replace(`/ticker/${target.ticker}` as const);
+              swipeX.setValue(0);
+            });
+          } else {
+            // Didn't pass threshold — spring back to center.
+            Animated.spring(swipeX, {
+              toValue: 0,
+              useNativeDriver: true,
+              bounciness: 6,
+            }).start();
+          }
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(swipeX, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 6,
+          }).start();
+        },
+      }),
+    [screenWidth, swipeX, router],
+  );
 
   // Update the nav title once the ticker payload arrives. Skipped on
   // iPad-landscape where the screen renders inside SplitLayout's Slot
@@ -155,6 +196,9 @@ export default function TickerScreen() {
     <View
       style={{ flex: 1, backgroundColor: c.background }}
       {...panResponder.panHandlers}
+    >
+    <Animated.View
+      style={{ flex: 1, transform: [{ translateX: swipeX }] }}
     >
     <ScrollView
       style={{ backgroundColor: c.background }}
@@ -319,22 +363,30 @@ export default function TickerScreen() {
         </Text>
       </View>
     </ScrollView>
+    </Animated.View>
 
       {/* Floating FY/Q period-header overlay. Pinned at the top of the
           screen while the historical table is on-screen. translateX is
           driven by the table's horizontal scroll so the visible periods
-          stay synced. */}
+          stay synced. Sits outside the Animated.View so it doesn't slide
+          with the swipe transition. */}
       {showStickyOverlay && (
-        <View
+        <Animated.View
           pointerEvents="none"
-          style={[styles.stickyOverlay, { backgroundColor: c.background }]}
+          style={[
+            styles.stickyOverlay,
+            {
+              backgroundColor: c.background,
+              transform: [{ translateX: swipeX }],
+            },
+          ]}
         >
           <HistoricalTablePeriodHeader
             columns={tableColumns.columns}
             dividerIdx={tableColumns.dividerIdx}
             scrollX={tableScrollX}
           />
-        </View>
+        </Animated.View>
       )}
     </View>
   );
