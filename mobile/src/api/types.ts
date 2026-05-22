@@ -40,6 +40,12 @@ export type IndustryDetailResponse = {
   slug: string;
   ticker_count: number;
   tickers: TickerRow[];
+  /** LLM-generated daily summary written when this industry was scanned.
+   * Empty string for industries that pre-date the summary-persistence
+   * feature (older daily-log entries lack the field). */
+  summary_md: string;
+  /** Date of the most recent batch that scanned this industry. */
+  summary_date: string;
 };
 
 export type Snapshot = {

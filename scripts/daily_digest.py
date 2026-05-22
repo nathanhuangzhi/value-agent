@@ -270,6 +270,19 @@ def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str
     })
     print(f"  wrote {COMPANIES_DIGEST.name}")
 
+    # Also write the summary back into the daily-industry-log entry so it
+    # survives the next day's run (which overwrites companies_digest.json).
+    # Each daily-log entry becomes the historical record for that batch.
+    if DAILY_LOG.exists():
+        log = json.loads(DAILY_LOG.read_text())
+        for entry in log:
+            if entry.get("date") == log_date:
+                entry["summary_md"] = summary_md
+                entry["summary_generated_at"] = datetime.now(timezone.utc).isoformat()
+                break
+        atomic_write_json(DAILY_LOG, log)
+        print(f"  updated {DAILY_LOG.name} with summary for {log_date}")
+
     return summary_md, table_rows
 
 

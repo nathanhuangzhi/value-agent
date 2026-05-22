@@ -260,11 +260,34 @@ def industry_detail(slug: str):
         ratios = _snapshot_ratios_for(t, row, sec_by_ticker, yf_by_ticker)
         tickers.append(_ticker_summary(row, validation.get(t), ratios))
 
+    # Most recent daily-log entry whose industries list contains this
+    # industry — that entry's persisted summary_md is the LLM write-up
+    # for the day this industry was scanned. Latest day's summary still
+    # comes from companies_digest.json.
+    summary_md = ""
+    summary_date = ""
+    log_entries = _read_json(_paths.daily_log, [])
+    for entry in sorted(log_entries, key=lambda e: e.get("date", ""), reverse=True):
+        if industry_name in (entry.get("industries") or []):
+            summary_md = entry.get("summary_md") or ""
+            summary_date = entry.get("date") or ""
+            break
+    persisted_digest = _read_json(_paths.digest, None)
+    if (
+        persisted_digest
+        and industry_name in (persisted_digest.get("industries") or [])
+        and persisted_digest.get("date", "") >= summary_date
+    ):
+        summary_md = persisted_digest.get("summary_md") or summary_md
+        summary_date = persisted_digest.get("date") or summary_date
+
     return {
         "industry": industry_name,
         "slug": slug,
         "ticker_count": len(tickers),
         "tickers": tickers,
+        "summary_md": summary_md,
+        "summary_date": summary_date,
     }
 
 
@@ -348,12 +371,13 @@ def digests_recent(limit: int = 10):
 
     sorted_entries = sorted(entries, key=lambda e: e.get("date", ""), reverse=True)[:limit]
 
-    # The persisted digest file only holds the most recent day's summary —
-    # attach it to the matching entry, leave older ones with empty summary.
+    # The summary for the most-recent day comes from companies_digest.json
+    # (freshly written by daily_digest). Older days persist their summary
+    # in the daily-log entry itself.
     persisted = _read_json(_paths.digest, None)
-    latest_summary = ""
+    latest_persisted_summary = ""
     if persisted and sorted_entries and persisted.get("date") == sorted_entries[0].get("date"):
-        latest_summary = persisted.get("summary_md") or ""
+        latest_persisted_summary = persisted.get("summary_md") or ""
 
     analyzed = _load_analyzed()
     out = []
@@ -362,17 +386,17 @@ def digests_recent(limit: int = 10):
         industries = entry.get("industries") or []
         ticker_symbols = entry.get("tickers") or []
 
-        # Compute the live ticker count from analyzed.json (a logged ticker
-        # may be missing if its analysis errored out — same defensive
-        # behavior as /digest/latest).
         live_count = sum(1 for t in ticker_symbols if t in analyzed)
+        summary_md = entry.get("summary_md") or ""
+        if i == 0 and latest_persisted_summary:
+            summary_md = latest_persisted_summary
 
         out.append({
             "date": log_date,
             "industries": industries,
             "slug": _slug(industries[0]) if industries else None,
             "ticker_count": live_count,
-            "summary_md": latest_summary if i == 0 else "",
+            "summary_md": summary_md,
             "is_latest": i == 0,
         })
 

@@ -75,7 +75,23 @@ export default function IndustryScreen() {
         <View style={styles.header}>
           <Text style={[styles.subheading, { color: c.textMuted }]}>
             {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
+            {data.summary_date ? ` · ${data.summary_date}` : ''}
           </Text>
+          {data.summary_md ? (
+            <View style={styles.summaryBlock}>
+              <Text
+                style={[
+                  styles.eyebrow,
+                  { color: c.brand, borderBottomColor: c.brand },
+                ]}
+              >
+                STORIES OF THE DAY
+              </Text>
+              <Text style={[styles.summary, { color: c.textPrimary }]}>
+                {data.summary_md.replace(/[*_`]+/g, '').trim()}
+              </Text>
+            </View>
+          ) : null}
         </View>
       }
       renderSectionHeader={() => <TickerRowHeader />}
@@ -95,5 +111,15 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   subheading: { fontSize: fontSize.sm },
+  summaryBlock: { marginTop: spacing.md },
+  eyebrow: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    letterSpacing: 2,
+    borderBottomWidth: 2,
+    paddingBottom: 4,
+    marginBottom: spacing.sm,
+  },
+  summary: { fontSize: fontSize.md, lineHeight: 22 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
 });
