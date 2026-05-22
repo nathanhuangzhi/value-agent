@@ -55,6 +55,11 @@ export default function RootLayout() {
               // navigate-siblings gesture doesn't fight the system back
               // gesture. Use the header back button to return.
               gestureEnabled: false,
+              // No transition between sibling tickers — swipe-to-next
+              // handles the visual continuity itself. The default Stack
+              // transition was making the swap feel like the page was
+              // "stuck" for ~1s as Stack animated the remount.
+              animation: 'none',
             }}
           />
         </Stack>

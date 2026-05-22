@@ -46,6 +46,11 @@ function slugify(s: string | null | undefined): string {
   return out || 'uncategorized';
 }
 
+// Expo Router remounts the screen when the dynamic `[symbol]` param
+// changes, which would wipe a useRef. Park the just-completed swipe
+// direction at module scope so the next mount can read it.
+let pendingSlideDir = 0;
+
 export default function TickerScreen() {
   const c = useColors();
   const navigation = useNavigation();
@@ -137,10 +142,6 @@ export default function TickerScreen() {
 
   const { width: screenWidth } = useWindowDimensions();
   const swipeX = useRef(new Animated.Value(0)).current;
-  // Carry the just-completed swipe direction across the router.replace so
-  // the next render can slide the new ticker IN from the opposite side
-  // (instead of snapping to center and briefly flashing the old content).
-  const incomingSlideDirRef = useRef(0);
 
   const panResponder = useMemo(
     () =>
@@ -172,7 +173,7 @@ export default function TickerScreen() {
                 : null;
           if (target) {
             console.log('[swipe-debug] RELEASE → router.replace to', target.ticker, 'dir=', target.dir, 'at', Date.now());
-            incomingSlideDirRef.current = target.dir;
+            pendingSlideDir = target.dir;
             router.replace(`/ticker/${target.ticker}` as const);
           } else {
             // Didn't pass threshold — spring back to center.
@@ -200,10 +201,10 @@ export default function TickerScreen() {
   // useLayoutEffect runs synchronously before the next paint so the new
   // content never flashes at the prior drag position.
   useLayoutEffect(() => {
-    const outDir = incomingSlideDirRef.current;
+    const outDir = pendingSlideDir;
     console.log('[swipe-debug] LAYOUT EFFECT symbol=', symbol, 'outDir=', outDir, 'at', Date.now());
+    pendingSlideDir = 0;
     if (outDir !== 0) {
-      incomingSlideDirRef.current = 0;
       swipeX.setValue(-outDir * screenWidth);
       Animated.timing(swipeX, {
         toValue: 0,
