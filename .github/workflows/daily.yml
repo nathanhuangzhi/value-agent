@@ -59,6 +59,41 @@ jobs:
           # write access (the workflow `permissions: contents: write`).
           persist-credentials: true
 
+      # CI gate: only proceed if the latest CI run on main is green.
+      # Saves DeepSeek $ on a broken build. Skipped on manual dispatch
+      # so we can still force a run when iterating on the pipeline.
+      - name: Verify CI is green on main
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Wait up to 5 min for any in-flight CI run on main to finish.
+          for attempt in $(seq 1 10); do
+            run=$(gh run list --workflow=ci.yml --branch=main --limit=1 \
+              --json status,conclusion,headSha,createdAt --jq '.[0]')
+            if [ -z "$run" ] || [ "$run" = "null" ]; then
+              echo "No CI runs found on main yet — allowing pipeline to proceed."
+              exit 0
+            fi
+            run_status=$(echo "$run" | jq -r '.status')
+            conclusion=$(echo "$run" | jq -r '.conclusion')
+            sha=$(echo "$run" | jq -r '.headSha')
+            echo "Latest CI on main: sha=${sha:0:8} status=$run_status conclusion=$conclusion"
+            if [ "$run_status" = "completed" ]; then
+              if [ "$conclusion" = "success" ]; then
+                echo "CI is green. Proceeding with daily pipeline."
+                exit 0
+              fi
+              echo "::error::CI on main is '$conclusion' for ${sha:0:8} — aborting daily pipeline to avoid wasted DeepSeek spend."
+              exit 1
+            fi
+            echo "CI still $run_status; waiting 30s..."
+            sleep 30
+          done
+          echo "::error::CI on main never completed within 5 min — aborting."
+          exit 1
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
