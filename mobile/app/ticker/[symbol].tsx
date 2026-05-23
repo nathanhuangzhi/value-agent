@@ -1,5 +1,4 @@
 import {
-  Profiler,
   useCallback,
   useEffect,
   useMemo,
@@ -9,6 +8,7 @@ import {
 import {
   ActivityIndicator,
   Animated,
+  InteractionManager,
   PanResponder,
   RefreshControl,
   ScrollView,
@@ -52,7 +52,6 @@ function slugify(s: string | null | undefined): string {
 let pendingSlideDir = 0;
 
 export default function TickerScreen() {
-  console.log('[swipe-debug] FN START at', Date.now());
   const c = useColors();
   const navigation = useNavigation();
   const router = useRouter();
@@ -117,29 +116,11 @@ export default function TickerScreen() {
   nextTickerRef.current = nextTicker;
 
   // Warm the SWR caches for the neighbouring tickers so a swipe renders
-  // instantly from cache instead of flashing a loading spinner. Best-effort
-  // — failures are swallowed by `prefetchTickerDetail`.
+  // instantly from cache instead of flashing a loading spinner.
   useEffect(() => {
-    console.log('[swipe-debug] symbol=', symbol, 'prev=', prevTicker, 'next=', nextTicker, 'industryLoading=', industryDetail.loading);
-    if (prevTicker) {
-      console.log('[swipe-debug] prefetching prev:', prevTicker, 'at', Date.now());
-      prefetchTickerDetail(prevTicker);
-    }
-    if (nextTicker) {
-      console.log('[swipe-debug] prefetching next:', nextTicker, 'at', Date.now());
-      prefetchTickerDetail(nextTicker);
-    }
-  }, [prevTicker, nextTicker, symbol, industryDetail.loading]);
-
-  // Log every render with current data state.
-  console.log(
-    '[swipe-debug] RENDER symbol=', symbol,
-    'tickerData?', ticker.data ? 'YES' : 'no',
-    'tickerLoading=', ticker.loading,
-    'priceData?', priceHistory.data ? 'YES' : 'no',
-    'priceLoading=', priceHistory.loading,
-    'at', Date.now(),
-  );
+    if (prevTicker) prefetchTickerDetail(prevTicker);
+    if (nextTicker) prefetchTickerDetail(nextTicker);
+  }, [prevTicker, nextTicker]);
 
   const { width: screenWidth } = useWindowDimensions();
   // Initial swipeX is computed once per mount. When the previous screen's
@@ -150,25 +131,29 @@ export default function TickerScreen() {
     const dir = pendingSlideDir;
     pendingSlideDir = 0;
     const initialX = dir !== 0 ? -dir * screenWidth : 0;
-    console.log('[swipe-debug] INIT swipeX startX=', initialX, 'dir=', dir, 'at', Date.now());
     const v = new Animated.Value(initialX);
-    let lastLogged = -Infinity;
-    v.addListener(({ value }) => {
-      const now = Date.now();
-      if (now - lastLogged > 40) {
-        console.log('[swipe-debug] swipeX value=', Math.round(value), 'at', now);
-        lastLogged = now;
-      }
-    });
     if (dir !== 0) {
       Animated.timing(v, {
         toValue: 0,
         duration: 180,
         useNativeDriver: true,
-      }).start(() => console.log('[swipe-debug] slide-in complete at', Date.now()));
+      }).start();
     }
     return v;
   });
+
+  // Defer mounting the heavy children (charts + historical table — each
+  // ~200ms to commit) until after the current frame / animations settle.
+  // Until then we render skeleton placeholders so the JS thread isn't
+  // stalled with native-view creation while the swipe-in animation is
+  // trying to run, which was causing the perceived "stuck" pause.
+  const [heavyVisible, setHeavyVisible] = useState(false);
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => {
+      setHeavyVisible(true);
+    });
+    return () => handle.cancel();
+  }, []);
 
   const panResponder = useMemo(
     () =>
@@ -199,7 +184,6 @@ export default function TickerScreen() {
                 ? { dir: +1 as const, ticker: prevTickerRef.current }
                 : null;
           if (target) {
-            console.log('[swipe-debug] RELEASE → router.replace to', target.ticker, 'dir=', target.dir, 'at', Date.now());
             pendingSlideDir = target.dir;
             router.replace(`/ticker/${target.ticker}` as const);
           } else {
@@ -256,18 +240,6 @@ export default function TickerScreen() {
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
 
   return (
-    <Profiler
-      id="ticker"
-      onRender={(_, phase, actualDuration, baseDuration) =>
-        console.log(
-          '[swipe-debug] PROFILER',
-          phase,
-          'actual=', Math.round(actualDuration), 'ms',
-          'base=', Math.round(baseDuration), 'ms',
-          'at', Date.now(),
-        )
-      }
-    >
     <View
       style={{ flex: 1, backgroundColor: c.background }}
       {...panResponder.panHandlers}
@@ -342,13 +314,13 @@ export default function TickerScreen() {
           tap — same data the historical-table "Valuation Multiples"
           rows are computed from, visualized over time. */}
       <Section title="Stock Price & Valuation">
-        {priceHistory.data ? (
+        {heavyVisible && priceHistory.data ? (
           <ValuationGrid
             annual={data.annual}
             quarterly={data.quarterly}
             priceHistory={priceHistory.data.data}
           />
-        ) : priceHistory.loading ? (
+        ) : !heavyVisible || priceHistory.loading ? (
           <View style={styles.chartLoading}>
             <ActivityIndicator color={c.brand} />
           </View>
@@ -371,12 +343,18 @@ export default function TickerScreen() {
         }}
       >
         <Section title="Historical Data (annual + quarterly)">
-          <HistoricalTable
-            statements={data.annual}
-            quarterly={data.quarterly}
-            priceHistory={priceHistory.data?.data}
-            externalScrollX={tableScrollX}
-          />
+          {heavyVisible ? (
+            <HistoricalTable
+              statements={data.annual}
+              quarterly={data.quarterly}
+              priceHistory={priceHistory.data?.data}
+              externalScrollX={tableScrollX}
+            />
+          ) : (
+            <View style={styles.chartLoading}>
+              <ActivityIndicator color={c.brand} />
+            </View>
+          )}
         </Section>
       </View>
 
@@ -464,7 +442,6 @@ export default function TickerScreen() {
         </Animated.View>
       )}
     </View>
-    </Profiler>
   );
 }
 
