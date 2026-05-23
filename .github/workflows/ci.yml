@@ -1,0 +1,65 @@
+# Pull-request / push CI gate. Runs the unit tests + mobile typecheck
+# so a refactor that breaks the API contract or the pipeline is caught
+# *before* the daily cron tries to run it.
+#
+# Independent of the daily pipeline (daily.yml) — that handles end-to-end
+# runs with real DeepSeek + SEC calls. This workflow is offline-only and
+# finishes in ~2 minutes.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+# A new push to the same branch supersedes any in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package + dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run pytest
+        run: pytest -q
+
+  mobile-typecheck:
+    name: mobile tsc
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install mobile deps
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
