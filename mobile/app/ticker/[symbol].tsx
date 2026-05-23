@@ -1,3 +1,15 @@
+/**
+ * Ticker detail screen rendered as a horizontal carousel: previous,
+ * current, next tickers in the industry are mounted side-by-side so a
+ * left/right swipe slides between them in one continuous motion — the
+ * next page is already in memory when the user starts swiping (Tinder /
+ * Stories pattern).
+ *
+ * Only the 3 pages adjacent to the current index are mounted. Heavy
+ * children inside each page (charts + historical table) are still
+ * deferred via InteractionManager so the JS thread isn't blocked
+ * during the slide.
+ */
 import {
   useCallback,
   useEffect,
@@ -17,7 +29,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import {
   prefetchTickerDetail,
@@ -46,44 +58,42 @@ function slugify(s: string | null | undefined): string {
   return out || 'uncategorized';
 }
 
-// Expo Router remounts the screen when the dynamic `[symbol]` param
-// changes, which would wipe a useRef. Park the just-completed swipe
-// direction at module scope so the next mount can read it.
-let pendingSlideDir = 0;
+function pickLatestSourceDate(sources: { published_date?: string | null }[] | undefined): string | null {
+  if (!sources || sources.length === 0) return null;
+  const dates = sources
+    .map((s) => (s.published_date ? s.published_date.slice(0, 10) : null))
+    .filter((d): d is string => !!d);
+  if (dates.length === 0) return null;
+  dates.sort();
+  return dates[dates.length - 1];
+}
 
-export default function TickerScreen() {
+// ===========================================================================
+// TickerPageContent — one full ticker page. Manages its own data hooks
+// and vertical scrolling. The carousel below mounts up to three of these
+// instances side-by-side.
+// ===========================================================================
+function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boolean }) {
   const c = useColors();
-  const navigation = useNavigation();
-  const router = useRouter();
   const device = useDeviceClass();
-  const { symbol } = useLocalSearchParams<{ symbol: string }>();
-  // On iPad-landscape the screen is rendered inside the SplitLayout's
-  // right pane (no Stack header), but it still benefits from being
-  // centered with a comfortable max-width so the eye doesn't scan
-  // across 800+ pt of statement text.
   const contentMaxWidth = device === 'tablet-landscape' ? 900
                         : device === 'tablet'           ? 760
                         : undefined;
 
   const ticker = useTickerDetail(symbol);
   const priceHistory = usePriceHistory(symbol);
-  // Sibling-ticker navigation: fetch the industry's ticker list so left/right
-  // swipe gestures can jump to the prev/next company in the same industry.
-  const industrySlug = ticker.data ? slugify(ticker.data.industry) : undefined;
-  const industryDetail = useIndustryDetail(industrySlug);
-  const { prevTicker, nextTicker } = useMemo(() => {
-    const list = industryDetail.data?.tickers ?? [];
-    const cur = (symbol || '').toUpperCase();
-    const idx = list.findIndex((t) => t.ticker === cur);
-    if (idx < 0) return { prevTicker: null, nextTicker: null };
-    return {
-      prevTicker: idx > 0 ? list[idx - 1].ticker : null,
-      nextTicker: idx < list.length - 1 ? list[idx + 1].ticker : null,
-    };
-  }, [industryDetail.data, symbol]);
 
-  // Sticky FY/Q overlay state — all hooks must be called unconditionally
-  // before any early returns to satisfy the Rules of Hooks.
+  // Defer heavy children (charts + historical table) past the current
+  // frame so neither the initial mount nor a sibling becoming the
+  // center hitches the JS thread.
+  const [heavyVisible, setHeavyVisible] = useState(false);
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => {
+      setHeavyVisible(true);
+    });
+    return () => handle.cancel();
+  }, []);
+
   const tableScrollX = useRef(new Animated.Value(0)).current;
   const tableTopRef = useRef<number | null>(null);
   const tableHeightRef = useRef<number | null>(null);
@@ -98,6 +108,7 @@ export default function TickerScreen() {
 
   const onPageScroll = useCallback(
     (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      if (!isCenter) return;
       const top = tableTopRef.current;
       const h = tableHeightRef.current;
       if (top == null || h == null) return;
@@ -105,116 +116,14 @@ export default function TickerScreen() {
       const show = y > top && y < top + h - HISTORICAL_TABLE_HEADER_HEIGHT;
       setShowStickyOverlay((prev) => (prev === show ? prev : show));
     },
-    [],
+    [isCenter],
   );
 
-  // Refs keep the gesture handler reading the latest prev/next without
-  // tearing down the PanResponder on every re-render.
-  const prevTickerRef = useRef<string | null>(null);
-  const nextTickerRef = useRef<string | null>(null);
-  prevTickerRef.current = prevTicker;
-  nextTickerRef.current = nextTicker;
-
-  // Warm the SWR caches for the neighbouring tickers so a swipe renders
-  // instantly from cache instead of flashing a loading spinner.
+  // Hide the sticky overlay when this page is not center (otherwise an
+  // off-screen sibling's overlay would still be in the view tree at top:0).
   useEffect(() => {
-    if (prevTicker) prefetchTickerDetail(prevTicker);
-    if (nextTicker) prefetchTickerDetail(nextTicker);
-  }, [prevTicker, nextTicker]);
-
-  const { width: screenWidth } = useWindowDimensions();
-  // Initial swipeX is computed once per mount. When the previous screen's
-  // swipe set `pendingSlideDir`, the new instance starts off-screen on
-  // the OPPOSITE side and queues a slide-in to centre — applied at the
-  // first paint, so there's no flash of new content at translateX=0.
-  const [swipeX] = useState(() => {
-    const dir = pendingSlideDir;
-    pendingSlideDir = 0;
-    const initialX = dir !== 0 ? -dir * screenWidth : 0;
-    const v = new Animated.Value(initialX);
-    if (dir !== 0) {
-      Animated.timing(v, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    }
-    return v;
-  });
-
-  // Defer mounting the heavy children (charts + historical table — each
-  // ~200ms to commit) until after the current frame / animations settle.
-  // Until then we render skeleton placeholders so the JS thread isn't
-  // stalled with native-view creation while the swipe-in animation is
-  // trying to run, which was causing the perceived "stuck" pause.
-  const [heavyVisible, setHeavyVisible] = useState(false);
-  useEffect(() => {
-    const handle = InteractionManager.runAfterInteractions(() => {
-      setHeavyVisible(true);
-    });
-    return () => handle.cancel();
-  }, []);
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => {
-          // Only claim the gesture for clearly horizontal drags so vertical
-          // page scroll and the table's horizontal pan keep working.
-          return Math.abs(g.dx) > Math.abs(g.dy) * 2 && Math.abs(g.dx) > 10;
-        },
-        onPanResponderGrant: () => {
-          swipeX.setOffset(0);
-          swipeX.setValue(0);
-        },
-        onPanResponderMove: (_, g) => {
-          swipeX.setValue(g.dx);
-        },
-        onPanResponderRelease: (_, g) => {
-          const SWIPE_DISTANCE = 80;
-          const SWIPE_VELOCITY = 0.35;
-          const left = g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
-          const right = g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
-          // User-facing mapping: left swipe = NEXT ticker; right swipe =
-          // PREVIOUS ticker. Mirrors carousels / Stories / Tinder.
-          const target =
-            left && nextTickerRef.current
-              ? { dir: -1 as const, ticker: nextTickerRef.current }
-              : right && prevTickerRef.current
-                ? { dir: +1 as const, ticker: prevTickerRef.current }
-                : null;
-          if (target) {
-            pendingSlideDir = target.dir;
-            router.replace(`/ticker/${target.ticker}` as const);
-          } else {
-            // Didn't pass threshold — spring back to center.
-            Animated.spring(swipeX, {
-              toValue: 0,
-              useNativeDriver: true,
-              bounciness: 6,
-            }).start();
-          }
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(swipeX, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 6,
-          }).start();
-        },
-      }),
-    [screenWidth, swipeX, router],
-  );
-
-
-  // Update the nav title once the ticker payload arrives. Skipped on
-  // iPad-landscape where the screen renders inside SplitLayout's Slot
-  // (no Stack header to write into).
-  useEffect(() => {
-    if (ticker.data && device !== 'tablet-landscape') {
-      navigation.setOptions({ title: ticker.data.ticker });
-    }
-  }, [ticker.data, navigation, device]);
+    if (!isCenter && showStickyOverlay) setShowStickyOverlay(false);
+  }, [isCenter, showStickyOverlay]);
 
   async function refreshAll() {
     await Promise.all([ticker.refresh(), priceHistory.refresh()]);
@@ -240,115 +149,66 @@ export default function TickerScreen() {
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: c.background }}
-      {...panResponder.panHandlers}
-    >
-    <Animated.View
-      style={{ flex: 1, transform: [{ translateX: swipeX }] }}
-    >
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentContainerStyle={[
-        styles.scroll,
-        // Center the content with a max-width on iPad so a wide screen
-        // doesn't sprawl statement text across 1000+ pt of horizontal space.
-        contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
-      ]}
-      refreshControl={
-        <RefreshControl
-          refreshing={ticker.loading || priceHistory.loading}
-          onRefresh={refreshAll}
-          tintColor={c.brand}
-        />
-      }
-      onScroll={onPageScroll}
-      scrollEventThrottle={32}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.companyName, { color: c.textPrimary }]} numberOfLines={2}>
-            {data.name}
-          </Text>
-          <Text style={[styles.meta, { color: c.textMuted }]}>
-            {[
-              data.ticker,
-              data.exchange,
-              data.sector && data.industry
-                ? `${data.sector} / ${data.industry}`
-                : data.sector || data.industry,
-              data.country,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-        </View>
-        <View style={styles.headerRight}>
-          <Text style={[styles.mcap, { color: c.textPrimary }]}>
-            {formatMoney(data.snapshot.market_cap)}
-          </Text>
-          <Text style={[styles.metaSmall, { color: c.textMuted }]}>Market Cap</Text>
-        </View>
-      </View>
-
-      {/* Business overview — matches the web's bullet-list shape: a
-          "What it does" summary plus 9 categorical attributes from the
-          Stage 2 classifier. Lives at the top because it's the
-          "what is this company" framing the reader needs before any
-          numbers make sense. */}
-      <Section title="Business Overview">
-        <BusinessOverview
-          classification={data.classification}
-          meta={data.classification_meta}
-        />
-      </Section>
-
-      {/* Snapshot KPI grid */}
-      <Section title="Snapshot">
-        <KPIGrid snapshot={data.snapshot} />
-      </Section>
-
-      {/* 2×2 grid: stock price + static P/E + static P/S + P/B. Mirrors
-          the web report's valuation panel. Each chart is interactive on
-          tap — same data the historical-table "Valuation Multiples"
-          rows are computed from, visualized over time. */}
-      <Section title="Stock Price & Valuation">
-        {heavyVisible && priceHistory.data ? (
-          <ValuationGrid
-            annual={data.annual}
-            quarterly={data.quarterly}
-            priceHistory={priceHistory.data.data}
+    <View style={{ flex: 1, backgroundColor: c.background }}>
+      <ScrollView
+        style={{ backgroundColor: c.background }}
+        contentContainerStyle={[
+          styles.scroll,
+          contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={ticker.loading || priceHistory.loading}
+            onRefresh={refreshAll}
+            tintColor={c.brand}
           />
-        ) : !heavyVisible || priceHistory.loading ? (
-          <View style={styles.chartLoading}>
-            <ActivityIndicator color={c.brand} />
-          </View>
-        ) : (
-          <Text style={{ color: c.textMuted, fontSize: fontSize.sm }}>
-            {priceHistory.error ?? '(no price data)'}
-          </Text>
-        )}
-      </Section>
-
-      {/* Historical statements: annual + quarterly in one scroll,
-          default-anchored to the most recent quarter on the right.
-          Price history is passed in so the table can compute Static P/E,
-          Static P/S, and P/B for each period (price × diluted shares ÷
-          annual baseline). */}
-      <View
-        onLayout={(e) => {
-          tableTopRef.current = e.nativeEvent.layout.y;
-          tableHeightRef.current = e.nativeEvent.layout.height;
-        }}
+        }
+        onScroll={onPageScroll}
+        scrollEventThrottle={32}
       >
-        <Section title="Historical Data (annual + quarterly)">
-          {heavyVisible ? (
-            <HistoricalTable
-              statements={data.annual}
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.companyName, { color: c.textPrimary }]} numberOfLines={2}>
+              {data.name}
+            </Text>
+            <Text style={[styles.meta, { color: c.textMuted }]}>
+              {[
+                data.ticker,
+                data.exchange,
+                data.sector && data.industry
+                  ? `${data.sector} / ${data.industry}`
+                  : data.sector || data.industry,
+                data.country,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          </View>
+          <View style={styles.headerRight}>
+            <Text style={[styles.mcap, { color: c.textPrimary }]}>
+              {formatMoney(data.snapshot.market_cap)}
+            </Text>
+            <Text style={[styles.metaSmall, { color: c.textMuted }]}>Market Cap</Text>
+          </View>
+        </View>
+
+        <Section title="Business Overview">
+          <BusinessOverview
+            classification={data.classification}
+            meta={data.classification_meta}
+          />
+        </Section>
+
+        <Section title="Snapshot">
+          <KPIGrid snapshot={data.snapshot} />
+        </Section>
+
+        <Section title="Stock Price & Valuation">
+          {heavyVisible && priceHistory.data ? (
+            <ValuationGrid
+              annual={data.annual}
               quarterly={data.quarterly}
-              priceHistory={priceHistory.data?.data}
-              externalScrollX={tableScrollX}
+              priceHistory={priceHistory.data.data}
             />
           ) : (
             <View style={styles.chartLoading}>
@@ -356,109 +216,280 @@ export default function TickerScreen() {
             </View>
           )}
         </Section>
-      </View>
 
-      {/* Investment narrative */}
-      <Section title="Investment Narrative">
-        {latestSourceDate ? (
-          <Text style={[styles.metaSmall, { color: c.textMuted, marginBottom: spacing.sm }]}>
-            Most recent source: {latestSourceDate}
-          </Text>
-        ) : null}
-        <Text style={[styles.body, { color: c.textPrimary }]}>
-          {data.narrative.text || '(no narrative available)'}
-        </Text>
-      </Section>
-
-      {/* Validation banner — moved to the BOTTOM of the page. Same data
-          quality info but framed as an end-of-report caveat rather than
-          a top-of-page interruption. Only rendered on warn / error. */}
-      {(data.validation.status === 'warn' || data.validation.status === 'error') && (
         <View
-          style={[
-            styles.validationBanner,
-            {
-              backgroundColor:
-                data.validation.status === 'error' ? c.statusErrorBg : c.statusWarnBg,
-              borderLeftColor:
-                data.validation.status === 'error' ? c.negative : c.warning,
-            },
-          ]}
+          onLayout={(e) => {
+            tableTopRef.current = e.nativeEvent.layout.y;
+            tableHeightRef.current = e.nativeEvent.layout.height;
+          }}
         >
-          <View style={styles.bannerHeader}>
-            <StatusBadge status={data.validation.status} />
-            <Text style={[styles.bannerTitle, { color: c.textPrimary }]}>
-              Data quality {data.validation.status === 'error' ? 'errors' : 'warnings'}
-            </Text>
-          </View>
-          {data.validation.issues
-            .filter((i) => i.severity !== 'info')
-            .slice(0, 3)
-            .map((i, idx) => (
-              <Text
-                key={idx}
-                style={[styles.bannerIssue, { color: c.textMuted }]}
-                numberOfLines={2}
-              >
-                • {i.detail}
-              </Text>
-            ))}
+          <Section title="Historical Data (annual + quarterly)">
+            {heavyVisible ? (
+              <HistoricalTable
+                statements={data.annual}
+                quarterly={data.quarterly}
+                priceHistory={priceHistory.data?.data}
+                externalScrollX={tableScrollX}
+              />
+            ) : (
+              <View style={styles.chartLoading}>
+                <ActivityIndicator color={c.brand} />
+              </View>
+            )}
+          </Section>
         </View>
-      )}
 
-      {/* Footer — disclaimer (matches the web) + analyzed-date stamp. */}
-      <View style={[styles.footer, { borderTopColor: c.border }]}>
-        <Text style={[styles.disclaimer, { color: c.textMuted }]}>
-          For research and educational purposes only. Not investment advice.
-        </Text>
-        <Text style={[styles.metaSmall, { color: c.textMuted }]}>
-          Analyzed {formatDate(data.analyzed_date)} · {data.narrative.model || 'unknown model'}
-        </Text>
-      </View>
-    </ScrollView>
-    </Animated.View>
+        <Section title="Investment Narrative">
+          {latestSourceDate ? (
+            <Text style={[styles.metaSmall, { color: c.textMuted, marginBottom: spacing.sm }]}>
+              Most recent source: {latestSourceDate}
+            </Text>
+          ) : null}
+          <Text style={[styles.body, { color: c.textPrimary }]}>
+            {data.narrative.text || '(no narrative available)'}
+          </Text>
+        </Section>
 
-      {/* Floating FY/Q period-header overlay. Pinned at the top of the
-          screen while the historical table is on-screen. translateX is
-          driven by the table's horizontal scroll so the visible periods
-          stay synced. Sits outside the Animated.View so it doesn't slide
-          with the swipe transition. */}
+        {(data.validation.status === 'warn' || data.validation.status === 'error') && (
+          <View
+            style={[
+              styles.validationBanner,
+              {
+                backgroundColor:
+                  data.validation.status === 'error' ? c.statusErrorBg : c.statusWarnBg,
+                borderLeftColor:
+                  data.validation.status === 'error' ? c.negative : c.warning,
+              },
+            ]}
+          >
+            <View style={styles.bannerHeader}>
+              <StatusBadge status={data.validation.status} />
+              <Text style={[styles.bannerTitle, { color: c.textPrimary }]}>
+                Data quality {data.validation.status === 'error' ? 'errors' : 'warnings'}
+              </Text>
+            </View>
+            {data.validation.issues
+              .filter((i) => i.severity !== 'info')
+              .slice(0, 3)
+              .map((i, idx) => (
+                <Text
+                  key={idx}
+                  style={[styles.bannerIssue, { color: c.textMuted }]}
+                  numberOfLines={2}
+                >
+                  • {i.detail}
+                </Text>
+              ))}
+          </View>
+        )}
+
+        <View style={[styles.footer, { borderTopColor: c.border }]}>
+          <Text style={[styles.disclaimer, { color: c.textMuted }]}>
+            For research and educational purposes only. Not investment advice.
+          </Text>
+          <Text style={[styles.metaSmall, { color: c.textMuted }]}>
+            Analyzed {formatDate(data.analyzed_date)} · {data.narrative.model || 'unknown model'}
+          </Text>
+        </View>
+      </ScrollView>
+
       {showStickyOverlay && (
-        <Animated.View
+        <View
           pointerEvents="none"
-          style={[
-            styles.stickyOverlay,
-            {
-              backgroundColor: c.background,
-              transform: [{ translateX: swipeX }],
-            },
-          ]}
+          style={[styles.stickyOverlay, { backgroundColor: c.background }]}
         >
           <HistoricalTablePeriodHeader
             columns={tableColumns.columns}
             dividerIdx={tableColumns.dividerIdx}
             scrollX={tableScrollX}
           />
-        </Animated.View>
+        </View>
       )}
     </View>
   );
 }
 
-/**
- * Mirror the Python `_latest_source_date` helper: pick the latest
- * `published_date` from the source list. URL/snippet regex fallbacks
- * happen on the backend already (the renderer's `_parse_source_date`),
- * so by the time data reaches us the field is just an ISO string.
- */
-function pickLatestSourceDate(sources: { published_date?: string | null }[] | undefined): string | null {
-  if (!sources || sources.length === 0) return null;
-  const dates = sources
-    .map((s) => (s.published_date ? s.published_date.slice(0, 10) : null))
-    .filter((d): d is string => !!d);
-  if (dates.length === 0) return null;
-  dates.sort();
-  return dates[dates.length - 1];
+// Memoize: the carousel re-renders frequently as containerX animates;
+// re-rendering a sibling page that hasn't changed is wasteful.
+const TickerPage = TickerPageContent;
+
+// ===========================================================================
+// TickerScreen — carousel container.
+// ===========================================================================
+export default function TickerScreen() {
+  const c = useColors();
+  const navigation = useNavigation();
+  const device = useDeviceClass();
+  const { symbol: initialSymbol } = useLocalSearchParams<{ symbol: string }>();
+  const initialSym = (initialSymbol || '').toUpperCase();
+
+  // Pull the industry's ticker list so we can compute neighbours. Fetch
+  // via the *first* ticker we have data for (the deep-link target);
+  // once we know its industry, the list arrives and we lock in.
+  const initialTicker = useTickerDetail(initialSym);
+  const industrySlug = initialTicker.data
+    ? slugify(initialTicker.data.industry)
+    : undefined;
+  const industryDetail = useIndustryDetail(industrySlug);
+  const tickerList = useMemo(
+    () => industryDetail.data?.tickers.map((t) => t.ticker) ?? [],
+    [industryDetail.data],
+  );
+
+  // Centre index walks through the industry list as the user swipes.
+  // Default to the index of the initial URL ticker once the list arrives,
+  // or -1 if not found (single-ticker mode).
+  const [centerIndex, setCenterIndex] = useState(-1);
+  useEffect(() => {
+    if (centerIndex !== -1 || tickerList.length === 0) return;
+    const idx = tickerList.indexOf(initialSym);
+    if (idx >= 0) setCenterIndex(idx);
+  }, [tickerList, initialSym, centerIndex]);
+
+  const centerSymbol = centerIndex >= 0 ? tickerList[centerIndex] : initialSym;
+
+  // Nav title tracks the currently-centred ticker. Skip on iPad-landscape
+  // (the SplitLayout renders without a Stack header).
+  useEffect(() => {
+    if (device !== 'tablet-landscape') {
+      navigation.setOptions({ title: centerSymbol });
+    }
+  }, [centerSymbol, navigation, device]);
+
+  // Prefetch the symbols around the centre so they're cache-warm when the
+  // user swipes into them.
+  useEffect(() => {
+    if (centerIndex < 0) return;
+    [centerIndex - 1, centerIndex + 1].forEach((i) => {
+      if (i >= 0 && i < tickerList.length) prefetchTickerDetail(tickerList[i]);
+    });
+  }, [centerIndex, tickerList]);
+
+  // Carousel translateX. Resting value = -centerIndex * screenWidth so
+  // the centre page sits at screen x = 0. During pan we superimpose the
+  // gesture dx as an Animated offset.
+  const { width: screenWidth } = useWindowDimensions();
+  const containerX = useRef(new Animated.Value(0)).current;
+  // Sync resting position to centerIndex changes. Using setValue
+  // (not animate) because the swipe-completion handler has already
+  // animated to this position before swapping centerIndex.
+  useEffect(() => {
+    if (centerIndex < 0) return;
+    containerX.setValue(-centerIndex * screenWidth);
+  }, [centerIndex, screenWidth, containerX]);
+
+  const centerIndexRef = useRef(centerIndex);
+  centerIndexRef.current = centerIndex;
+  const tickerListLengthRef = useRef(tickerList.length);
+  tickerListLengthRef.current = tickerList.length;
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) =>
+          Math.abs(g.dx) > Math.abs(g.dy) * 2 && Math.abs(g.dx) > 10,
+        onPanResponderGrant: () => {
+          const base = -centerIndexRef.current * screenWidth;
+          containerX.setOffset(base);
+          containerX.setValue(0);
+        },
+        onPanResponderMove: (_, g) => {
+          containerX.setValue(g.dx);
+        },
+        onPanResponderRelease: (_, g) => {
+          containerX.flattenOffset();
+          const SWIPE_DISTANCE = 80;
+          const SWIPE_VELOCITY = 0.35;
+          const left = g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
+          const right = g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
+          const idx = centerIndexRef.current;
+          const len = tickerListLengthRef.current;
+          // Left swipe → next (higher index); right swipe → previous.
+          let targetIdx = idx;
+          if (left && idx < len - 1) targetIdx = idx + 1;
+          else if (right && idx > 0) targetIdx = idx - 1;
+
+          if (targetIdx !== idx) {
+            Animated.timing(containerX, {
+              toValue: -targetIdx * screenWidth,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(() => {
+              // containerX is already at -targetIdx * screenWidth, which
+              // is the resting position for the new centre. Updating
+              // centerIndex does NOT cause a visual jump because the
+              // useEffect above setValue's the same value we just
+              // animated to.
+              setCenterIndex(targetIdx);
+            });
+          } else {
+            Animated.spring(containerX, {
+              toValue: -idx * screenWidth,
+              useNativeDriver: true,
+              bounciness: 6,
+            }).start();
+          }
+        },
+        onPanResponderTerminate: () => {
+          containerX.flattenOffset();
+          Animated.spring(containerX, {
+            toValue: -centerIndexRef.current * screenWidth,
+            useNativeDriver: true,
+            bounciness: 6,
+          }).start();
+        },
+      }),
+    [screenWidth, containerX],
+  );
+
+  if (initialTicker.error && !initialTicker.data) {
+    return (
+      <View style={[styles.center, { backgroundColor: c.background }]}>
+        <Text style={{ color: c.negative }}>{initialTicker.error}</Text>
+      </View>
+    );
+  }
+
+  // Once we know the industry's ticker list, render the carousel.
+  // While the list is still loading, render the single page so the
+  // user isn't waiting on an industry round-trip to see anything.
+  if (tickerList.length === 0 || centerIndex < 0) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.background }}>
+        <TickerPage symbol={initialSym} isCenter />
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={{ flex: 1, backgroundColor: c.background }}
+      {...panResponder.panHandlers}
+    >
+      <Animated.View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          width: tickerList.length * screenWidth,
+          transform: [{ translateX: containerX }],
+        }}
+      >
+        {tickerList.map((sym, i) => {
+          // Only mount the centre and its immediate neighbours; everything
+          // else stays as a fixed-width spacer so the layout coordinates
+          // stay correct.
+          const distance = Math.abs(i - centerIndex);
+          return (
+            <View key={sym} style={{ width: screenWidth }}>
+              {distance <= 1 ? (
+                <TickerPage symbol={sym} isCenter={i === centerIndex} />
+              ) : null}
+            </View>
+          );
+        })}
+      </Animated.View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -474,7 +505,6 @@ const styles = StyleSheet.create({
   meta: { fontSize: fontSize.sm, marginTop: 4 },
   metaSmall: { fontSize: fontSize.xs, letterSpacing: 0.3 },
   mcap: { fontSize: fontSize.lg, fontWeight: '700', fontVariant: ['tabular-nums'] },
-
   validationBanner: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
@@ -485,7 +515,6 @@ const styles = StyleSheet.create({
   bannerHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   bannerTitle: { fontSize: fontSize.sm, fontWeight: '600' },
   bannerIssue: { fontSize: fontSize.xs + 1, marginTop: spacing.sm, lineHeight: 18 },
-
   body: { fontSize: fontSize.md, lineHeight: 22 },
   footer: {
     marginTop: spacing.xxl,
