@@ -184,7 +184,30 @@ jobs:
             echo "No state changes to commit."
           else
             git commit -m "Daily pipeline run $(date -u +%Y-%m-%d)"
-            git push
+            # The cron's 14-min runtime can race with manual pushes to
+            # main, which makes a naive `git push` fail with "rejected
+            # (fetch first)" and drops the day's work. Rebase the bot
+            # commit on top of whatever landed during the run, then
+            # push. Retry once if a second push arrives during the
+            # rebase window itself.
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main || {
+                echo "::error::Rebase failed unexpectedly — manual intervention required."
+                git rebase --abort || true
+                exit 1
+              }
+              if git push; then
+                echo "Pushed on attempt $attempt."
+                break
+              fi
+              if [ "$attempt" = "3" ]; then
+                echo "::error::Push still rejected after 3 attempts."
+                exit 1
+              fi
+              echo "Push rejected, refetching and retrying (attempt $((attempt + 1)))…"
+              sleep 5
+            done
           fi
 
       - name: Upload digest HTML as workflow artifact
