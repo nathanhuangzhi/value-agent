@@ -61,9 +61,14 @@ export function SidebarNav() {
   }, [industries, selectedSlug]);
 
   // Which ticker is currently shown in the right pane? Derived from the
-  // current URL segments: `/ticker/QDEL` → "QDEL".
-  const isOnTicker = segments[0] === 'ticker';
-  const activeTicker = isOnTicker && segments[1] ? segments[1].toUpperCase() : null;
+  // current URL segments: `/ticker/QDEL` → "QDEL". Cast through
+  // `readonly string[]` because expo-router's typed-routes feature
+  // returns a tuple union whose length-1 variant doesn't allow [1] —
+  // the generated router.d.ts that smooths this over is gitignored
+  // and therefore absent in CI.
+  const segs = segments as readonly string[];
+  const isOnTicker = segs[0] === 'ticker';
+  const activeTicker = isOnTicker && segs[1] ? segs[1].toUpperCase() : null;
 
   /**
    * Navigate to a ticker. If we're already on a ticker page we `replace`
