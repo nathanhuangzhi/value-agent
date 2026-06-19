@@ -22,7 +22,11 @@ data/*
 !data/companies_classify_failures.json
 !data/classify_probes.json
 !data/daily_industry_log.json
-!data/companies_sec.json
+# companies_sec.json is intentionally NOT whitelisted: SEC XBRL companyfacts
+# grew past GitHub's 100 MB per-file push limit (~05-29), which silently
+# rejected every daily commit-back (the pipeline kept emailing + publishing,
+# so the failure was invisible). It's free + idempotent to re-fetch, so we
+# regenerate it each run instead of persisting it in git history.
 !data/companies_yfinance.json
 !data/companies_validation.json
 !data/companies_digest.json
