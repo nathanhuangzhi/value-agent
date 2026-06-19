@@ -44,11 +44,12 @@ from app.tools.paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
-# How many `recent` digest entries to bake into the static file. The mobile
-# home screen displays 10; we bake a larger window so the client can scroll
-# back further without re-fetching, and so a near-term increase doesn't
-# require a workflow change.
-RECENT_DIGESTS_LIMIT = 20
+# How many `recent` digest entries to bake into the static file. We keep the
+# full history (one entry per industry-day) so the app never drops past dates
+# off the home feed — the funnel only adds ~one industry/day and tops out near
+# the ~120-industry universe, so the file stays small. A `None` slice (`[:None]`)
+# returns every entry.
+RECENT_DIGESTS_LIMIT = None
 
 
 def _write_json(path: Path, payload: dict) -> None:

@@ -25,7 +25,9 @@ export default function HomeScreen() {
   const totalTickers = industriesResp.data?.total_tickers ?? 0;
   const error = industriesResp.error;
   const [refreshing, setRefreshing] = useState(false);
-  const digests = useRecentDigests();
+  // Show the full history of past industry-days, not just a recent window —
+  // the baked file holds every entry (bake_api RECENT_DIGESTS_LIMIT = None).
+  const digests = useRecentDigests(Infinity);
   // On iPad-landscape the sidebar already has the industries list, so the
   // home screen suppresses its own copy to avoid duplication. The digest
   // banners (which the sidebar can't fit) still render at the top.
