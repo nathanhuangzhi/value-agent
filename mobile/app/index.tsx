@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { useIndustries, useRecentDigests } from '@/api/hooks';
 import { DigestBanner } from '@/components/DigestBanner';
 import { useIsTabletLandscape } from '@/hooks/useDeviceClass';
+import { useLastViewed } from '@/hooks/useLastViewed';
 import { useColors, fontSize, spacing, radii } from '@/theme/colors';
 
 export default function HomeScreen() {
@@ -28,6 +29,8 @@ export default function HomeScreen() {
   // Show the full history of past industry-days, not just a recent window —
   // the baked file holds every entry (bake_api RECENT_DIGESTS_LIMIT = None).
   const digests = useRecentDigests(Infinity);
+  // Highlight the industry the user opened last time.
+  const { lastIndustry } = useLastViewed();
   // On iPad-landscape the sidebar already has the industries list, so the
   // home screen suppresses its own copy to avoid duplication. The digest
   // banners (which the sidebar can't fit) still render at the top.
@@ -96,29 +99,41 @@ export default function HomeScreen() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
       }
-      renderItem={({ item }) => (
+      renderItem={({ item }) => {
+        const isLastViewed = item.slug === lastIndustry;
+        return (
         <Pressable
           onPress={() => router.push(`/industry/${item.slug}`)}
           style={({ pressed }) => [
             styles.industryRow,
             {
-              backgroundColor: pressed ? c.surface : c.background,
+              backgroundColor: pressed
+                ? c.surface
+                : isLastViewed
+                  ? c.statusOkBg
+                  : c.background,
               borderBottomColor: c.border,
+              borderLeftColor: isLastViewed ? c.brand : 'transparent',
             },
           ]}
         >
           <View style={{ flex: 1 }}>
             <Text style={[styles.industryName, { color: c.textPrimary }]}>{item.name}</Text>
-            <Text style={[styles.industryMeta, { color: c.textMuted }]}>
-              Last analyzed {item.latest_analyzed}
-            </Text>
+            {isLastViewed ? (
+              <Text style={[styles.lastViewed, { color: c.brand }]}>LAST VIEWED</Text>
+            ) : (
+              <Text style={[styles.industryMeta, { color: c.textMuted }]}>
+                Last analyzed {item.latest_analyzed}
+              </Text>
+            )}
           </View>
           <View style={styles.countWrap}>
             <Text style={[styles.count, { color: c.brand }]}>{item.ticker_count}</Text>
             <Text style={[styles.countLabel, { color: c.textMuted }]}>tickers</Text>
           </View>
         </Pressable>
-      )}
+        );
+      }}
     />
   );
 }
@@ -150,9 +165,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    // Constant left border (transparent unless highlighted) so toggling the
+    // last-viewed highlight never shifts row content sideways.
+    borderLeftWidth: 3,
   },
   industryName: { fontSize: fontSize.md, fontWeight: '600' },
   industryMeta: { fontSize: fontSize.xs, marginTop: 4, letterSpacing: 0.5 },
+  lastViewed: { fontSize: fontSize.xs, fontWeight: '700', letterSpacing: 1, marginTop: 4 },
   countWrap: { alignItems: 'flex-end', marginLeft: spacing.md },
   count: { fontSize: fontSize.xl, fontWeight: '700', fontVariant: ['tabular-nums'] },
   countLabel: { fontSize: fontSize.xs - 1, letterSpacing: 1 },

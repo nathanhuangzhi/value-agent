@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 
 import { useColors } from '@/theme/colors';
 import { useIsTabletLandscape } from '@/hooks/useDeviceClass';
+import { LastViewedProvider } from '@/hooks/useLastViewed';
 import { SplitLayout } from '@/components/SplitLayout';
 
 
@@ -25,6 +26,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <LastViewedProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {isTabletLandscape ? (
         <SplitLayout />
@@ -64,6 +66,7 @@ export default function RootLayout() {
           />
         </Stack>
       )}
+      </LastViewedProvider>
     </SafeAreaProvider>
   );
 }

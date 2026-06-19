@@ -13,6 +13,7 @@ import { api, ApiError } from '@/api/client';
 import type { IndustryDetailResponse } from '@/api/types';
 import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
+import { useLastViewed } from '@/hooks/useLastViewed';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 
 export default function IndustryScreen() {
@@ -20,9 +21,16 @@ export default function IndustryScreen() {
   const navigation = useNavigation();
   const device = useDeviceClass();
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { lastCompany, setLastIndustry } = useLastViewed();
   const [data, setData] = useState<IndustryDetailResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Remember this industry as the one viewed last, so the home screen
+  // highlights it on return.
+  useEffect(() => {
+    if (slug) setLastIndustry(slug);
+  }, [slug, setLastIndustry]);
 
   const load = useCallback(async () => {
     if (!slug) return;
@@ -99,7 +107,9 @@ export default function IndustryScreen() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
       }
-      renderItem={({ item }) => <TickerRow row={item} />}
+      renderItem={({ item }) => (
+        <TickerRow row={item} highlighted={item.ticker === lastCompany} />
+      )}
     />
   );
 }

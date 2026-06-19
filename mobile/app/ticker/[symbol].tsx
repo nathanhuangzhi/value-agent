@@ -49,6 +49,7 @@ import { Section } from '@/components/Section';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ValuationGrid } from '@/components/ValuationGrid';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
+import { useLastViewed } from '@/hooks/useLastViewed';
 import { useColors, fontSize, spacing, radii } from '@/theme/colors';
 import { formatDate, formatMoney } from '@/utils/format';
 
@@ -347,6 +348,13 @@ export default function TickerScreen() {
   }, [tickerList, initialSym, centerIndex]);
 
   const centerSymbol = centerIndex >= 0 ? tickerList[centerIndex] : initialSym;
+
+  // Remember the currently-centred ticker as the company viewed last, so its
+  // industry screen highlights it on return. Tracks swipes between siblings.
+  const { setLastCompany } = useLastViewed();
+  useEffect(() => {
+    if (centerSymbol) setLastCompany(centerSymbol);
+  }, [centerSymbol, setLastCompany]);
 
   // Nav title tracks the currently-centred ticker. Skip on iPad-landscape
   // (the SplitLayout renders without a Stack header).

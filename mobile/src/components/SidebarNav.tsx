@@ -36,6 +36,7 @@ import {
   useRecentDigests,
 } from '@/api/hooks';
 import type { IndustrySummary, TickerRow } from '@/api/types';
+import { useLastViewed } from '@/hooks/useLastViewed';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
 
@@ -50,6 +51,10 @@ export function SidebarNav() {
   const industriesResp = useIndustries();
   const industries = industriesResp.data?.industries ?? null;
   const error = industriesResp.error;
+
+  // Highlight the industry opened last time (this sidebar stands in for the
+  // home screen's industry list on iPad-landscape).
+  const { lastIndustry } = useLastViewed();
 
   // Track which industry is expanded in the sidebar. Defaults to the
   // most-recently-analyzed one once the list loads.
@@ -138,6 +143,7 @@ export function SidebarNav() {
           <IndustryRow
             industry={item}
             isSelected={selectedSlug === item.slug}
+            isLastViewed={item.slug === lastIndustry}
             onPress={() => setSelectedSlug(item.slug === selectedSlug ? null : item.slug)}
             activeTicker={activeTicker}
             onTickerPress={goToTicker}
@@ -155,12 +161,14 @@ export function SidebarNav() {
 function IndustryRow({
   industry,
   isSelected,
+  isLastViewed,
   onPress,
   activeTicker,
   onTickerPress,
 }: {
   industry: IndustrySummary;
   isSelected: boolean;
+  isLastViewed: boolean;
   onPress: () => void;
   activeTicker: string | null;
   onTickerPress: (ticker: string) => void;
@@ -174,8 +182,13 @@ function IndustryRow({
         style={({ pressed }) => [
           styles.industryRow,
           {
-            backgroundColor: pressed ? c.border : 'transparent',
+            backgroundColor: pressed
+              ? c.border
+              : isLastViewed
+                ? c.statusOkBg
+                : 'transparent',
             borderBottomColor: c.border,
+            borderLeftColor: isLastViewed ? c.brand : 'transparent',
           },
         ]}
       >
@@ -345,6 +358,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    // Constant left border (transparent unless last-viewed) — no layout shift.
+    borderLeftWidth: 3,
   },
   industryName: {
     fontSize: fontSize.sm,

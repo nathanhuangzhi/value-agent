@@ -38,7 +38,7 @@ export function TickerRowHeader() {
   );
 }
 
-export function TickerRow({ row }: { row: TickerRowData }) {
+export function TickerRow({ row, highlighted = false }: { row: TickerRowData; highlighted?: boolean }) {
   const c = useColors();
   const router = useRouter();
   const segments = useSegments();
@@ -61,13 +61,18 @@ export function TickerRow({ row }: { row: TickerRowData }) {
       style={({ pressed }) => [
         styles.row,
         {
-          backgroundColor: pressed ? c.surface : c.background,
+          backgroundColor: pressed
+            ? c.surface
+            : highlighted
+              ? c.statusOkBg
+              : c.background,
           borderBottomColor: c.border,
+          borderLeftColor: highlighted ? c.brand : 'transparent',
         },
       ]}
     >
       <View style={[styles.left, { flex: COL_FLEX.identity }]}>
-        <Text style={[styles.ticker, { color: c.textPrimary }]}>{row.ticker}</Text>
+        <Text style={[styles.ticker, { color: highlighted ? c.brand : c.textPrimary }]}>{row.ticker}</Text>
         <Text
           style={[styles.name, { color: c.textMuted }]}
           numberOfLines={1}
@@ -102,6 +107,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    // Constant left border (transparent unless highlighted) so the
+    // last-viewed highlight never shifts row content. The header shares
+    // this style, so columns stay aligned.
+    borderLeftWidth: 3,
   },
   left: { minWidth: 0 },
   kpiCell: { alignItems: 'flex-end', paddingHorizontal: spacing.xs },
