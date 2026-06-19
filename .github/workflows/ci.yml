@@ -20,6 +20,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Early-warning guard: GitHub hard-rejects any push containing a file >100 MB.
+  # When data/companies_sec.json silently crossed that line (~05-29), it blocked
+  # the daily pipeline's commit-back for 3 weeks while email/publish kept working,
+  # so the breakage was invisible. Fail loudly here once any tracked file gets
+  # within ~10 MB of the cliff, so the next file creeping toward it (e.g.
+  # companies_yfinance.json) trips this gate *before* it breaks the commit-back.
+  size-guard:
+    name: file size guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if any tracked file approaches the 100 MB push limit
+        run: |
+          set -euo pipefail
+          LIMIT_MB=90
+          fail=0
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            mb=$(( $(stat -c%s "$f") / 1024 / 1024 ))
+            if [ "$mb" -ge "$LIMIT_MB" ]; then
+              echo "::error file=$f::$f is ${mb} MB — within $((100 - LIMIT_MB)) MB of GitHub's 100 MB per-file push limit. Stop committing it (drop from the .gitignore whitelist + the daily.yml commit-back add-list) before it silently breaks the daily commit-back."
+              fail=1
+            fi
+          done < <(git ls-files)
+          [ "$fail" -eq 0 ] && echo "OK: no tracked file is within $((100 - LIMIT_MB)) MB of the 100 MB limit."
+          exit "$fail"
+
   pytest:
     name: pytest + lint
     runs-on: ubuntu-latest
