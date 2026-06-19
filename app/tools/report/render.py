@@ -9,7 +9,7 @@ import re
 
 from markdown_it import MarkdownIt
 
-from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE
+from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE_DIR
 from app.tools.report.charts import _chart_valuation_monthly
 from app.tools.report.format import (
     AMBER,
@@ -34,6 +34,7 @@ from app.tools.report.ratios import (
 )
 from app.tools.report.sec_adapter import (
     load_sec_by_ticker,
+    load_sharded_by_ticker,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
 )
@@ -52,11 +53,11 @@ def _get_sec_data() -> dict:
 
 
 def _get_yfinance_data() -> dict:
-    """Lazy-load companies_yfinance.json once per process. Same shape as
-    companies_sec.json — `load_sec_by_ticker` works for both."""
+    """Lazy-load the per-industry yfinance shards once per process, merged
+    into the same ticker-keyed dict the SEC monolith produces."""
     global _YF_DATA
     if _YF_DATA is None:
-        _YF_DATA = load_sec_by_ticker(COMPANIES_YFINANCE)
+        _YF_DATA = load_sharded_by_ticker(COMPANIES_YFINANCE_DIR)
     return _YF_DATA
 
 

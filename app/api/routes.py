@@ -26,13 +26,14 @@ from app.tools.paths import (
     COMPANIES_DIGEST,
     COMPANIES_SEC,
     COMPANIES_VALIDATION,
-    COMPANIES_YFINANCE,
+    COMPANIES_YFINANCE_DIR,
     DAILY_LOG,
 )
 from app.tools.report.format import latest_by_ticker
 from app.tools.report.ratios import compute_snapshot_ratios
 from app.tools.report.sec_adapter import (
     load_sec_by_ticker,
+    load_sharded_by_ticker,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
 )
@@ -46,7 +47,7 @@ class _DataPaths:
     fixture files instead of the real `data/` directory."""
     analyzed: Path = COMPANIES_ANALYZED
     sec: Path = COMPANIES_SEC
-    yfinance: Path = COMPANIES_YFINANCE
+    yfinance: Path = COMPANIES_YFINANCE_DIR   # directory of per-industry shards
     validation: Path = COMPANIES_VALIDATION
     daily_log: Path = DAILY_LOG
     digest: Path = COMPANIES_DIGEST
@@ -79,18 +80,33 @@ def _slug(s: str) -> str:
 _cache: dict[Path, tuple[int, object]] = {}
 
 
-def _mtime_load(path: Path, loader):
-    """Return `loader(path)`, memoized until the file's mtime changes."""
-    try:
-        mtime = path.stat().st_mtime_ns
-    except FileNotFoundError:
-        mtime = 0
+def _mtime_load(path: Path, loader, mtime_key=None):
+    """Return `loader(path)`, memoized until `mtime_key(path)` changes.
+
+    `mtime_key` defaults to the file's own mtime. Sharded inputs (a directory
+    of files) pass a key that folds in every shard's mtime, so editing any
+    shard busts the cache — a single dir mtime wouldn't change on file edits."""
+    if mtime_key is None:
+        try:
+            mtime = path.stat().st_mtime_ns
+        except FileNotFoundError:
+            mtime = 0
+    else:
+        mtime = mtime_key(path)
     cached = _cache.get(path)
     if cached is not None and cached[0] == mtime:
         return cached[1]
     payload = loader(path)
     _cache[path] = (mtime, payload)
     return payload
+
+
+def _dir_mtime(path: Path) -> int:
+    """Max mtime across a shard directory's *.json files (0 if absent)."""
+    try:
+        return max((p.stat().st_mtime_ns for p in path.glob("*.json")), default=0)
+    except (FileNotFoundError, NotADirectoryError):
+        return 0
 
 
 def _load_analyzed() -> dict:
@@ -115,8 +131,10 @@ def _load_sec() -> dict:
 
 
 def _load_yf() -> dict:
-    """mtime-cached yfinance sidecar (same shape + helper as SEC)."""
-    return _mtime_load(_paths.yfinance, load_sec_by_ticker)
+    """mtime-cached yfinance shards — a directory of per-industry files merged
+    into one ticker-keyed dict (same shape as the SEC sidecar). Cache key folds
+    in every shard's mtime so editing any one shard invalidates it."""
+    return _mtime_load(_paths.yfinance, load_sharded_by_ticker, mtime_key=_dir_mtime)
 
 
 def _blended_quarterly(sec_row, yf_row):

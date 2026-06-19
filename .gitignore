@@ -27,7 +27,11 @@ data/*
 # rejected every daily commit-back (the pipeline kept emailing + publishing,
 # so the failure was invisible). It's free + idempotent to re-fetch, so we
 # regenerate it each run instead of persisting it in git history.
-!data/companies_yfinance.json
+# yfinance is sharded one file per industry under data/yfinance/ (keeps every
+# file small — far under the 100 MB push limit — and daily diffs touch only
+# the scanned industry's shard). Whitelist the directory's JSON files.
+!data/yfinance/
+!data/yfinance/*.json
 !data/companies_validation.json
 !data/companies_digest.json
 *.egg-info/

@@ -314,3 +314,28 @@ def load_sec_by_ticker(path) -> dict:
     if not p.exists():
         return {}
     return {r["ticker"]: r for r in json.loads(p.read_text()) if r.get("ticker")}
+
+
+def load_sharded_by_ticker(dir_path) -> dict:
+    """Load a directory of same-shaped shard files (e.g. data/yfinance/<industry
+    -slug>.json) into one dict keyed by ticker — same return shape as
+    `load_sec_by_ticker`, so callers stay agnostic to monolith vs. shards.
+
+    On a duplicate ticker (e.g. one reclassified into a new industry while a
+    stale row lingers in its old shard), the row with the latest `fetched_at`
+    wins. A missing directory yields an empty dict."""
+    import json
+    from pathlib import Path
+    d = Path(dir_path)
+    if not d.is_dir():
+        return {}
+    out: dict = {}
+    for f in sorted(d.glob("*.json")):
+        for r in json.loads(f.read_text()):
+            t = r.get("ticker")
+            if not t:
+                continue
+            prev = out.get(t)
+            if prev is None or (r.get("fetched_at") or "") >= (prev.get("fetched_at") or ""):
+                out[t] = r
+    return out

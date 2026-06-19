@@ -180,7 +180,7 @@ jobs:
             data/companies_classify_failures.json \
             data/classify_probes.json \
             data/daily_industry_log.json \
-            data/companies_yfinance.json \
+            data/yfinance/ \
             data/companies_validation.json \
             data/companies_digest.json
           if git diff --staged --quiet; then
@@ -221,3 +221,26 @@ jobs:
           path: data/reports/_digest.html
           if-no-files-found: ignore
           retention-days: 14
+
+      # Independent off-git backup of the yfinance shards. They're already
+      # committed to the repo, but a Release asset is a second, standalone
+      # copy that survives even if we ever stop tracking them in git (as we
+      # had to for companies_sec.json). One rolling asset on a fixed tag,
+      # overwritten each run (--clobber) — the latest snapshot, not history.
+      - name: Back up yfinance shards to a Release asset
+        if: ${{ always() && !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ! -d data/yfinance ]; then
+            echo "No data/yfinance dir — skipping backup."
+            exit 0
+          fi
+          tar -czf yfinance-shards.tar.gz -C data yfinance
+          gh release view yfinance-data >/dev/null 2>&1 || \
+            gh release create yfinance-data \
+              --title "yfinance data backup" \
+              --notes "Rolling backup of data/yfinance/ shards. Latest daily run wins (asset is overwritten each run). Restore: gh release download yfinance-data && tar -xzf yfinance-shards.tar.gz -C data"
+          gh release upload yfinance-data yfinance-shards.tar.gz --clobber
+          echo "Uploaded yfinance-shards.tar.gz ($(du -h yfinance-shards.tar.gz | cut -f1)) to release 'yfinance-data'."

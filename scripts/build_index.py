@@ -29,7 +29,7 @@ from app.tools.paths import (
     COMPANIES_ANALYZED,
     COMPANIES_SEC,
     COMPANIES_VALIDATION,
-    COMPANIES_YFINANCE,
+    COMPANIES_YFINANCE_DIR,
     DATA_DIR,
 )
 
@@ -47,6 +47,7 @@ from app.tools.report.format import (
 from app.tools.report.ratios import compute_snapshot_ratios
 from app.tools.report.sec_adapter import (
     load_sec_by_ticker,
+    load_sharded_by_ticker,
     sec_to_yfinance_quarterly,
 )
 
@@ -72,7 +73,7 @@ def _collect_rows(reports_dir: Path) -> list[dict]:
     # Same blended SEC+yfinance pipeline the report renderer uses — keep
     # the index table consistent with each ticker's KPI grid.
     sec_by_ticker = load_sec_by_ticker(COMPANIES_SEC)
-    yf_by_ticker = load_sec_by_ticker(COMPANIES_YFINANCE)
+    yf_by_ticker = load_sharded_by_ticker(COMPANIES_YFINANCE_DIR)
 
     rows = []
     for html_path in sorted(reports_dir.glob("*.html")):

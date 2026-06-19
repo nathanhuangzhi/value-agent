@@ -21,7 +21,7 @@ def fake_data(tmp_path, monkeypatch):
     paths = routes._DataPaths(
         analyzed=tmp_path / "companies_analyzed.json",
         sec=tmp_path / "companies_sec.json",
-        yfinance=tmp_path / "companies_yfinance.json",
+        yfinance=tmp_path / "yfinance",   # directory of per-industry shards
         validation=tmp_path / "companies_validation.json",
         daily_log=tmp_path / "daily_industry_log.json",
         digest=tmp_path / "companies_digest.json",
@@ -75,7 +75,7 @@ def fake_data(tmp_path, monkeypatch):
         ]},
     ]))
     paths.sec.write_text(json.dumps([]))
-    paths.yfinance.write_text(json.dumps([]))
+    paths.yfinance.mkdir()   # empty shard dir → loader returns {}
     paths.daily_log.write_text(json.dumps([
         {"date": "2026-05-09", "industries": ["Medical Devices"],
          "tickers": ["QDEL", "INGN"]},
