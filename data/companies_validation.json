@@ -1,7 +1,7 @@
 [
   {
     "ticker": "ACON",
-    "checked_at": "2026-06-19T14:20:32.383370+00:00",
+    "checked_at": "2026-06-19T15:59:12.456654+00:00",
     "status": "info",
     "issues": [
       {
@@ -23,19 +23,24 @@
   },
   {
     "ticker": "ADGM",
-    "checked_at": "2026-06-19T14:20:32.383442+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.456712+00:00",
+    "status": "warn",
     "issues": [
       {
         "severity": "info",
         "rule": "zero_annual_revenue",
         "detail": "FY2025 reported revenue is 0 — pre-revenue stage"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       }
     ]
   },
   {
     "ticker": "AEMD",
-    "checked_at": "2026-06-19T14:20:32.383619+00:00",
+    "checked_at": "2026-06-19T15:59:12.456936+00:00",
     "status": "warn",
     "issues": [
       {
@@ -57,17 +62,12 @@
         "severity": "info",
         "rule": "eps_mismatch",
         "detail": "FY2017 reported EPS -0.10 vs NI/shares -0.46 (-361%)"
-      },
-      {
-        "severity": "info",
-        "rule": "mcap_reconciliation",
-        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-58%)"
       }
     ]
   },
   {
     "ticker": "AEVA",
-    "checked_at": "2026-06-19T14:20:32.383723+00:00",
+    "checked_at": "2026-06-19T15:59:12.457066+00:00",
     "status": "warn",
     "issues": [
       {
@@ -104,7 +104,7 @@
   },
   {
     "ticker": "AEYE",
-    "checked_at": "2026-06-19T14:20:32.383968+00:00",
+    "checked_at": "2026-06-19T15:59:12.457405+00:00",
     "status": "info",
     "issues": [
       {
@@ -116,7 +116,7 @@
   },
   {
     "ticker": "AGPU",
-    "checked_at": "2026-06-19T14:20:32.384229+00:00",
+    "checked_at": "2026-06-19T15:59:12.457758+00:00",
     "status": "info",
     "issues": [
       {
@@ -143,7 +143,7 @@
   },
   {
     "ticker": "AIB",
-    "checked_at": "2026-06-19T14:20:32.384250+00:00",
+    "checked_at": "2026-06-19T15:59:12.457784+00:00",
     "status": "error",
     "issues": [
       {
@@ -185,9 +185,14 @@
   },
   {
     "ticker": "AIDX",
-    "checked_at": "2026-06-19T14:20:32.384279+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.457817+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "missing_quarterly_net_income",
+        "detail": "no quarterly Net Income — TTM metrics will be n/a"
+      },
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
@@ -197,13 +202,18 @@
   },
   {
     "ticker": "AIFC",
-    "checked_at": "2026-06-19T14:20:32.384562+00:00",
+    "checked_at": "2026-06-19T15:59:12.458172+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2025 |Net Income| -345M > 1.5× Revenue 25M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-27 is 265 days old (>180)"
       },
       {
         "severity": "info",
@@ -229,7 +239,7 @@
   },
   {
     "ticker": "AIFF",
-    "checked_at": "2026-06-19T14:20:32.384852+00:00",
+    "checked_at": "2026-06-19T15:59:12.458533+00:00",
     "status": "warn",
     "issues": [
       {
@@ -246,7 +256,7 @@
   },
   {
     "ticker": "AIOT",
-    "checked_at": "2026-06-19T14:20:32.384990+00:00",
+    "checked_at": "2026-06-19T15:59:12.458694+00:00",
     "status": "info",
     "issues": [
       {
@@ -257,7 +267,7 @@
       {
         "severity": "info",
         "rule": "eps_mismatch",
-        "detail": "FY2022 reported EPS -0.49 vs NI/shares -0.19 (+61%)"
+        "detail": "FY2022 reported EPS -0.48 vs NI/shares -0.19 (+60%)"
       },
       {
         "severity": "info",
@@ -278,7 +288,7 @@
   },
   {
     "ticker": "AIRE",
-    "checked_at": "2026-06-19T14:20:32.385043+00:00",
+    "checked_at": "2026-06-19T15:59:12.458758+00:00",
     "status": "info",
     "issues": [
       {
@@ -295,7 +305,7 @@
   },
   {
     "ticker": "AIRI",
-    "checked_at": "2026-06-19T14:20:32.385283+00:00",
+    "checked_at": "2026-06-19T15:59:12.459108+00:00",
     "status": "info",
     "issues": [
       {
@@ -327,7 +337,7 @@
   },
   {
     "ticker": "AIRO",
-    "checked_at": "2026-06-19T14:20:32.385316+00:00",
+    "checked_at": "2026-06-19T15:59:12.459149+00:00",
     "status": "info",
     "issues": [
       {
@@ -339,7 +349,7 @@
   },
   {
     "ticker": "AISP",
-    "checked_at": "2026-06-19T14:20:32.385372+00:00",
+    "checked_at": "2026-06-19T15:59:12.459218+00:00",
     "status": "warn",
     "issues": [
       {
@@ -356,7 +366,7 @@
   },
   {
     "ticker": "AIXC",
-    "checked_at": "2026-06-19T14:20:32.385471+00:00",
+    "checked_at": "2026-06-19T15:59:12.459318+00:00",
     "status": "warn",
     "issues": [
       {
@@ -408,7 +418,7 @@
   },
   {
     "ticker": "AKBA",
-    "checked_at": "2026-06-19T14:20:32.385627+00:00",
+    "checked_at": "2026-06-19T15:59:12.459520+00:00",
     "status": "warn",
     "issues": [
       {
@@ -435,7 +445,7 @@
   },
   {
     "ticker": "ALBT",
-    "checked_at": "2026-06-19T14:20:32.385754+00:00",
+    "checked_at": "2026-06-19T15:59:12.459682+00:00",
     "status": "warn",
     "issues": [
       {
@@ -462,7 +472,7 @@
   },
   {
     "ticker": "ALIT",
-    "checked_at": "2026-06-19T14:20:32.385827+00:00",
+    "checked_at": "2026-06-19T15:59:12.459779+00:00",
     "status": "info",
     "issues": [
       {
@@ -479,13 +489,18 @@
   },
   {
     "ticker": "ALTS",
-    "checked_at": "2026-06-19T14:20:32.386080+00:00",
+    "checked_at": "2026-06-19T15:59:12.460123+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2025 |Net Income| -345M > 1.5× Revenue 25M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-27 is 265 days old (>180)"
       },
       {
         "severity": "info",
@@ -511,13 +526,13 @@
   },
   {
     "ticker": "AMIX",
-    "checked_at": "2026-06-19T14:20:32.386112+00:00",
+    "checked_at": "2026-06-19T15:59:12.460160+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "info",
         "rule": "zero_annual_revenue",
-        "detail": "FY2025 reported revenue is 0 — pre-revenue stage"
+        "detail": "FY2024 reported revenue is 0 — pre-revenue stage"
       },
       {
         "severity": "warn",
@@ -527,13 +542,13 @@
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
-        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-42%)"
+        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-86%)"
       }
     ]
   },
   {
     "ticker": "AMOD",
-    "checked_at": "2026-06-19T14:20:32.386140+00:00",
+    "checked_at": "2026-06-19T15:59:12.460199+00:00",
     "status": "info",
     "issues": [
       {
@@ -545,7 +560,7 @@
   },
   {
     "ticker": "AMPL",
-    "checked_at": "2026-06-19T14:20:32.386219+00:00",
+    "checked_at": "2026-06-19T15:59:12.460331+00:00",
     "status": "error",
     "issues": [
       {
@@ -557,7 +572,7 @@
   },
   {
     "ticker": "AMPY",
-    "checked_at": "2026-06-19T14:20:32.386504+00:00",
+    "checked_at": "2026-06-19T15:59:12.460704+00:00",
     "status": "warn",
     "issues": [
       {
@@ -589,7 +604,7 @@
   },
   {
     "ticker": "AMST",
-    "checked_at": "2026-06-19T14:20:32.386584+00:00",
+    "checked_at": "2026-06-19T15:59:12.460803+00:00",
     "status": "warn",
     "issues": [
       {
@@ -606,7 +621,7 @@
   },
   {
     "ticker": "AMWD",
-    "checked_at": "2026-06-19T14:20:32.386894+00:00",
+    "checked_at": "2026-06-19T15:59:12.461247+00:00",
     "status": "warn",
     "issues": [
       {
@@ -623,7 +638,7 @@
   },
   {
     "ticker": "AMWL",
-    "checked_at": "2026-06-19T14:20:32.386993+00:00",
+    "checked_at": "2026-06-19T15:59:12.461379+00:00",
     "status": "warn",
     "issues": [
       {
@@ -635,7 +650,7 @@
   },
   {
     "ticker": "AMZE",
-    "checked_at": "2026-06-19T14:20:32.387060+00:00",
+    "checked_at": "2026-06-19T15:59:12.461466+00:00",
     "status": "warn",
     "issues": [
       {
@@ -657,7 +672,7 @@
   },
   {
     "ticker": "ANGI",
-    "checked_at": "2026-06-19T14:20:32.387223+00:00",
+    "checked_at": "2026-06-19T15:59:12.461692+00:00",
     "status": "error",
     "issues": [
       {
@@ -669,7 +684,7 @@
   },
   {
     "ticker": "ANGO",
-    "checked_at": "2026-06-19T14:20:32.387555+00:00",
+    "checked_at": "2026-06-19T15:59:12.462124+00:00",
     "status": "warn",
     "issues": [
       {
@@ -696,7 +711,7 @@
   },
   {
     "ticker": "ANIK",
-    "checked_at": "2026-06-19T14:20:32.387891+00:00",
+    "checked_at": "2026-06-19T15:59:12.462582+00:00",
     "status": "info",
     "issues": [
       {
@@ -723,7 +738,7 @@
   },
   {
     "ticker": "ANNA",
-    "checked_at": "2026-06-19T14:20:32.387932+00:00",
+    "checked_at": "2026-06-19T15:59:12.462633+00:00",
     "status": "warn",
     "issues": [
       {
@@ -745,7 +760,7 @@
   },
   {
     "ticker": "ANY",
-    "checked_at": "2026-06-19T14:20:32.388057+00:00",
+    "checked_at": "2026-06-19T15:59:12.462804+00:00",
     "status": "warn",
     "issues": [
       {
@@ -772,7 +787,7 @@
   },
   {
     "ticker": "API",
-    "checked_at": "2026-06-19T14:20:32.388083+00:00",
+    "checked_at": "2026-06-19T15:59:12.462837+00:00",
     "status": "error",
     "issues": [
       {
@@ -819,7 +834,7 @@
   },
   {
     "ticker": "APPS",
-    "checked_at": "2026-06-19T14:20:32.388381+00:00",
+    "checked_at": "2026-06-19T15:59:12.463243+00:00",
     "status": "warn",
     "issues": [
       {
@@ -846,7 +861,7 @@
   },
   {
     "ticker": "APYX",
-    "checked_at": "2026-06-19T14:20:32.388737+00:00",
+    "checked_at": "2026-06-19T15:59:12.463707+00:00",
     "status": "warn",
     "issues": [
       {
@@ -893,7 +908,7 @@
   },
   {
     "ticker": "AQST",
-    "checked_at": "2026-06-19T14:20:32.388875+00:00",
+    "checked_at": "2026-06-19T15:59:12.463896+00:00",
     "status": "warn",
     "issues": [
       {
@@ -905,13 +920,13 @@
   },
   {
     "ticker": "ARAY",
-    "checked_at": "2026-06-19T14:20:32.389182+00:00",
+    "checked_at": "2026-06-19T15:59:12.464372+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "AREN",
-    "checked_at": "2026-06-19T14:20:32.389326+00:00",
+    "checked_at": "2026-06-19T15:59:12.464570+00:00",
     "status": "warn",
     "issues": [
       {
@@ -953,7 +968,7 @@
   },
   {
     "ticker": "ARKR",
-    "checked_at": "2026-06-19T14:20:32.389620+00:00",
+    "checked_at": "2026-06-19T15:59:12.464979+00:00",
     "status": "warn",
     "issues": [
       {
@@ -970,7 +985,7 @@
   },
   {
     "ticker": "ARL",
-    "checked_at": "2026-06-19T14:20:32.389809+00:00",
+    "checked_at": "2026-06-19T15:59:12.465257+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1022,7 +1037,7 @@
   },
   {
     "ticker": "ASRT",
-    "checked_at": "2026-06-19T14:20:32.389904+00:00",
+    "checked_at": "2026-06-19T15:59:12.465392+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1034,7 +1049,7 @@
   },
   {
     "ticker": "ASUR",
-    "checked_at": "2026-06-19T14:20:32.390145+00:00",
+    "checked_at": "2026-06-19T15:59:12.465750+00:00",
     "status": "info",
     "issues": [
       {
@@ -1046,7 +1061,7 @@
   },
   {
     "ticker": "ATCH",
-    "checked_at": "2026-06-19T14:20:32.390176+00:00",
+    "checked_at": "2026-06-19T15:59:12.465792+00:00",
     "status": "error",
     "issues": [
       {
@@ -1063,13 +1078,13 @@
   },
   {
     "ticker": "ATER",
-    "checked_at": "2026-06-19T14:20:32.390272+00:00",
+    "checked_at": "2026-06-19T15:59:12.465930+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "ATHR",
-    "checked_at": "2026-06-19T14:20:32.390303+00:00",
+    "checked_at": "2026-06-19T15:59:12.465971+00:00",
     "status": "error",
     "issues": [
       {
@@ -1081,7 +1096,7 @@
   },
   {
     "ticker": "AUID",
-    "checked_at": "2026-06-19T14:20:32.390458+00:00",
+    "checked_at": "2026-06-19T15:59:12.466183+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1103,7 +1118,7 @@
   },
   {
     "ticker": "AUUD",
-    "checked_at": "2026-06-19T14:20:32.390513+00:00",
+    "checked_at": "2026-06-19T15:59:12.466254+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1125,7 +1140,7 @@
   },
   {
     "ticker": "AWRE",
-    "checked_at": "2026-06-19T14:20:32.390846+00:00",
+    "checked_at": "2026-06-19T15:59:12.466738+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1162,7 +1177,7 @@
   },
   {
     "ticker": "AYTU",
-    "checked_at": "2026-06-19T14:20:32.391031+00:00",
+    "checked_at": "2026-06-19T15:59:12.466996+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1179,7 +1194,7 @@
   },
   {
     "ticker": "AZTA",
-    "checked_at": "2026-06-19T14:20:32.391335+00:00",
+    "checked_at": "2026-06-19T15:59:12.467440+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1206,7 +1221,7 @@
   },
   {
     "ticker": "BATL",
-    "checked_at": "2026-06-19T14:20:32.391617+00:00",
+    "checked_at": "2026-06-19T15:59:12.467817+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1268,7 +1283,7 @@
   },
   {
     "ticker": "BBNX",
-    "checked_at": "2026-06-19T14:20:32.391663+00:00",
+    "checked_at": "2026-06-19T15:59:12.467873+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1285,7 +1300,7 @@
   },
   {
     "ticker": "BDL",
-    "checked_at": "2026-06-19T14:20:32.391991+00:00",
+    "checked_at": "2026-06-19T15:59:12.468358+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1297,7 +1312,7 @@
   },
   {
     "ticker": "BEAT",
-    "checked_at": "2026-06-19T14:20:32.392021+00:00",
+    "checked_at": "2026-06-19T15:59:12.468400+00:00",
     "status": "error",
     "issues": [
       {
@@ -1319,7 +1334,7 @@
   },
   {
     "ticker": "BFRG",
-    "checked_at": "2026-06-19T14:20:32.392058+00:00",
+    "checked_at": "2026-06-19T15:59:12.468448+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1336,7 +1351,7 @@
   },
   {
     "ticker": "BFRI",
-    "checked_at": "2026-06-19T14:20:32.392135+00:00",
+    "checked_at": "2026-06-19T15:59:12.468551+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1363,7 +1378,7 @@
   },
   {
     "ticker": "BGDE",
-    "checked_at": "2026-06-19T14:20:32.392256+00:00",
+    "checked_at": "2026-06-19T15:59:12.468717+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1405,13 +1420,13 @@
   },
   {
     "ticker": "BGS",
-    "checked_at": "2026-06-19T14:20:32.392607+00:00",
+    "checked_at": "2026-06-19T15:59:12.469210+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BH",
-    "checked_at": "2026-06-19T14:20:32.392727+00:00",
+    "checked_at": "2026-06-19T15:59:12.469380+00:00",
     "status": "error",
     "issues": [
       {
@@ -1428,7 +1443,7 @@
   },
   {
     "ticker": "BH-A",
-    "checked_at": "2026-06-19T14:20:32.392843+00:00",
+    "checked_at": "2026-06-19T15:59:12.469546+00:00",
     "status": "error",
     "issues": [
       {
@@ -1445,7 +1460,7 @@
   },
   {
     "ticker": "BIOA",
-    "checked_at": "2026-06-19T14:20:32.392872+00:00",
+    "checked_at": "2026-06-19T15:59:12.469585+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1457,7 +1472,7 @@
   },
   {
     "ticker": "BJDX",
-    "checked_at": "2026-06-19T14:20:32.392908+00:00",
+    "checked_at": "2026-06-19T15:59:12.469632+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1479,13 +1494,13 @@
   },
   {
     "ticker": "BJRI",
-    "checked_at": "2026-06-19T14:20:32.393244+00:00",
+    "checked_at": "2026-06-19T15:59:12.470124+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BKKT",
-    "checked_at": "2026-06-19T14:20:32.393319+00:00",
+    "checked_at": "2026-06-19T15:59:12.470226+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1542,7 +1557,7 @@
   },
   {
     "ticker": "BLIN",
-    "checked_at": "2026-06-19T14:20:32.393608+00:00",
+    "checked_at": "2026-06-19T15:59:12.470615+00:00",
     "status": "info",
     "issues": [
       {
@@ -1579,7 +1594,7 @@
   },
   {
     "ticker": "BLMN",
-    "checked_at": "2026-06-19T14:20:32.393924+00:00",
+    "checked_at": "2026-06-19T15:59:12.471078+00:00",
     "status": "info",
     "issues": [
       {
@@ -1591,7 +1606,7 @@
   },
   {
     "ticker": "BLND",
-    "checked_at": "2026-06-19T14:20:32.394014+00:00",
+    "checked_at": "2026-06-19T15:59:12.471201+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1633,13 +1648,13 @@
   },
   {
     "ticker": "BLZE",
-    "checked_at": "2026-06-19T14:20:32.394084+00:00",
+    "checked_at": "2026-06-19T15:59:12.471294+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BMBL",
-    "checked_at": "2026-06-19T14:20:32.394173+00:00",
+    "checked_at": "2026-06-19T15:59:12.471401+00:00",
     "status": "info",
     "issues": [
       {
@@ -1661,19 +1676,19 @@
   },
   {
     "ticker": "BMRA",
-    "checked_at": "2026-06-19T14:20:32.394436+00:00",
+    "checked_at": "2026-06-19T15:59:12.471757+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BNAI",
-    "checked_at": "2026-06-19T14:20:32.394478+00:00",
+    "checked_at": "2026-06-19T15:59:12.471810+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BNGO",
-    "checked_at": "2026-06-19T14:20:32.394620+00:00",
+    "checked_at": "2026-06-19T15:59:12.472007+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1715,19 +1730,19 @@
   },
   {
     "ticker": "BODI",
-    "checked_at": "2026-06-19T14:20:32.394699+00:00",
+    "checked_at": "2026-06-19T15:59:12.472122+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BOF",
-    "checked_at": "2026-06-19T14:20:32.394745+00:00",
+    "checked_at": "2026-06-19T15:59:12.472185+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BRCB",
-    "checked_at": "2026-06-19T14:20:32.394778+00:00",
+    "checked_at": "2026-06-19T15:59:12.472229+00:00",
     "status": "info",
     "issues": [
       {
@@ -1739,19 +1754,19 @@
   },
   {
     "ticker": "BRCC",
-    "checked_at": "2026-06-19T14:20:32.394848+00:00",
+    "checked_at": "2026-06-19T15:59:12.472328+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BRID",
-    "checked_at": "2026-06-19T14:20:32.395100+00:00",
+    "checked_at": "2026-06-19T15:59:12.472696+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "BRN",
-    "checked_at": "2026-06-19T14:20:32.395365+00:00",
+    "checked_at": "2026-06-19T15:59:12.473056+00:00",
     "status": "info",
     "issues": [
       {
@@ -1763,7 +1778,7 @@
   },
   {
     "ticker": "BRR",
-    "checked_at": "2026-06-19T14:20:32.395383+00:00",
+    "checked_at": "2026-06-19T15:59:12.473090+00:00",
     "status": "error",
     "issues": [
       {
@@ -1795,7 +1810,7 @@
   },
   {
     "ticker": "BSET",
-    "checked_at": "2026-06-19T14:20:32.395738+00:00",
+    "checked_at": "2026-06-19T15:59:12.473550+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1807,7 +1822,7 @@
   },
   {
     "ticker": "BTAI",
-    "checked_at": "2026-06-19T14:20:32.395803+00:00",
+    "checked_at": "2026-06-19T15:59:12.473637+00:00",
     "status": "info",
     "issues": [
       {
@@ -1819,7 +1834,7 @@
   },
   {
     "ticker": "BTBD",
-    "checked_at": "2026-06-19T14:20:32.395889+00:00",
+    "checked_at": "2026-06-19T15:59:12.473753+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1836,7 +1851,7 @@
   },
   {
     "ticker": "BTBT",
-    "checked_at": "2026-06-19T14:20:32.395942+00:00",
+    "checked_at": "2026-06-19T15:59:12.473825+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1858,7 +1873,7 @@
   },
   {
     "ticker": "BTCS",
-    "checked_at": "2026-06-19T14:20:32.396148+00:00",
+    "checked_at": "2026-06-19T15:59:12.474115+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1900,7 +1915,7 @@
   },
   {
     "ticker": "BTM",
-    "checked_at": "2026-06-19T14:20:32.396200+00:00",
+    "checked_at": "2026-06-19T15:59:12.474185+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1917,7 +1932,7 @@
   },
   {
     "ticker": "BVS",
-    "checked_at": "2026-06-19T14:20:32.396286+00:00",
+    "checked_at": "2026-06-19T15:59:12.474297+00:00",
     "status": "info",
     "issues": [
       {
@@ -1939,7 +1954,7 @@
   },
   {
     "ticker": "BYND",
-    "checked_at": "2026-06-19T14:20:32.396429+00:00",
+    "checked_at": "2026-06-19T15:59:12.474473+00:00",
     "status": "warn",
     "issues": [
       {
@@ -1976,7 +1991,7 @@
   },
   {
     "ticker": "BYRN",
-    "checked_at": "2026-06-19T14:20:32.396633+00:00",
+    "checked_at": "2026-06-19T15:59:12.474756+00:00",
     "status": "info",
     "issues": [
       {
@@ -1998,7 +2013,7 @@
   },
   {
     "ticker": "BZAI",
-    "checked_at": "2026-06-19T14:20:32.396674+00:00",
+    "checked_at": "2026-06-19T15:59:12.474808+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2020,7 +2035,7 @@
   },
   {
     "ticker": "BZFD",
-    "checked_at": "2026-06-19T14:20:32.396758+00:00",
+    "checked_at": "2026-06-19T15:59:12.474918+00:00",
     "status": "info",
     "issues": [
       {
@@ -2042,7 +2057,7 @@
   },
   {
     "ticker": "CABR",
-    "checked_at": "2026-06-19T14:20:32.396781+00:00",
+    "checked_at": "2026-06-19T15:59:12.474948+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2054,7 +2069,7 @@
   },
   {
     "ticker": "CANG",
-    "checked_at": "2026-06-19T14:20:32.396808+00:00",
+    "checked_at": "2026-06-19T15:59:12.474982+00:00",
     "status": "error",
     "issues": [
       {
@@ -2101,7 +2116,7 @@
   },
   {
     "ticker": "CARL",
-    "checked_at": "2026-06-19T14:20:32.396840+00:00",
+    "checked_at": "2026-06-19T15:59:12.475023+00:00",
     "status": "info",
     "issues": [
       {
@@ -2113,13 +2128,13 @@
   },
   {
     "ticker": "CARS",
-    "checked_at": "2026-06-19T14:20:32.397006+00:00",
+    "checked_at": "2026-06-19T15:59:12.475260+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CATX",
-    "checked_at": "2026-06-19T14:20:32.397224+00:00",
+    "checked_at": "2026-06-19T15:59:12.475572+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2146,19 +2161,19 @@
   },
   {
     "ticker": "CBLL",
-    "checked_at": "2026-06-19T14:20:32.397261+00:00",
+    "checked_at": "2026-06-19T15:59:12.475620+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CBRL",
-    "checked_at": "2026-06-19T14:20:32.397627+00:00",
+    "checked_at": "2026-06-19T15:59:12.476144+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CCLD",
-    "checked_at": "2026-06-19T14:20:32.397840+00:00",
+    "checked_at": "2026-06-19T15:59:12.476498+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2220,7 +2235,7 @@
   },
   {
     "ticker": "CCSI",
-    "checked_at": "2026-06-19T14:20:32.397919+00:00",
+    "checked_at": "2026-06-19T15:59:12.476607+00:00",
     "status": "info",
     "issues": [
       {
@@ -2232,13 +2247,13 @@
   },
   {
     "ticker": "CD",
-    "checked_at": "2026-06-19T14:20:32.397955+00:00",
+    "checked_at": "2026-06-19T15:59:12.476655+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CERS",
-    "checked_at": "2026-06-19T14:20:32.398198+00:00",
+    "checked_at": "2026-06-19T15:59:12.476975+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2285,7 +2300,7 @@
   },
   {
     "ticker": "CERT",
-    "checked_at": "2026-06-19T14:20:32.398284+00:00",
+    "checked_at": "2026-06-19T15:59:12.477099+00:00",
     "status": "info",
     "issues": [
       {
@@ -2297,7 +2312,7 @@
   },
   {
     "ticker": "CETX",
-    "checked_at": "2026-06-19T14:20:32.398578+00:00",
+    "checked_at": "2026-06-19T15:59:12.477474+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2354,7 +2369,7 @@
   },
   {
     "ticker": "CHAI",
-    "checked_at": "2026-06-19T14:20:32.398604+00:00",
+    "checked_at": "2026-06-19T15:59:12.477507+00:00",
     "status": "error",
     "issues": [
       {
@@ -2401,7 +2416,7 @@
   },
   {
     "ticker": "CHCI",
-    "checked_at": "2026-06-19T14:20:32.398746+00:00",
+    "checked_at": "2026-06-19T15:59:12.477690+00:00",
     "status": "info",
     "issues": [
       {
@@ -2438,7 +2453,7 @@
   },
   {
     "ticker": "CISO",
-    "checked_at": "2026-06-19T14:20:32.398862+00:00",
+    "checked_at": "2026-06-19T15:59:12.477827+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2485,7 +2500,7 @@
   },
   {
     "ticker": "CKX",
-    "checked_at": "2026-06-19T14:20:32.399113+00:00",
+    "checked_at": "2026-06-19T15:59:12.478202+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2497,19 +2512,25 @@
   },
   {
     "ticker": "CLNN",
-    "checked_at": "2026-06-19T14:20:32.399184+00:00",
+    "checked_at": "2026-06-19T15:59:12.478300+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CLPT",
-    "checked_at": "2026-06-19T14:20:32.399458+00:00",
-    "status": "ok",
-    "issues": []
+    "checked_at": "2026-06-19T15:59:12.478661+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      }
+    ]
   },
   {
     "ticker": "CMRC",
-    "checked_at": "2026-06-19T14:20:32.399572+00:00",
+    "checked_at": "2026-06-19T15:59:12.478805+00:00",
     "status": "info",
     "issues": [
       {
@@ -2526,7 +2547,7 @@
   },
   {
     "ticker": "CNDT",
-    "checked_at": "2026-06-19T14:20:32.399744+00:00",
+    "checked_at": "2026-06-19T15:59:12.479130+00:00",
     "status": "info",
     "issues": [
       {
@@ -2563,7 +2584,7 @@
   },
   {
     "ticker": "CNNE",
-    "checked_at": "2026-06-19T14:20:32.399898+00:00",
+    "checked_at": "2026-06-19T15:59:12.479458+00:00",
     "status": "info",
     "issues": [
       {
@@ -2595,7 +2616,7 @@
   },
   {
     "ticker": "COCH",
-    "checked_at": "2026-06-19T14:20:32.399950+00:00",
+    "checked_at": "2026-06-19T15:59:12.479560+00:00",
     "status": "info",
     "issues": [
       {
@@ -2617,15 +2638,20 @@
   },
   {
     "ticker": "CODA",
-    "checked_at": "2026-06-19T14:20:32.400121+00:00",
+    "checked_at": "2026-06-19T15:59:12.479925+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CODX",
-    "checked_at": "2026-06-19T14:20:32.400240+00:00",
+    "checked_at": "2026-06-19T15:59:12.480183+00:00",
     "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "warn",
         "rule": "yoy_revenue_jump",
@@ -2640,7 +2666,7 @@
   },
   {
     "ticker": "COHN",
-    "checked_at": "2026-06-19T14:20:32.400569+00:00",
+    "checked_at": "2026-06-19T15:59:12.480867+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2737,7 +2763,7 @@
   },
   {
     "ticker": "COOK",
-    "checked_at": "2026-06-19T14:20:32.400655+00:00",
+    "checked_at": "2026-06-19T15:59:12.481039+00:00",
     "status": "info",
     "issues": [
       {
@@ -2749,7 +2775,7 @@
   },
   {
     "ticker": "CPIX",
-    "checked_at": "2026-06-19T14:20:32.401008+00:00",
+    "checked_at": "2026-06-19T15:59:12.481856+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2760,8 +2786,30 @@
     ]
   },
   {
+    "ticker": "CPS",
+    "checked_at": "2026-06-19T15:59:12.482454+00:00",
+    "status": "info",
+    "issues": [
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2011 reported EPS 3.93 vs NI/shares 5.36 (+37%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2012 reported EPS 4.14 vs NI/shares 5.55 (+34%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2013 reported EPS 2.24 vs NI/shares 3.05 (+36%)"
+      }
+    ]
+  },
+  {
     "ticker": "CREX",
-    "checked_at": "2026-06-19T14:20:32.401302+00:00",
+    "checked_at": "2026-06-19T15:59:12.483027+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2788,7 +2836,7 @@
   },
   {
     "ticker": "CRNC",
-    "checked_at": "2026-06-19T14:20:32.401421+00:00",
+    "checked_at": "2026-06-19T15:59:12.483234+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2800,7 +2848,7 @@
   },
   {
     "ticker": "CRT",
-    "checked_at": "2026-06-19T14:20:32.401451+00:00",
+    "checked_at": "2026-06-19T15:59:12.483289+00:00",
     "status": "error",
     "issues": [
       {
@@ -2847,13 +2895,13 @@
   },
   {
     "ticker": "CRWS",
-    "checked_at": "2026-06-19T14:20:32.401704+00:00",
+    "checked_at": "2026-06-19T15:59:12.483781+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CSAI",
-    "checked_at": "2026-06-19T14:20:32.401745+00:00",
+    "checked_at": "2026-06-19T15:59:12.483859+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2875,7 +2923,7 @@
   },
   {
     "ticker": "CSPI",
-    "checked_at": "2026-06-19T14:20:32.402017+00:00",
+    "checked_at": "2026-06-19T15:59:12.484398+00:00",
     "status": "info",
     "issues": [
       {
@@ -2907,7 +2955,7 @@
   },
   {
     "ticker": "CTEV",
-    "checked_at": "2026-06-19T14:20:32.402124+00:00",
+    "checked_at": "2026-06-19T15:59:12.484603+00:00",
     "status": "warn",
     "issues": [
       {
@@ -2924,7 +2972,7 @@
   },
   {
     "ticker": "CTKB",
-    "checked_at": "2026-06-19T14:20:32.402199+00:00",
+    "checked_at": "2026-06-19T15:59:12.484743+00:00",
     "status": "info",
     "issues": [
       {
@@ -2941,7 +2989,7 @@
   },
   {
     "ticker": "CTLP",
-    "checked_at": "2026-06-19T14:20:32.402522+00:00",
+    "checked_at": "2026-06-19T15:59:12.485346+00:00",
     "status": "info",
     "issues": [
       {
@@ -2998,13 +3046,13 @@
   },
   {
     "ticker": "CTM",
-    "checked_at": "2026-06-19T14:20:32.402589+00:00",
+    "checked_at": "2026-06-19T15:59:12.485461+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "CTOR",
-    "checked_at": "2026-06-19T14:20:32.402617+00:00",
+    "checked_at": "2026-06-19T15:59:12.485511+00:00",
     "status": "error",
     "issues": [
       {
@@ -3026,9 +3074,14 @@
   },
   {
     "ticker": "CTSO",
-    "checked_at": "2026-06-19T14:20:32.402903+00:00",
+    "checked_at": "2026-06-19T15:59:12.486067+00:00",
     "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "warn",
         "rule": "q_sum_vs_annual",
@@ -3053,7 +3106,7 @@
   },
   {
     "ticker": "CV",
-    "checked_at": "2026-06-19T14:20:32.402940+00:00",
+    "checked_at": "2026-06-19T15:59:12.486137+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3067,6 +3120,11 @@
         "detail": "FY2025 |Net Income| -25M > 1.5× Revenue 14M — heavy cash burn"
       },
       {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
+      {
         "severity": "info",
         "rule": "mcap_reconciliation",
         "detail": "Stage-1 mcap 0.36B vs price×shares 0.17B (-51%)"
@@ -3074,8 +3132,40 @@
     ]
   },
   {
+    "ticker": "CVGI",
+    "checked_at": "2026-06-19T15:59:12.486755+00:00",
+    "status": "info",
+    "issues": [
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2017 reported EPS -0.08 vs NI/shares -0.08 (+5%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2022 reported EPS -0.51 vs NI/shares -0.68 (-33%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2023 reported EPS 1.30 vs NI/shares 1.47 (+13%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2024 reported EPS -1.07 vs NI/shares -0.83 (+22%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2025 reported EPS -0.61 vs NI/shares -0.67 (-10%)"
+      }
+    ]
+  },
+  {
     "ticker": "CVRX",
-    "checked_at": "2026-06-19T14:20:32.403014+00:00",
+    "checked_at": "2026-06-19T15:59:12.486894+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3087,12 +3177,17 @@
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2022 |Net Income| -41M > 1.5× Revenue 22M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       }
     ]
   },
   {
     "ticker": "CVU",
-    "checked_at": "2026-06-19T14:20:32.403325+00:00",
+    "checked_at": "2026-06-19T15:59:12.487504+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3114,7 +3209,7 @@
   },
   {
     "ticker": "CXAI",
-    "checked_at": "2026-06-19T14:20:32.403358+00:00",
+    "checked_at": "2026-06-19T15:59:12.487568+00:00",
     "status": "error",
     "issues": [
       {
@@ -3126,7 +3221,7 @@
   },
   {
     "ticker": "CYAB",
-    "checked_at": "2026-06-19T14:20:32.403378+00:00",
+    "checked_at": "2026-06-19T15:59:12.487605+00:00",
     "status": "error",
     "issues": [
       {
@@ -3153,7 +3248,7 @@
   },
   {
     "ticker": "CYCU",
-    "checked_at": "2026-06-19T14:20:32.403439+00:00",
+    "checked_at": "2026-06-19T15:59:12.487680+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3175,7 +3270,7 @@
   },
   {
     "ticker": "CYN",
-    "checked_at": "2026-06-19T14:20:32.403494+00:00",
+    "checked_at": "2026-06-19T15:59:12.487774+00:00",
     "status": "info",
     "issues": [
       {
@@ -3187,7 +3282,7 @@
   },
   {
     "ticker": "DAIC",
-    "checked_at": "2026-06-19T14:20:32.403524+00:00",
+    "checked_at": "2026-06-19T15:59:12.487827+00:00",
     "status": "info",
     "issues": [
       {
@@ -3199,7 +3294,7 @@
   },
   {
     "ticker": "DCTH",
-    "checked_at": "2026-06-19T14:20:32.403699+00:00",
+    "checked_at": "2026-06-19T15:59:12.488168+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3216,7 +3311,7 @@
   },
   {
     "ticker": "DDC",
-    "checked_at": "2026-06-19T14:20:32.403720+00:00",
+    "checked_at": "2026-06-19T15:59:12.488207+00:00",
     "status": "error",
     "issues": [
       {
@@ -3263,15 +3358,20 @@
   },
   {
     "ticker": "DERM",
-    "checked_at": "2026-06-19T14:20:32.403792+00:00",
+    "checked_at": "2026-06-19T15:59:12.488338+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "DFNS",
-    "checked_at": "2026-06-19T14:20:32.403846+00:00",
+    "checked_at": "2026-06-19T15:59:12.488431+00:00",
     "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2024-06-30 is 719 days old (>180)"
+      },
       {
         "severity": "warn",
         "rule": "yoy_revenue_jump",
@@ -3301,7 +3401,7 @@
   },
   {
     "ticker": "DH",
-    "checked_at": "2026-06-19T14:20:32.403927+00:00",
+    "checked_at": "2026-06-19T15:59:12.488578+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3313,7 +3413,7 @@
   },
   {
     "ticker": "DHX",
-    "checked_at": "2026-06-19T14:20:32.404121+00:00",
+    "checked_at": "2026-06-19T15:59:12.488963+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3325,7 +3425,7 @@
   },
   {
     "ticker": "DIBS",
-    "checked_at": "2026-06-19T14:20:32.404207+00:00",
+    "checked_at": "2026-06-19T15:59:12.489131+00:00",
     "status": "info",
     "issues": [
       {
@@ -3347,7 +3447,7 @@
   },
   {
     "ticker": "DIN",
-    "checked_at": "2026-06-19T14:20:32.404563+00:00",
+    "checked_at": "2026-06-19T15:59:12.489801+00:00",
     "status": "error",
     "issues": [
       {
@@ -3384,7 +3484,7 @@
   },
   {
     "ticker": "DJCO",
-    "checked_at": "2026-06-19T14:20:32.404864+00:00",
+    "checked_at": "2026-06-19T15:59:12.490390+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3411,7 +3511,7 @@
   },
   {
     "ticker": "DMRC",
-    "checked_at": "2026-06-19T14:20:32.405193+00:00",
+    "checked_at": "2026-06-19T15:59:12.491026+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3443,7 +3543,7 @@
   },
   {
     "ticker": "DOMH",
-    "checked_at": "2026-06-19T14:20:32.405370+00:00",
+    "checked_at": "2026-06-19T15:59:12.491366+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3485,7 +3585,7 @@
   },
   {
     "ticker": "DOMO",
-    "checked_at": "2026-06-19T14:20:32.405515+00:00",
+    "checked_at": "2026-06-19T15:59:12.491621+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3497,12 +3597,17 @@
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2017 |Net Income| -177M > 1.5× Revenue 109M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-10-31 is 231 days old (>180)"
       }
     ]
   },
   {
     "ticker": "DOUG",
-    "checked_at": "2026-06-19T14:20:32.405597+00:00",
+    "checked_at": "2026-06-19T15:59:12.491775+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3524,7 +3629,7 @@
   },
   {
     "ticker": "DRIO",
-    "checked_at": "2026-06-19T14:20:32.405809+00:00",
+    "checked_at": "2026-06-19T15:59:12.492263+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3636,7 +3741,7 @@
   },
   {
     "ticker": "DSP",
-    "checked_at": "2026-06-19T14:20:32.405899+00:00",
+    "checked_at": "2026-06-19T15:59:12.492436+00:00",
     "status": "info",
     "issues": [
       {
@@ -3653,7 +3758,7 @@
   },
   {
     "ticker": "DTST",
-    "checked_at": "2026-06-19T14:20:32.406180+00:00",
+    "checked_at": "2026-06-19T15:59:12.492963+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3685,7 +3790,7 @@
   },
   {
     "ticker": "DUOT",
-    "checked_at": "2026-06-19T14:20:32.406472+00:00",
+    "checked_at": "2026-06-19T15:59:12.493492+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3722,7 +3827,7 @@
   },
   {
     "ticker": "DVLT",
-    "checked_at": "2026-06-19T14:20:32.406605+00:00",
+    "checked_at": "2026-06-19T15:59:12.493735+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3774,7 +3879,7 @@
   },
   {
     "ticker": "DXR",
-    "checked_at": "2026-06-19T14:20:32.406645+00:00",
+    "checked_at": "2026-06-19T15:59:12.493811+00:00",
     "status": "error",
     "issues": [
       {
@@ -3791,7 +3896,7 @@
   },
   {
     "ticker": "EBS",
-    "checked_at": "2026-06-19T14:20:32.406990+00:00",
+    "checked_at": "2026-06-19T15:59:12.494481+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3818,7 +3923,7 @@
   },
   {
     "ticker": "ECOR",
-    "checked_at": "2026-06-19T14:20:32.407114+00:00",
+    "checked_at": "2026-06-19T15:59:12.494716+00:00",
     "status": "info",
     "issues": [
       {
@@ -3830,7 +3935,7 @@
   },
   {
     "ticker": "EFOI",
-    "checked_at": "2026-06-19T14:20:32.407461+00:00",
+    "checked_at": "2026-06-19T15:59:12.495345+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3857,7 +3962,7 @@
   },
   {
     "ticker": "EFOR",
-    "checked_at": "2026-06-19T14:20:32.407617+00:00",
+    "checked_at": "2026-06-19T15:59:12.495631+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3869,7 +3974,7 @@
   },
   {
     "ticker": "EGAN",
-    "checked_at": "2026-06-19T14:20:32.407930+00:00",
+    "checked_at": "2026-06-19T15:59:12.496237+00:00",
     "status": "info",
     "issues": [
       {
@@ -3881,7 +3986,7 @@
   },
   {
     "ticker": "EGHT",
-    "checked_at": "2026-06-19T14:20:32.408258+00:00",
+    "checked_at": "2026-06-19T15:59:12.496840+00:00",
     "status": "info",
     "issues": [
       {
@@ -3893,7 +3998,7 @@
   },
   {
     "ticker": "EGY",
-    "checked_at": "2026-06-19T14:20:32.408426+00:00",
+    "checked_at": "2026-06-19T15:59:12.497147+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3920,7 +4025,7 @@
   },
   {
     "ticker": "EKSO",
-    "checked_at": "2026-06-19T14:20:32.408673+00:00",
+    "checked_at": "2026-06-19T15:59:12.497627+00:00",
     "status": "warn",
     "issues": [
       {
@@ -3957,13 +4062,13 @@
   },
   {
     "ticker": "ELMD",
-    "checked_at": "2026-06-19T14:20:32.408926+00:00",
+    "checked_at": "2026-06-19T15:59:12.498109+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "ELMT",
-    "checked_at": "2026-06-19T14:20:32.408945+00:00",
+    "checked_at": "2026-06-19T15:59:12.498143+00:00",
     "status": "error",
     "issues": [
       {
@@ -3975,6 +4080,11 @@
         "severity": "error",
         "rule": "missing_annual_net_income",
         "detail": "no annual Net Income concept"
+      },
+      {
+        "severity": "warn",
+        "rule": "missing_quarterly_net_income",
+        "detail": "no quarterly Net Income — TTM metrics will be n/a"
       },
       {
         "severity": "error",
@@ -4005,7 +4115,7 @@
   },
   {
     "ticker": "ELUT",
-    "checked_at": "2026-06-19T14:20:32.409038+00:00",
+    "checked_at": "2026-06-19T15:59:12.498311+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4022,6 +4132,11 @@
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2025 |Net Income| 53M > 1.5× Revenue 12M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -4042,13 +4157,13 @@
   },
   {
     "ticker": "EMBC",
-    "checked_at": "2026-06-19T14:20:32.409108+00:00",
+    "checked_at": "2026-06-19T15:59:12.498439+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "EOLS",
-    "checked_at": "2026-06-19T14:20:32.409209+00:00",
+    "checked_at": "2026-06-19T15:59:12.498627+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4065,7 +4180,7 @@
   },
   {
     "ticker": "EONR",
-    "checked_at": "2026-06-19T14:20:32.409247+00:00",
+    "checked_at": "2026-06-19T15:59:12.498695+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4087,7 +4202,7 @@
   },
   {
     "ticker": "EP",
-    "checked_at": "2026-06-19T14:20:32.409361+00:00",
+    "checked_at": "2026-06-19T15:59:12.498908+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4109,7 +4224,7 @@
   },
   {
     "ticker": "EPM",
-    "checked_at": "2026-06-19T14:20:32.409698+00:00",
+    "checked_at": "2026-06-19T15:59:12.499551+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4146,7 +4261,7 @@
   },
   {
     "ticker": "EPSN",
-    "checked_at": "2026-06-19T14:20:32.409806+00:00",
+    "checked_at": "2026-06-19T15:59:12.499757+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4158,7 +4273,7 @@
   },
   {
     "ticker": "ESPR",
-    "checked_at": "2026-06-19T14:20:32.409915+00:00",
+    "checked_at": "2026-06-19T15:59:12.499966+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4185,13 +4300,13 @@
   },
   {
     "ticker": "ETD",
-    "checked_at": "2026-06-19T14:20:32.410221+00:00",
+    "checked_at": "2026-06-19T15:59:12.500585+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "ETON",
-    "checked_at": "2026-06-19T14:20:32.410306+00:00",
+    "checked_at": "2026-06-19T15:59:12.500756+00:00",
     "status": "info",
     "issues": [
       {
@@ -4203,7 +4318,7 @@
   },
   {
     "ticker": "EVER",
-    "checked_at": "2026-06-19T14:20:32.410456+00:00",
+    "checked_at": "2026-06-19T15:59:12.501018+00:00",
     "status": "info",
     "issues": [
       {
@@ -4220,7 +4335,7 @@
   },
   {
     "ticker": "EVH",
-    "checked_at": "2026-06-19T14:20:32.410636+00:00",
+    "checked_at": "2026-06-19T15:59:12.501371+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4262,13 +4377,13 @@
   },
   {
     "ticker": "EXFY",
-    "checked_at": "2026-06-19T14:20:32.410715+00:00",
+    "checked_at": "2026-06-19T15:59:12.501515+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "EXOD",
-    "checked_at": "2026-06-19T14:20:32.410755+00:00",
+    "checked_at": "2026-06-19T15:59:12.501590+00:00",
     "status": "error",
     "issues": [
       {
@@ -4290,7 +4405,7 @@
   },
   {
     "ticker": "FARM",
-    "checked_at": "2026-06-19T14:20:32.411065+00:00",
+    "checked_at": "2026-06-19T15:59:12.502198+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4317,15 +4432,20 @@
   },
   {
     "ticker": "FATN",
-    "checked_at": "2026-06-19T14:20:32.411100+00:00",
+    "checked_at": "2026-06-19T15:59:12.502255+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "FEED",
-    "checked_at": "2026-06-19T14:20:32.411278+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.502591+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -4350,7 +4470,7 @@
   },
   {
     "ticker": "FEMY",
-    "checked_at": "2026-06-19T14:20:32.411353+00:00",
+    "checked_at": "2026-06-19T15:59:12.502731+00:00",
     "status": "info",
     "issues": [
       {
@@ -4362,7 +4482,7 @@
   },
   {
     "ticker": "FGI",
-    "checked_at": "2026-06-19T14:20:32.411432+00:00",
+    "checked_at": "2026-06-19T15:59:12.502849+00:00",
     "status": "info",
     "issues": [
       {
@@ -4379,7 +4499,7 @@
   },
   {
     "ticker": "FJET",
-    "checked_at": "2026-06-19T14:20:32.411456+00:00",
+    "checked_at": "2026-06-19T15:59:12.502886+00:00",
     "status": "error",
     "issues": [
       {
@@ -4406,7 +4526,7 @@
   },
   {
     "ticker": "FLD",
-    "checked_at": "2026-06-19T14:20:32.411495+00:00",
+    "checked_at": "2026-06-19T15:59:12.502956+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4428,7 +4548,7 @@
   },
   {
     "ticker": "FLXS",
-    "checked_at": "2026-06-19T14:20:32.411823+00:00",
+    "checked_at": "2026-06-19T15:59:12.503607+00:00",
     "status": "info",
     "issues": [
       {
@@ -4440,7 +4560,7 @@
   },
   {
     "ticker": "FORA",
-    "checked_at": "2026-06-19T14:20:32.411904+00:00",
+    "checked_at": "2026-06-19T15:59:12.503755+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4461,8 +4581,14 @@
     ]
   },
   {
+    "ticker": "FOXF",
+    "checked_at": "2026-06-19T15:59:12.504289+00:00",
+    "status": "ok",
+    "issues": []
+  },
+  {
     "ticker": "FRMM",
-    "checked_at": "2026-06-19T14:20:32.411948+00:00",
+    "checked_at": "2026-06-19T15:59:12.504379+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4489,7 +4615,7 @@
   },
   {
     "ticker": "FRPH",
-    "checked_at": "2026-06-19T14:20:32.412246+00:00",
+    "checked_at": "2026-06-19T15:59:12.504949+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4521,7 +4647,7 @@
   },
   {
     "ticker": "FTHM",
-    "checked_at": "2026-06-19T14:20:32.412335+00:00",
+    "checked_at": "2026-06-19T15:59:12.505120+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4538,7 +4664,7 @@
   },
   {
     "ticker": "FTLF",
-    "checked_at": "2026-06-19T14:20:32.412619+00:00",
+    "checked_at": "2026-06-19T15:59:12.505635+00:00",
     "status": "info",
     "issues": [
       {
@@ -4560,7 +4686,7 @@
   },
   {
     "ticker": "FTW",
-    "checked_at": "2026-06-19T14:20:32.412640+00:00",
+    "checked_at": "2026-06-19T15:59:12.505671+00:00",
     "status": "error",
     "issues": [
       {
@@ -4607,7 +4733,7 @@
   },
   {
     "ticker": "FUSE",
-    "checked_at": "2026-06-19T14:20:32.412674+00:00",
+    "checked_at": "2026-06-19T15:59:12.505729+00:00",
     "status": "info",
     "issues": [
       {
@@ -4619,7 +4745,7 @@
   },
   {
     "ticker": "FWRG",
-    "checked_at": "2026-06-19T14:20:32.412753+00:00",
+    "checked_at": "2026-06-19T15:59:12.505873+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4631,7 +4757,7 @@
   },
   {
     "ticker": "GBR",
-    "checked_at": "2026-06-19T14:20:32.413057+00:00",
+    "checked_at": "2026-06-19T15:59:12.506471+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4668,7 +4794,7 @@
   },
   {
     "ticker": "GCTK",
-    "checked_at": "2026-06-19T14:20:32.413163+00:00",
+    "checked_at": "2026-06-19T15:59:12.506656+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4750,7 +4876,7 @@
   },
   {
     "ticker": "GDRX",
-    "checked_at": "2026-06-19T14:20:32.413264+00:00",
+    "checked_at": "2026-06-19T15:59:12.506841+00:00",
     "status": "info",
     "issues": [
       {
@@ -4772,13 +4898,13 @@
   },
   {
     "ticker": "GDYN",
-    "checked_at": "2026-06-19T14:20:32.413361+00:00",
+    "checked_at": "2026-06-19T15:59:12.507019+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "GEMI",
-    "checked_at": "2026-06-19T14:20:32.413415+00:00",
+    "checked_at": "2026-06-19T15:59:12.507096+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4805,7 +4931,7 @@
   },
   {
     "ticker": "GENK",
-    "checked_at": "2026-06-19T14:20:32.413472+00:00",
+    "checked_at": "2026-06-19T15:59:12.507193+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4827,7 +4953,7 @@
   },
   {
     "ticker": "GETY",
-    "checked_at": "2026-06-19T14:20:32.413539+00:00",
+    "checked_at": "2026-06-19T15:59:12.507315+00:00",
     "status": "error",
     "issues": [
       {
@@ -4839,7 +4965,7 @@
   },
   {
     "ticker": "GGRP",
-    "checked_at": "2026-06-19T14:20:32.413613+00:00",
+    "checked_at": "2026-06-19T15:59:12.507453+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4851,7 +4977,7 @@
   },
   {
     "ticker": "GIFT",
-    "checked_at": "2026-06-19T14:20:32.413680+00:00",
+    "checked_at": "2026-06-19T15:59:12.507574+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4868,7 +4994,7 @@
   },
   {
     "ticker": "GLND",
-    "checked_at": "2026-06-19T14:20:32.413697+00:00",
+    "checked_at": "2026-06-19T15:59:12.507604+00:00",
     "status": "error",
     "issues": [
       {
@@ -4915,7 +5041,7 @@
   },
   {
     "ticker": "GLOO",
-    "checked_at": "2026-06-19T14:20:32.413745+00:00",
+    "checked_at": "2026-06-19T15:59:12.507683+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4932,6 +5058,11 @@
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2025 |Net Income| -157M > 1.5× Revenue 95M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-10-31 is 231 days old (>180)"
       },
       {
         "severity": "warn",
@@ -4962,7 +5093,7 @@
   },
   {
     "ticker": "GOAI",
-    "checked_at": "2026-06-19T14:20:32.413800+00:00",
+    "checked_at": "2026-06-19T15:59:12.507790+00:00",
     "status": "warn",
     "issues": [
       {
@@ -4979,7 +5110,7 @@
   },
   {
     "ticker": "GPUS",
-    "checked_at": "2026-06-19T14:20:32.414075+00:00",
+    "checked_at": "2026-06-19T15:59:12.508325+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5021,7 +5152,7 @@
   },
   {
     "ticker": "GREE",
-    "checked_at": "2026-06-19T14:20:32.414159+00:00",
+    "checked_at": "2026-06-19T15:59:12.508499+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5048,7 +5179,7 @@
   },
   {
     "ticker": "GRNT",
-    "checked_at": "2026-06-19T14:20:32.414229+00:00",
+    "checked_at": "2026-06-19T15:59:12.508637+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5065,7 +5196,7 @@
   },
   {
     "ticker": "GRPN",
-    "checked_at": "2026-06-19T14:20:32.414550+00:00",
+    "checked_at": "2026-06-19T15:59:12.509258+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5101,8 +5232,14 @@
     ]
   },
   {
+    "ticker": "GTEC",
+    "checked_at": "2026-06-19T15:59:12.509448+00:00",
+    "status": "ok",
+    "issues": []
+  },
+  {
     "ticker": "GTIM",
-    "checked_at": "2026-06-19T14:20:32.414827+00:00",
+    "checked_at": "2026-06-19T15:59:12.509979+00:00",
     "status": "info",
     "issues": [
       {
@@ -5124,7 +5261,7 @@
   },
   {
     "ticker": "GYRO",
-    "checked_at": "2026-06-19T14:20:32.414863+00:00",
+    "checked_at": "2026-06-19T15:59:12.510050+00:00",
     "status": "error",
     "issues": [
       {
@@ -5156,7 +5293,7 @@
   },
   {
     "ticker": "HAIN",
-    "checked_at": "2026-06-19T14:20:32.415202+00:00",
+    "checked_at": "2026-06-19T15:59:12.510622+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5203,7 +5340,7 @@
   },
   {
     "ticker": "HBB",
-    "checked_at": "2026-06-19T14:20:32.415374+00:00",
+    "checked_at": "2026-06-19T15:59:12.510857+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5225,7 +5362,7 @@
   },
   {
     "ticker": "HBIO",
-    "checked_at": "2026-06-19T14:20:32.415715+00:00",
+    "checked_at": "2026-06-19T15:59:12.511325+00:00",
     "status": "info",
     "issues": [
       {
@@ -5247,7 +5384,7 @@
   },
   {
     "ticker": "HCAT",
-    "checked_at": "2026-06-19T14:20:32.415835+00:00",
+    "checked_at": "2026-06-19T15:59:12.511490+00:00",
     "status": "info",
     "issues": [
       {
@@ -5269,7 +5406,7 @@
   },
   {
     "ticker": "HCKT",
-    "checked_at": "2026-06-19T14:20:32.416184+00:00",
+    "checked_at": "2026-06-19T15:59:12.511999+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5301,7 +5438,7 @@
   },
   {
     "ticker": "HCTI",
-    "checked_at": "2026-06-19T14:20:32.416262+00:00",
+    "checked_at": "2026-06-19T15:59:12.512115+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5328,7 +5465,7 @@
   },
   {
     "ticker": "HCWC",
-    "checked_at": "2026-06-19T14:20:32.416301+00:00",
+    "checked_at": "2026-06-19T15:59:12.512169+00:00",
     "status": "info",
     "issues": [
       {
@@ -5340,7 +5477,7 @@
   },
   {
     "ticker": "HGBL",
-    "checked_at": "2026-06-19T14:20:32.416593+00:00",
+    "checked_at": "2026-06-19T15:59:12.512572+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5367,7 +5504,7 @@
   },
   {
     "ticker": "HIT",
-    "checked_at": "2026-06-19T14:20:32.416630+00:00",
+    "checked_at": "2026-06-19T15:59:12.512623+00:00",
     "status": "error",
     "issues": [
       {
@@ -5379,9 +5516,19 @@
   },
   {
     "ticker": "HIVE",
-    "checked_at": "2026-06-19T14:20:32.416669+00:00",
+    "checked_at": "2026-06-19T15:59:12.512666+00:00",
     "status": "error",
     "issues": [
+      {
+        "severity": "error",
+        "rule": "missing_annual_revenue",
+        "detail": "no annual Revenue concept in SEC data"
+      },
+      {
+        "severity": "error",
+        "rule": "missing_annual_net_income",
+        "detail": "no annual Net Income concept"
+      },
       {
         "severity": "warn",
         "rule": "missing_quarterly_net_income",
@@ -5393,25 +5540,42 @@
         "detail": "no annual Operating Income — margins won't compute"
       },
       {
-        "severity": "warn",
-        "rule": "gross_margin_out_of_range",
-        "detail": "FY2023 Gross Margin -23% outside expected [0, 100%]"
+        "severity": "error",
+        "rule": "missing_diluted_shares",
+        "detail": "no diluted-shares concept — P/E + EPS won't compute"
+      },
+      {
+        "severity": "error",
+        "rule": "missing_total_assets",
+        "detail": "no Total Assets concept"
+      },
+      {
+        "severity": "error",
+        "rule": "missing_stockholders_equity",
+        "detail": "no Stockholders Equity — P/B and ROE won't compute"
       },
       {
         "severity": "warn",
-        "rule": "gross_margin_out_of_range",
-        "detail": "FY2024 Gross Margin -34% outside expected [0, 100%]"
-      },
+        "rule": "no_gross_profit_source",
+        "detail": "neither Gross Profit nor Cost of Revenue fetched — Gross Margin will show n/a"
+      }
+    ]
+  },
+  {
+    "ticker": "HLLY",
+    "checked_at": "2026-06-19T15:59:12.512782+00:00",
+    "status": "info",
+    "issues": [
       {
-        "severity": "warn",
-        "rule": "gross_margin_out_of_range",
-        "detail": "FY2025 Gross Margin -21% outside expected [0, 100%]"
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2022 reported EPS 0.14 vs NI/shares 0.63 (+349%)"
       }
     ]
   },
   {
     "ticker": "HOFT",
-    "checked_at": "2026-06-19T14:20:32.417032+00:00",
+    "checked_at": "2026-06-19T15:59:12.513330+00:00",
     "status": "info",
     "issues": [
       {
@@ -5433,7 +5597,7 @@
   },
   {
     "ticker": "HPK",
-    "checked_at": "2026-06-19T14:20:32.417128+00:00",
+    "checked_at": "2026-06-19T15:59:12.513459+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5480,7 +5644,7 @@
   },
   {
     "ticker": "HSCS",
-    "checked_at": "2026-06-19T14:20:32.417177+00:00",
+    "checked_at": "2026-06-19T15:59:12.513532+00:00",
     "status": "info",
     "issues": [
       {
@@ -5492,7 +5656,7 @@
   },
   {
     "ticker": "HSTM",
-    "checked_at": "2026-06-19T14:20:32.417480+00:00",
+    "checked_at": "2026-06-19T15:59:12.513955+00:00",
     "status": "info",
     "issues": [
       {
@@ -5503,8 +5667,30 @@
     ]
   },
   {
+    "ticker": "HYLN",
+    "checked_at": "2026-06-19T15:59:12.514063+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "gross_margin_out_of_range",
+        "detail": "FY2022 Gross Margin -317% outside expected [0, 100%]"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2020 reported EPS -0.35 vs NI/shares 2.88 (+923%)"
+      },
+      {
+        "severity": "info",
+        "rule": "mcap_reconciliation",
+        "detail": "Stage-1 mcap 0.44B vs price×shares 1.42B (+223%)"
+      }
+    ]
+  },
+  {
     "ticker": "HYPR",
-    "checked_at": "2026-06-19T14:20:32.417562+00:00",
+    "checked_at": "2026-06-19T15:59:12.514191+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5529,6 +5715,11 @@
       },
       {
         "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
+      {
+        "severity": "warn",
         "rule": "yoy_revenue_jump",
         "detail": "FY2021→FY2022 revenue 1M → 7M (4.6×, not M&A-flagged)"
       },
@@ -5541,19 +5732,19 @@
   },
   {
     "ticker": "IBEX",
-    "checked_at": "2026-06-19T14:20:32.417625+00:00",
+    "checked_at": "2026-06-19T15:59:12.514285+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "IBTA",
-    "checked_at": "2026-06-19T14:20:32.417668+00:00",
+    "checked_at": "2026-06-19T15:59:12.514355+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "IDAI",
-    "checked_at": "2026-06-19T14:20:32.417740+00:00",
+    "checked_at": "2026-06-19T15:59:12.514464+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5570,7 +5761,7 @@
   },
   {
     "ticker": "IDN",
-    "checked_at": "2026-06-19T14:20:32.418068+00:00",
+    "checked_at": "2026-06-19T15:59:12.514950+00:00",
     "status": "info",
     "issues": [
       {
@@ -5592,7 +5783,7 @@
   },
   {
     "ticker": "III",
-    "checked_at": "2026-06-19T14:20:32.418250+00:00",
+    "checked_at": "2026-06-19T15:59:12.515222+00:00",
     "status": "info",
     "issues": [
       {
@@ -5609,7 +5800,7 @@
   },
   {
     "ticker": "IIIV",
-    "checked_at": "2026-06-19T14:20:32.418462+00:00",
+    "checked_at": "2026-06-19T15:59:12.515460+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5661,7 +5852,7 @@
   },
   {
     "ticker": "ILLR",
-    "checked_at": "2026-06-19T14:20:32.418568+00:00",
+    "checked_at": "2026-06-19T15:59:12.515557+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5693,7 +5884,7 @@
   },
   {
     "ticker": "IMMR",
-    "checked_at": "2026-06-19T14:20:32.418888+00:00",
+    "checked_at": "2026-06-19T15:59:12.516009+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5705,7 +5896,7 @@
   },
   {
     "ticker": "IMXI",
-    "checked_at": "2026-06-19T14:20:32.419008+00:00",
+    "checked_at": "2026-06-19T15:59:12.516203+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5717,7 +5908,7 @@
   },
   {
     "ticker": "INBS",
-    "checked_at": "2026-06-19T14:20:32.419084+00:00",
+    "checked_at": "2026-06-19T15:59:12.516315+00:00",
     "status": "info",
     "issues": [
       {
@@ -5729,7 +5920,7 @@
   },
   {
     "ticker": "INFU",
-    "checked_at": "2026-06-19T14:20:32.419372+00:00",
+    "checked_at": "2026-06-19T15:59:12.516748+00:00",
     "status": "info",
     "issues": [
       {
@@ -5751,7 +5942,7 @@
   },
   {
     "ticker": "INGN",
-    "checked_at": "2026-06-19T14:20:32.419634+00:00",
+    "checked_at": "2026-06-19T15:59:12.517111+00:00",
     "status": "info",
     "issues": [
       {
@@ -5773,7 +5964,7 @@
   },
   {
     "ticker": "INLX",
-    "checked_at": "2026-06-19T14:20:32.419895+00:00",
+    "checked_at": "2026-06-19T15:59:12.517497+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5795,7 +5986,7 @@
   },
   {
     "ticker": "INR",
-    "checked_at": "2026-06-19T14:20:32.419942+00:00",
+    "checked_at": "2026-06-19T15:59:12.517562+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5827,7 +6018,7 @@
   },
   {
     "ticker": "INTZ",
-    "checked_at": "2026-06-19T14:20:32.420217+00:00",
+    "checked_at": "2026-06-19T15:59:12.517971+00:00",
     "status": "info",
     "issues": [
       {
@@ -5859,7 +6050,7 @@
   },
   {
     "ticker": "INUV",
-    "checked_at": "2026-06-19T14:20:32.420499+00:00",
+    "checked_at": "2026-06-19T15:59:12.518390+00:00",
     "status": "info",
     "issues": [
       {
@@ -5871,7 +6062,7 @@
   },
   {
     "ticker": "IPM",
-    "checked_at": "2026-06-19T14:20:32.420777+00:00",
+    "checked_at": "2026-06-19T15:59:12.518798+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5898,7 +6089,7 @@
   },
   {
     "ticker": "IPST",
-    "checked_at": "2026-06-19T14:20:32.420821+00:00",
+    "checked_at": "2026-06-19T15:59:12.518855+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5920,9 +6111,14 @@
   },
   {
     "ticker": "IRIX",
-    "checked_at": "2026-06-19T14:20:32.421113+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.519285+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-27 is 265 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -5937,7 +6133,7 @@
   },
   {
     "ticker": "IRWD",
-    "checked_at": "2026-06-19T14:20:32.421496+00:00",
+    "checked_at": "2026-06-19T15:59:12.519809+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5964,13 +6160,13 @@
   },
   {
     "ticker": "ISSC",
-    "checked_at": "2026-06-19T14:20:32.421817+00:00",
+    "checked_at": "2026-06-19T15:59:12.520286+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "IVF",
-    "checked_at": "2026-06-19T14:20:32.422052+00:00",
+    "checked_at": "2026-06-19T15:59:12.520606+00:00",
     "status": "warn",
     "issues": [
       {
@@ -5980,30 +6176,20 @@
       },
       {
         "severity": "info",
-        "rule": "eps_mismatch",
-        "detail": "FY2024 reported EPS -3078.74 vs NI/shares -3682.96 (-20%)"
-      },
-      {
-        "severity": "info",
-        "rule": "eps_mismatch",
-        "detail": "FY2025 reported EPS -45.57 vs NI/shares -199.20 (-337%)"
-      },
-      {
-        "severity": "info",
         "rule": "mcap_reconciliation",
-        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-93%)"
+        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-82%)"
       }
     ]
   },
   {
     "ticker": "IZEA",
-    "checked_at": "2026-06-19T14:20:32.422321+00:00",
+    "checked_at": "2026-06-19T15:59:12.520997+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "JACK",
-    "checked_at": "2026-06-19T14:20:32.422630+00:00",
+    "checked_at": "2026-06-19T15:59:12.521435+00:00",
     "status": "info",
     "issues": [
       {
@@ -6035,13 +6221,13 @@
   },
   {
     "ticker": "JBSS",
-    "checked_at": "2026-06-19T14:20:32.422955+00:00",
+    "checked_at": "2026-06-19T15:59:12.521909+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "JTAI",
-    "checked_at": "2026-06-19T14:20:32.423007+00:00",
+    "checked_at": "2026-06-19T15:59:12.521979+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6058,19 +6244,19 @@
   },
   {
     "ticker": "JVA",
-    "checked_at": "2026-06-19T14:20:32.423272+00:00",
+    "checked_at": "2026-06-19T15:59:12.522379+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "KEQU",
-    "checked_at": "2026-06-19T14:20:32.423593+00:00",
+    "checked_at": "2026-06-19T15:59:12.522832+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "KGEI",
-    "checked_at": "2026-06-19T14:20:32.423623+00:00",
+    "checked_at": "2026-06-19T15:59:12.522872+00:00",
     "status": "error",
     "issues": [
       {
@@ -6117,7 +6303,7 @@
   },
   {
     "ticker": "KIDS",
-    "checked_at": "2026-06-19T14:20:32.423797+00:00",
+    "checked_at": "2026-06-19T15:59:12.523124+00:00",
     "status": "info",
     "issues": [
       {
@@ -6144,7 +6330,7 @@
   },
   {
     "ticker": "KITT",
-    "checked_at": "2026-06-19T14:20:32.423869+00:00",
+    "checked_at": "2026-06-19T15:59:12.523220+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6181,7 +6367,7 @@
   },
   {
     "ticker": "KLTR",
-    "checked_at": "2026-06-19T14:20:32.423954+00:00",
+    "checked_at": "2026-06-19T15:59:12.523362+00:00",
     "status": "info",
     "issues": [
       {
@@ -6203,7 +6389,7 @@
   },
   {
     "ticker": "KPLT",
-    "checked_at": "2026-06-19T14:20:32.424035+00:00",
+    "checked_at": "2026-06-19T15:59:12.523487+00:00",
     "status": "info",
     "issues": [
       {
@@ -6215,13 +6401,13 @@
   },
   {
     "ticker": "KRMD",
-    "checked_at": "2026-06-19T14:20:32.424292+00:00",
+    "checked_at": "2026-06-19T15:59:12.523874+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "KRUS",
-    "checked_at": "2026-06-19T14:20:32.424411+00:00",
+    "checked_at": "2026-06-19T15:59:12.524031+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6233,7 +6419,7 @@
   },
   {
     "ticker": "LAB",
-    "checked_at": "2026-06-19T14:20:32.424749+00:00",
+    "checked_at": "2026-06-19T15:59:12.524559+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6260,19 +6446,19 @@
   },
   {
     "ticker": "LAW",
-    "checked_at": "2026-06-19T14:20:32.424821+00:00",
+    "checked_at": "2026-06-19T15:59:12.524667+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "LCUT",
-    "checked_at": "2026-06-19T14:20:32.425101+00:00",
+    "checked_at": "2026-06-19T15:59:12.525126+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "LFCR",
-    "checked_at": "2026-06-19T14:20:32.425447+00:00",
+    "checked_at": "2026-06-19T15:59:12.525623+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6329,7 +6515,7 @@
   },
   {
     "ticker": "LFMD",
-    "checked_at": "2026-06-19T14:20:32.425681+00:00",
+    "checked_at": "2026-06-19T15:59:12.525966+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6376,7 +6562,7 @@
   },
   {
     "ticker": "LFVN",
-    "checked_at": "2026-06-19T14:20:32.425984+00:00",
+    "checked_at": "2026-06-19T15:59:12.526424+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6388,7 +6574,7 @@
   },
   {
     "ticker": "LHAI",
-    "checked_at": "2026-06-19T14:20:32.426026+00:00",
+    "checked_at": "2026-06-19T15:59:12.526493+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6410,7 +6596,7 @@
   },
   {
     "ticker": "LIDR",
-    "checked_at": "2026-06-19T14:20:32.426099+00:00",
+    "checked_at": "2026-06-19T15:59:12.526591+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6437,7 +6623,7 @@
   },
   {
     "ticker": "LMFA",
-    "checked_at": "2026-06-19T14:20:32.426273+00:00",
+    "checked_at": "2026-06-19T15:59:12.526835+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6469,7 +6655,7 @@
   },
   {
     "ticker": "LMRI",
-    "checked_at": "2026-06-19T14:20:32.426292+00:00",
+    "checked_at": "2026-06-19T15:59:12.526858+00:00",
     "status": "error",
     "issues": [
       {
@@ -6481,6 +6667,11 @@
         "severity": "error",
         "rule": "missing_annual_net_income",
         "detail": "no annual Net Income concept"
+      },
+      {
+        "severity": "warn",
+        "rule": "missing_quarterly_net_income",
+        "detail": "no quarterly Net Income — TTM metrics will be n/a"
       },
       {
         "severity": "error",
@@ -6511,13 +6702,13 @@
   },
   {
     "ticker": "LNSR",
-    "checked_at": "2026-06-19T14:20:32.426379+00:00",
+    "checked_at": "2026-06-19T15:59:12.526974+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "LOCO",
-    "checked_at": "2026-06-19T14:20:32.426631+00:00",
+    "checked_at": "2026-06-19T15:59:12.527329+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6529,7 +6720,7 @@
   },
   {
     "ticker": "LOVE",
-    "checked_at": "2026-06-19T14:20:32.426757+00:00",
+    "checked_at": "2026-06-19T15:59:12.527509+00:00",
     "status": "info",
     "issues": [
       {
@@ -6546,7 +6737,7 @@
   },
   {
     "ticker": "LPSN",
-    "checked_at": "2026-06-19T14:20:32.427054+00:00",
+    "checked_at": "2026-06-19T15:59:12.527953+00:00",
     "status": "info",
     "issues": [
       {
@@ -6568,7 +6759,7 @@
   },
   {
     "ticker": "LRHC",
-    "checked_at": "2026-06-19T14:20:32.427107+00:00",
+    "checked_at": "2026-06-19T15:59:12.528024+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6584,23 +6775,18 @@
       {
         "severity": "info",
         "rule": "eps_mismatch",
-        "detail": "FY2024 reported EPS -7844.00 vs NI/shares -7117.03 (+9%)"
-      },
-      {
-        "severity": "info",
-        "rule": "eps_mismatch",
-        "detail": "FY2025 reported EPS -3531.00 vs NI/shares -3285.77 (+7%)"
+        "detail": "FY2024 reported EPS -0.79 vs NI/shares -0.71 (+10%)"
       },
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
-        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-99%)"
+        "detail": "Stage-1 mcap 0.00B vs price×shares 0.03B (+1302%)"
       }
     ]
   },
   {
     "ticker": "LSF",
-    "checked_at": "2026-06-19T14:20:32.427205+00:00",
+    "checked_at": "2026-06-19T15:59:12.528174+00:00",
     "status": "info",
     "issues": [
       {
@@ -6617,7 +6803,7 @@
   },
   {
     "ticker": "LUCD",
-    "checked_at": "2026-06-19T14:20:32.427269+00:00",
+    "checked_at": "2026-06-19T15:59:12.528262+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6629,6 +6815,11 @@
         "severity": "warn",
         "rule": "gross_margin_out_of_range",
         "detail": "FY2025 Gross Margin -42% outside expected [0, 100%]"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -6644,7 +6835,7 @@
   },
   {
     "ticker": "LUCY",
-    "checked_at": "2026-06-19T14:20:32.427329+00:00",
+    "checked_at": "2026-06-19T15:59:12.528349+00:00",
     "status": "error",
     "issues": [
       {
@@ -6666,13 +6857,13 @@
   },
   {
     "ticker": "LUNG",
-    "checked_at": "2026-06-19T14:20:32.427443+00:00",
+    "checked_at": "2026-06-19T15:59:12.528491+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "LVO",
-    "checked_at": "2026-06-19T14:20:32.427653+00:00",
+    "checked_at": "2026-06-19T15:59:12.528787+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6694,15 +6885,20 @@
   },
   {
     "ticker": "LWAY",
-    "checked_at": "2026-06-19T14:20:32.427919+00:00",
+    "checked_at": "2026-06-19T15:59:12.529178+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "MAMA",
-    "checked_at": "2026-06-19T14:20:32.428165+00:00",
+    "checked_at": "2026-06-19T15:59:12.529546+00:00",
     "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-10-31 is 231 days old (>180)"
+      },
       {
         "severity": "warn",
         "rule": "q_sum_vs_annual",
@@ -6722,7 +6918,7 @@
   },
   {
     "ticker": "MASS",
-    "checked_at": "2026-06-19T14:20:32.428243+00:00",
+    "checked_at": "2026-06-19T15:59:12.529657+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6739,7 +6935,7 @@
   },
   {
     "ticker": "MAX",
-    "checked_at": "2026-06-19T14:20:32.428344+00:00",
+    "checked_at": "2026-06-19T15:59:12.529804+00:00",
     "status": "info",
     "issues": [
       {
@@ -6751,13 +6947,13 @@
   },
   {
     "ticker": "MAYS",
-    "checked_at": "2026-06-19T14:20:32.428488+00:00",
+    "checked_at": "2026-06-19T15:59:12.529993+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "MBOT",
-    "checked_at": "2026-06-19T14:20:32.428602+00:00",
+    "checked_at": "2026-06-19T15:59:12.530158+00:00",
     "status": "info",
     "issues": [
       {
@@ -6779,13 +6975,19 @@
   },
   {
     "ticker": "MDAI",
-    "checked_at": "2026-06-19T14:20:32.428651+00:00",
-    "status": "ok",
-    "issues": []
+    "checked_at": "2026-06-19T15:59:12.530229+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      }
+    ]
   },
   {
     "ticker": "MDBH",
-    "checked_at": "2026-06-19T14:20:32.428669+00:00",
+    "checked_at": "2026-06-19T15:59:12.530260+00:00",
     "status": "error",
     "issues": [
       {
@@ -6807,7 +7009,7 @@
   },
   {
     "ticker": "MDRR",
-    "checked_at": "2026-06-19T14:20:32.428778+00:00",
+    "checked_at": "2026-06-19T15:59:12.530432+00:00",
     "status": "info",
     "issues": [
       {
@@ -6819,7 +7021,7 @@
   },
   {
     "ticker": "MEHA",
-    "checked_at": "2026-06-19T14:20:32.428808+00:00",
+    "checked_at": "2026-06-19T15:59:12.530475+00:00",
     "status": "info",
     "issues": [
       {
@@ -6831,9 +7033,14 @@
   },
   {
     "ticker": "MGRX",
-    "checked_at": "2026-06-19T14:20:32.428856+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.530537+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -6848,7 +7055,7 @@
   },
   {
     "ticker": "MIGI",
-    "checked_at": "2026-06-19T14:20:32.428977+00:00",
+    "checked_at": "2026-06-19T15:59:12.530699+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6890,19 +7097,25 @@
   },
   {
     "ticker": "MITK",
-    "checked_at": "2026-06-19T14:20:32.429294+00:00",
+    "checked_at": "2026-06-19T15:59:12.531168+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "MLP",
-    "checked_at": "2026-06-19T14:20:32.429573+00:00",
+    "checked_at": "2026-06-19T15:59:12.531557+00:00",
+    "status": "ok",
+    "issues": []
+  },
+  {
+    "ticker": "MLR",
+    "checked_at": "2026-06-19T15:59:12.532040+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "MLSS",
-    "checked_at": "2026-06-19T14:20:32.429842+00:00",
+    "checked_at": "2026-06-19T15:59:12.532445+00:00",
     "status": "info",
     "issues": [
       {
@@ -6918,8 +7131,20 @@
     ]
   },
   {
+    "ticker": "MNRO",
+    "checked_at": "2026-06-19T15:59:12.532643+00:00",
+    "status": "info",
+    "issues": [
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2024 reported EPS -0.22 vs NI/shares -0.17 (+21%)"
+      }
+    ]
+  },
+  {
     "ticker": "MNTN",
-    "checked_at": "2026-06-19T14:20:32.429875+00:00",
+    "checked_at": "2026-06-19T15:59:12.532685+00:00",
     "status": "info",
     "issues": [
       {
@@ -6931,7 +7156,7 @@
   },
   {
     "ticker": "MNTS",
-    "checked_at": "2026-06-19T14:20:32.429945+00:00",
+    "checked_at": "2026-06-19T15:59:12.532787+00:00",
     "status": "info",
     "issues": [
       {
@@ -6943,7 +7168,7 @@
   },
   {
     "ticker": "MODD",
-    "checked_at": "2026-06-19T14:20:32.429993+00:00",
+    "checked_at": "2026-06-19T15:59:12.532847+00:00",
     "status": "warn",
     "issues": [
       {
@@ -6965,7 +7190,7 @@
   },
   {
     "ticker": "MOVE",
-    "checked_at": "2026-06-19T14:20:32.430030+00:00",
+    "checked_at": "2026-06-19T15:59:12.532894+00:00",
     "status": "error",
     "issues": [
       {
@@ -6977,6 +7202,11 @@
         "severity": "warn",
         "rule": "gross_margin_out_of_range",
         "detail": "FY2024 Gross Margin -197% outside expected [0, 100%]"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -6991,8 +7221,35 @@
     ]
   },
   {
+    "ticker": "MPAA",
+    "checked_at": "2026-06-19T15:59:12.533391+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "q_sum_vs_annual",
+        "detail": "FY2011 annual rev 179M vs Σ4-quarters 364M (+104%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2011 reported EPS 1.13 vs NI/shares -3.80 (-437%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2012 reported EPS 1.01 vs NI/shares -6.36 (-730%)"
+      },
+      {
+        "severity": "info",
+        "rule": "mcap_reconciliation",
+        "detail": "Stage-1 mcap 0.22B vs price×shares 0.31B (+39%)"
+      }
+    ]
+  },
+  {
     "ticker": "MRLN",
-    "checked_at": "2026-06-19T14:20:32.430049+00:00",
+    "checked_at": "2026-06-19T15:59:12.533417+00:00",
     "status": "error",
     "issues": [
       {
@@ -7014,7 +7271,7 @@
   },
   {
     "ticker": "MTR",
-    "checked_at": "2026-06-19T14:20:32.430076+00:00",
+    "checked_at": "2026-06-19T15:59:12.533458+00:00",
     "status": "error",
     "issues": [
       {
@@ -7061,7 +7318,7 @@
   },
   {
     "ticker": "MVO",
-    "checked_at": "2026-06-19T14:20:32.430102+00:00",
+    "checked_at": "2026-06-19T15:59:12.533496+00:00",
     "status": "error",
     "issues": [
       {
@@ -7107,14 +7364,46 @@
     ]
   },
   {
+    "ticker": "MVST",
+    "checked_at": "2026-06-19T15:59:12.533617+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "gross_margin_out_of_range",
+        "detail": "FY2021 Gross Margin -28% outside expected [0, 100%]"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2019 reported EPS -1.17 vs NI/shares 0.03 (+103%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2020 reported EPS -0.82 vs NI/shares -0.02 (+97%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2021 reported EPS -1.26 vs NI/shares -1.11 (+12%)"
+      },
+      {
+        "severity": "info",
+        "rule": "mcap_reconciliation",
+        "detail": "Stage-1 mcap 0.63B vs price×shares 0.42B (-33%)"
+      }
+    ]
+  },
+  {
     "ticker": "MWYN",
-    "checked_at": "2026-06-19T14:20:32.430133+00:00",
+    "checked_at": "2026-06-19T15:59:12.533657+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "MXC",
-    "checked_at": "2026-06-19T14:20:32.430425+00:00",
+    "checked_at": "2026-06-19T15:59:12.534056+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7131,13 +7420,19 @@
   },
   {
     "ticker": "MXCT",
-    "checked_at": "2026-06-19T14:20:32.430505+00:00",
-    "status": "ok",
-    "issues": []
+    "checked_at": "2026-06-19T15:59:12.534171+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      }
+    ]
   },
   {
     "ticker": "MYO",
-    "checked_at": "2026-06-19T14:20:32.430645+00:00",
+    "checked_at": "2026-06-19T15:59:12.534366+00:00",
     "status": "info",
     "issues": [
       {
@@ -7164,7 +7459,7 @@
   },
   {
     "ticker": "MYSE",
-    "checked_at": "2026-06-19T14:20:32.430706+00:00",
+    "checked_at": "2026-06-19T15:59:12.534448+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7186,7 +7481,7 @@
   },
   {
     "ticker": "NABL",
-    "checked_at": "2026-06-19T14:20:32.430787+00:00",
+    "checked_at": "2026-06-19T15:59:12.534560+00:00",
     "status": "info",
     "issues": [
       {
@@ -7203,13 +7498,13 @@
   },
   {
     "ticker": "NAII",
-    "checked_at": "2026-06-19T14:20:32.431037+00:00",
+    "checked_at": "2026-06-19T15:59:12.534912+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "NAKA",
-    "checked_at": "2026-06-19T14:20:32.431079+00:00",
+    "checked_at": "2026-06-19T15:59:12.534968+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7226,19 +7521,19 @@
   },
   {
     "ticker": "NATH",
-    "checked_at": "2026-06-19T14:20:32.431414+00:00",
+    "checked_at": "2026-06-19T15:59:12.535417+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "NATR",
-    "checked_at": "2026-06-19T14:20:32.431735+00:00",
+    "checked_at": "2026-06-19T15:59:12.535873+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "NCL",
-    "checked_at": "2026-06-19T14:20:32.431780+00:00",
+    "checked_at": "2026-06-19T15:59:12.535932+00:00",
     "status": "info",
     "issues": [
       {
@@ -7255,7 +7550,7 @@
   },
   {
     "ticker": "NCPL",
-    "checked_at": "2026-06-19T14:20:32.431978+00:00",
+    "checked_at": "2026-06-19T15:59:12.536228+00:00",
     "status": "info",
     "issues": [
       {
@@ -7267,7 +7562,7 @@
   },
   {
     "ticker": "NDLS",
-    "checked_at": "2026-06-19T14:20:32.432256+00:00",
+    "checked_at": "2026-06-19T15:59:12.536625+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7289,7 +7584,7 @@
   },
   {
     "ticker": "NEN",
-    "checked_at": "2026-06-19T14:20:32.432615+00:00",
+    "checked_at": "2026-06-19T15:59:12.537118+00:00",
     "status": "error",
     "issues": [
       {
@@ -7311,7 +7606,7 @@
   },
   {
     "ticker": "NEPH",
-    "checked_at": "2026-06-19T14:20:32.432891+00:00",
+    "checked_at": "2026-06-19T15:59:12.537503+00:00",
     "status": "info",
     "issues": [
       {
@@ -7343,7 +7638,7 @@
   },
   {
     "ticker": "NMTC",
-    "checked_at": "2026-06-19T14:20:32.433042+00:00",
+    "checked_at": "2026-06-19T15:59:12.537709+00:00",
     "status": "info",
     "issues": [
       {
@@ -7355,13 +7650,19 @@
   },
   {
     "ticker": "NPCE",
-    "checked_at": "2026-06-19T14:20:32.433116+00:00",
-    "status": "ok",
-    "issues": []
+    "checked_at": "2026-06-19T15:59:12.537808+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      }
+    ]
   },
   {
     "ticker": "NPK",
-    "checked_at": "2026-06-19T14:20:32.433537+00:00",
+    "checked_at": "2026-06-19T15:59:12.538397+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7373,7 +7674,7 @@
   },
   {
     "ticker": "NRC",
-    "checked_at": "2026-06-19T14:20:32.433816+00:00",
+    "checked_at": "2026-06-19T15:59:12.538796+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7390,13 +7691,13 @@
   },
   {
     "ticker": "NRDS",
-    "checked_at": "2026-06-19T14:20:32.433892+00:00",
+    "checked_at": "2026-06-19T15:59:12.538901+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "NRDY",
-    "checked_at": "2026-06-19T14:20:32.433977+00:00",
+    "checked_at": "2026-06-19T15:59:12.539018+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7418,7 +7719,7 @@
   },
   {
     "ticker": "NRT",
-    "checked_at": "2026-06-19T14:20:32.434012+00:00",
+    "checked_at": "2026-06-19T15:59:12.539081+00:00",
     "status": "error",
     "issues": [
       {
@@ -7460,7 +7761,7 @@
   },
   {
     "ticker": "NSPR",
-    "checked_at": "2026-06-19T14:20:32.434306+00:00",
+    "checked_at": "2026-06-19T15:59:12.539492+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7487,13 +7788,19 @@
   },
   {
     "ticker": "NSYS",
-    "checked_at": "2026-06-19T14:20:32.434587+00:00",
-    "status": "ok",
-    "issues": []
+    "checked_at": "2026-06-19T15:59:12.539866+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      }
+    ]
   },
   {
     "ticker": "NTWK",
-    "checked_at": "2026-06-19T14:20:32.434847+00:00",
+    "checked_at": "2026-06-19T15:59:12.540235+00:00",
     "status": "info",
     "issues": [
       {
@@ -7510,7 +7817,7 @@
   },
   {
     "ticker": "NUAI",
-    "checked_at": "2026-06-19T14:20:32.434888+00:00",
+    "checked_at": "2026-06-19T15:59:12.540289+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7527,9 +7834,14 @@
   },
   {
     "ticker": "NUWE",
-    "checked_at": "2026-06-19T14:20:32.435110+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.540586+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -7559,7 +7871,7 @@
   },
   {
     "ticker": "NVNO",
-    "checked_at": "2026-06-19T14:20:32.435164+00:00",
+    "checked_at": "2026-06-19T15:59:12.540656+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7586,25 +7898,25 @@
   },
   {
     "ticker": "NXDR",
-    "checked_at": "2026-06-19T14:20:32.435235+00:00",
+    "checked_at": "2026-06-19T15:59:12.540750+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "NXGL",
-    "checked_at": "2026-06-19T14:20:32.435331+00:00",
+    "checked_at": "2026-06-19T15:59:12.540883+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "NXL",
-    "checked_at": "2026-06-19T14:20:32.435384+00:00",
+    "checked_at": "2026-06-19T15:59:12.540953+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "NXPL",
-    "checked_at": "2026-06-19T14:20:32.435571+00:00",
+    "checked_at": "2026-06-19T15:59:12.541240+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7621,7 +7933,7 @@
   },
   {
     "ticker": "NYC",
-    "checked_at": "2026-06-19T14:20:32.435695+00:00",
+    "checked_at": "2026-06-19T15:59:12.541410+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7653,7 +7965,7 @@
   },
   {
     "ticker": "OBAI",
-    "checked_at": "2026-06-19T14:20:32.435724+00:00",
+    "checked_at": "2026-06-19T15:59:12.541446+00:00",
     "status": "info",
     "issues": [
       {
@@ -7665,7 +7977,7 @@
   },
   {
     "ticker": "OFIX",
-    "checked_at": "2026-06-19T14:20:32.436142+00:00",
+    "checked_at": "2026-06-19T15:59:12.541926+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7707,7 +8019,7 @@
   },
   {
     "ticker": "OFRM",
-    "checked_at": "2026-06-19T14:20:32.436167+00:00",
+    "checked_at": "2026-06-19T15:59:12.541950+00:00",
     "status": "error",
     "issues": [
       {
@@ -7749,9 +8061,14 @@
   },
   {
     "ticker": "OLB",
-    "checked_at": "2026-06-19T14:20:32.436452+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.542356+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -7766,7 +8083,7 @@
   },
   {
     "ticker": "OM",
-    "checked_at": "2026-06-19T14:20:32.436573+00:00",
+    "checked_at": "2026-06-19T15:59:12.542533+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7828,7 +8145,7 @@
   },
   {
     "ticker": "OMDA",
-    "checked_at": "2026-06-19T14:20:32.436612+00:00",
+    "checked_at": "2026-06-19T15:59:12.542587+00:00",
     "status": "info",
     "issues": [
       {
@@ -7840,7 +8157,7 @@
   },
   {
     "ticker": "ONFO",
-    "checked_at": "2026-06-19T14:20:32.436675+00:00",
+    "checked_at": "2026-06-19T15:59:12.542676+00:00",
     "status": "info",
     "issues": [
       {
@@ -7862,7 +8179,7 @@
   },
   {
     "ticker": "ONMD",
-    "checked_at": "2026-06-19T14:20:32.436728+00:00",
+    "checked_at": "2026-06-19T15:59:12.542752+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7889,9 +8206,14 @@
   },
   {
     "ticker": "OOMA",
-    "checked_at": "2026-06-19T14:20:32.436916+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.543037+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-10-31 is 231 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -7901,7 +8223,7 @@
   },
   {
     "ticker": "OPAD",
-    "checked_at": "2026-06-19T14:20:32.437009+00:00",
+    "checked_at": "2026-06-19T15:59:12.543180+00:00",
     "status": "warn",
     "issues": [
       {
@@ -7918,13 +8240,13 @@
   },
   {
     "ticker": "OPRX",
-    "checked_at": "2026-06-19T14:20:32.437269+00:00",
+    "checked_at": "2026-06-19T15:59:12.543551+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "OPXS",
-    "checked_at": "2026-06-19T14:20:32.437563+00:00",
+    "checked_at": "2026-06-19T15:59:12.543943+00:00",
     "status": "info",
     "issues": [
       {
@@ -7966,7 +8288,7 @@
   },
   {
     "ticker": "ORGO",
-    "checked_at": "2026-06-19T14:20:32.437705+00:00",
+    "checked_at": "2026-06-19T15:59:12.544146+00:00",
     "status": "info",
     "issues": [
       {
@@ -7983,7 +8305,7 @@
   },
   {
     "ticker": "OSPN",
-    "checked_at": "2026-06-19T14:20:32.438049+00:00",
+    "checked_at": "2026-06-19T15:59:12.544634+00:00",
     "status": "info",
     "issues": [
       {
@@ -7995,7 +8317,7 @@
   },
   {
     "ticker": "OSUR",
-    "checked_at": "2026-06-19T14:20:32.438366+00:00",
+    "checked_at": "2026-06-19T15:59:12.545101+00:00",
     "status": "info",
     "issues": [
       {
@@ -8012,7 +8334,7 @@
   },
   {
     "ticker": "OWLT",
-    "checked_at": "2026-06-19T14:20:32.438456+00:00",
+    "checked_at": "2026-06-19T15:59:12.545202+00:00",
     "status": "info",
     "issues": [
       {
@@ -8029,7 +8351,7 @@
   },
   {
     "ticker": "PACB",
-    "checked_at": "2026-06-19T14:20:32.438786+00:00",
+    "checked_at": "2026-06-19T15:59:12.545671+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8081,7 +8403,7 @@
   },
   {
     "ticker": "PAR",
-    "checked_at": "2026-06-19T14:20:32.439076+00:00",
+    "checked_at": "2026-06-19T15:59:12.546087+00:00",
     "status": "info",
     "issues": [
       {
@@ -8108,7 +8430,7 @@
   },
   {
     "ticker": "PAVM",
-    "checked_at": "2026-06-19T14:20:32.439154+00:00",
+    "checked_at": "2026-06-19T15:59:12.546191+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8120,6 +8442,11 @@
         "severity": "warn",
         "rule": "gross_margin_out_of_range",
         "detail": "FY2024 Gross Margin -62% outside expected [0, 100%]"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -8140,7 +8467,7 @@
   },
   {
     "ticker": "PAVS",
-    "checked_at": "2026-06-19T14:20:32.439180+00:00",
+    "checked_at": "2026-06-19T15:59:12.546226+00:00",
     "status": "error",
     "issues": [
       {
@@ -8187,7 +8514,7 @@
   },
   {
     "ticker": "PAYS",
-    "checked_at": "2026-06-19T14:20:32.439462+00:00",
+    "checked_at": "2026-06-19T15:59:12.546582+00:00",
     "status": "info",
     "issues": [
       {
@@ -8204,7 +8531,7 @@
   },
   {
     "ticker": "PCRX",
-    "checked_at": "2026-06-19T14:20:32.439800+00:00",
+    "checked_at": "2026-06-19T15:59:12.547058+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8241,9 +8568,14 @@
   },
   {
     "ticker": "PD",
-    "checked_at": "2026-06-19T14:20:32.439917+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.547223+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-10-31 is 231 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -8258,7 +8590,7 @@
   },
   {
     "ticker": "PDEX",
-    "checked_at": "2026-06-19T14:20:32.440174+00:00",
+    "checked_at": "2026-06-19T15:59:12.547581+00:00",
     "status": "info",
     "issues": [
       {
@@ -8275,7 +8607,7 @@
   },
   {
     "ticker": "PDYN",
-    "checked_at": "2026-06-19T14:20:32.440249+00:00",
+    "checked_at": "2026-06-19T15:59:12.547683+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8287,7 +8619,7 @@
   },
   {
     "ticker": "PED",
-    "checked_at": "2026-06-19T14:20:32.440389+00:00",
+    "checked_at": "2026-06-19T15:59:12.547874+00:00",
     "status": "info",
     "issues": [
       {
@@ -8309,7 +8641,7 @@
   },
   {
     "ticker": "PEW",
-    "checked_at": "2026-06-19T14:20:32.440439+00:00",
+    "checked_at": "2026-06-19T15:59:12.547918+00:00",
     "status": "info",
     "issues": [
       {
@@ -8321,7 +8653,7 @@
   },
   {
     "ticker": "PFSA",
-    "checked_at": "2026-06-19T14:20:32.440472+00:00",
+    "checked_at": "2026-06-19T15:59:12.547956+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8353,9 +8685,14 @@
   },
   {
     "ticker": "PHR",
-    "checked_at": "2026-06-19T14:20:32.440599+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.548137+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-10-31 is 231 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -8375,7 +8712,7 @@
   },
   {
     "ticker": "PHUN",
-    "checked_at": "2026-06-19T14:20:32.440721+00:00",
+    "checked_at": "2026-06-19T15:59:12.548305+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8402,7 +8739,7 @@
   },
   {
     "ticker": "PKE",
-    "checked_at": "2026-06-19T14:20:32.441074+00:00",
+    "checked_at": "2026-06-19T15:59:12.548787+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8434,9 +8771,14 @@
   },
   {
     "ticker": "PMI",
-    "checked_at": "2026-06-19T14:20:32.441105+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.548826+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
@@ -8446,9 +8788,14 @@
   },
   {
     "ticker": "PNRG",
-    "checked_at": "2026-06-19T14:20:32.441372+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.549213+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
@@ -8458,7 +8805,7 @@
   },
   {
     "ticker": "POCI",
-    "checked_at": "2026-06-19T14:20:32.441641+00:00",
+    "checked_at": "2026-06-19T15:59:12.549572+00:00",
     "status": "info",
     "issues": [
       {
@@ -8475,13 +8822,13 @@
   },
   {
     "ticker": "PODC",
-    "checked_at": "2026-06-19T14:20:32.441684+00:00",
+    "checked_at": "2026-06-19T15:59:12.549626+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "POWW",
-    "checked_at": "2026-06-19T14:20:32.441835+00:00",
+    "checked_at": "2026-06-19T15:59:12.549828+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8538,7 +8885,7 @@
   },
   {
     "ticker": "PROP",
-    "checked_at": "2026-06-19T14:20:32.442098+00:00",
+    "checked_at": "2026-06-19T15:59:12.550206+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8580,7 +8927,7 @@
   },
   {
     "ticker": "PRPL",
-    "checked_at": "2026-06-19T14:20:32.442229+00:00",
+    "checked_at": "2026-06-19T15:59:12.550390+00:00",
     "status": "info",
     "issues": [
       {
@@ -8607,7 +8954,7 @@
   },
   {
     "ticker": "PRT",
-    "checked_at": "2026-06-19T14:20:32.442254+00:00",
+    "checked_at": "2026-06-19T15:59:12.550428+00:00",
     "status": "error",
     "issues": [
       {
@@ -8654,7 +9001,7 @@
   },
   {
     "ticker": "PRTH",
-    "checked_at": "2026-06-19T14:20:32.442422+00:00",
+    "checked_at": "2026-06-19T15:59:12.550635+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8670,8 +9017,25 @@
     ]
   },
   {
+    "ticker": "PRTS",
+    "checked_at": "2026-06-19T15:59:12.551104+00:00",
+    "status": "info",
+    "issues": [
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2016 reported EPS 0.08 vs NI/shares -0.02 (-121%)"
+      },
+      {
+        "severity": "info",
+        "rule": "mcap_reconciliation",
+        "detail": "Stage-1 mcap 0.07B vs price×shares 0.39B (+496%)"
+      }
+    ]
+  },
+  {
     "ticker": "PSQH",
-    "checked_at": "2026-06-19T14:20:32.442483+00:00",
+    "checked_at": "2026-06-19T15:59:12.551191+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8703,13 +9067,13 @@
   },
   {
     "ticker": "PTLO",
-    "checked_at": "2026-06-19T14:20:32.442563+00:00",
+    "checked_at": "2026-06-19T15:59:12.551299+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "PUBM",
-    "checked_at": "2026-06-19T14:20:32.442646+00:00",
+    "checked_at": "2026-06-19T15:59:12.551412+00:00",
     "status": "info",
     "issues": [
       {
@@ -8721,7 +9085,7 @@
   },
   {
     "ticker": "PURR",
-    "checked_at": "2026-06-19T14:20:32.442664+00:00",
+    "checked_at": "2026-06-19T15:59:12.551437+00:00",
     "status": "error",
     "issues": [
       {
@@ -8763,7 +9127,7 @@
   },
   {
     "ticker": "PVL",
-    "checked_at": "2026-06-19T14:20:32.442691+00:00",
+    "checked_at": "2026-06-19T15:59:12.551475+00:00",
     "status": "error",
     "issues": [
       {
@@ -8810,19 +9174,19 @@
   },
   {
     "ticker": "QDEL",
-    "checked_at": "2026-06-19T14:20:32.442767+00:00",
+    "checked_at": "2026-06-19T15:59:12.551578+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "QSI",
-    "checked_at": "2026-06-19T14:20:32.442818+00:00",
+    "checked_at": "2026-06-19T15:59:12.551645+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "QTI",
-    "checked_at": "2026-06-19T14:20:32.442866+00:00",
+    "checked_at": "2026-06-19T15:59:12.551708+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8849,13 +9213,13 @@
   },
   {
     "ticker": "QTRX",
-    "checked_at": "2026-06-19T14:20:32.443012+00:00",
+    "checked_at": "2026-06-19T15:59:12.551909+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "RAVE",
-    "checked_at": "2026-06-19T14:20:32.443287+00:00",
+    "checked_at": "2026-06-19T15:59:12.552311+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8912,19 +9276,24 @@
   },
   {
     "ticker": "RBBN",
-    "checked_at": "2026-06-19T14:20:32.443474+00:00",
+    "checked_at": "2026-06-19T15:59:12.552553+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "RCEL",
-    "checked_at": "2026-06-19T14:20:32.443601+00:00",
+    "checked_at": "2026-06-19T15:59:12.552713+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2020 |Net Income| -42M > 1.5× Revenue 14M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -8955,13 +9324,13 @@
   },
   {
     "ticker": "RDVT",
-    "checked_at": "2026-06-19T14:20:32.443726+00:00",
+    "checked_at": "2026-06-19T15:59:12.552882+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "RDZN",
-    "checked_at": "2026-06-19T14:20:32.443776+00:00",
+    "checked_at": "2026-06-19T15:59:12.552948+00:00",
     "status": "warn",
     "issues": [
       {
@@ -8983,7 +9352,7 @@
   },
   {
     "ticker": "REAX",
-    "checked_at": "2026-06-19T14:20:32.443799+00:00",
+    "checked_at": "2026-06-19T15:59:12.552979+00:00",
     "status": "error",
     "issues": [
       {
@@ -9030,9 +9399,14 @@
   },
   {
     "ticker": "REBN",
-    "checked_at": "2026-06-19T14:20:32.443863+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.553062+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
@@ -9042,7 +9416,7 @@
   },
   {
     "ticker": "REI",
-    "checked_at": "2026-06-19T14:20:32.444009+00:00",
+    "checked_at": "2026-06-19T15:59:12.553266+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9054,7 +9428,7 @@
   },
   {
     "ticker": "REKR",
-    "checked_at": "2026-06-19T14:20:32.444160+00:00",
+    "checked_at": "2026-06-19T15:59:12.553462+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9096,7 +9470,7 @@
   },
   {
     "ticker": "REPX",
-    "checked_at": "2026-06-19T14:20:32.444408+00:00",
+    "checked_at": "2026-06-19T15:59:12.553787+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9133,7 +9507,7 @@
   },
   {
     "ticker": "RFL",
-    "checked_at": "2026-06-19T14:20:32.444550+00:00",
+    "checked_at": "2026-06-19T15:59:12.553977+00:00",
     "status": "info",
     "issues": [
       {
@@ -9150,13 +9524,13 @@
   },
   {
     "ticker": "RGR",
-    "checked_at": "2026-06-19T14:20:32.444940+00:00",
+    "checked_at": "2026-06-19T15:59:12.554548+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "RICK",
-    "checked_at": "2026-06-19T14:20:32.445314+00:00",
+    "checked_at": "2026-06-19T15:59:12.555076+00:00",
     "status": "info",
     "issues": [
       {
@@ -9183,7 +9557,7 @@
   },
   {
     "ticker": "RKDA",
-    "checked_at": "2026-06-19T14:20:32.445525+00:00",
+    "checked_at": "2026-06-19T15:59:12.555344+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9230,7 +9604,7 @@
   },
   {
     "ticker": "RMNI",
-    "checked_at": "2026-06-19T14:20:32.445701+00:00",
+    "checked_at": "2026-06-19T15:59:12.555581+00:00",
     "status": "info",
     "issues": [
       {
@@ -9262,7 +9636,7 @@
   },
   {
     "ticker": "RMR",
-    "checked_at": "2026-06-19T14:20:32.445901+00:00",
+    "checked_at": "2026-06-19T15:59:12.555856+00:00",
     "status": "info",
     "issues": [
       {
@@ -9284,7 +9658,7 @@
   },
   {
     "ticker": "RMSG",
-    "checked_at": "2026-06-19T14:20:32.445924+00:00",
+    "checked_at": "2026-06-19T15:59:12.555887+00:00",
     "status": "error",
     "issues": [
       {
@@ -9331,13 +9705,13 @@
   },
   {
     "ticker": "RMTI",
-    "checked_at": "2026-06-19T14:20:32.446235+00:00",
+    "checked_at": "2026-06-19T15:59:12.556332+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "RPAY",
-    "checked_at": "2026-06-19T14:20:32.446365+00:00",
+    "checked_at": "2026-06-19T15:59:12.556505+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9389,7 +9763,7 @@
   },
   {
     "ticker": "RPD",
-    "checked_at": "2026-06-19T14:20:32.446572+00:00",
+    "checked_at": "2026-06-19T15:59:12.556770+00:00",
     "status": "info",
     "issues": [
       {
@@ -9411,7 +9785,7 @@
   },
   {
     "ticker": "RPID",
-    "checked_at": "2026-06-19T14:20:32.446657+00:00",
+    "checked_at": "2026-06-19T15:59:12.556880+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9445,6 +9819,11 @@
         "detail": "FY2024 |Net Income| -47M > 1.5× Revenue 28M — heavy cash burn"
       },
       {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
+      {
         "severity": "info",
         "rule": "eps_mismatch",
         "detail": "FY2020 reported EPS -126.11 vs NI/shares -103.40 (+18%)"
@@ -9458,7 +9837,7 @@
   },
   {
     "ticker": "RRGB",
-    "checked_at": "2026-06-19T14:20:32.446919+00:00",
+    "checked_at": "2026-06-19T15:59:12.557277+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9470,7 +9849,7 @@
   },
   {
     "ticker": "RSKD",
-    "checked_at": "2026-06-19T14:20:32.446942+00:00",
+    "checked_at": "2026-06-19T15:59:12.557323+00:00",
     "status": "error",
     "issues": [
       {
@@ -9517,7 +9896,7 @@
   },
   {
     "ticker": "RSSS",
-    "checked_at": "2026-06-19T14:20:32.447198+00:00",
+    "checked_at": "2026-06-19T15:59:12.557668+00:00",
     "status": "info",
     "issues": [
       {
@@ -9529,7 +9908,7 @@
   },
   {
     "ticker": "RVP",
-    "checked_at": "2026-06-19T14:20:32.447520+00:00",
+    "checked_at": "2026-06-19T15:59:12.558083+00:00",
     "status": "info",
     "issues": [
       {
@@ -9586,7 +9965,7 @@
   },
   {
     "ticker": "RVYL",
-    "checked_at": "2026-06-19T14:20:32.447787+00:00",
+    "checked_at": "2026-06-19T15:59:12.558431+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9618,7 +9997,7 @@
   },
   {
     "ticker": "RXST",
-    "checked_at": "2026-06-19T14:20:32.447865+00:00",
+    "checked_at": "2026-06-19T15:59:12.558531+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9640,7 +10019,7 @@
   },
   {
     "ticker": "RXT",
-    "checked_at": "2026-06-19T14:20:32.447961+00:00",
+    "checked_at": "2026-06-19T15:59:12.558656+00:00",
     "status": "info",
     "issues": [
       {
@@ -9652,7 +10031,7 @@
   },
   {
     "ticker": "SABR",
-    "checked_at": "2026-06-19T14:20:32.448205+00:00",
+    "checked_at": "2026-06-19T15:59:12.559001+00:00",
     "status": "info",
     "issues": [
       {
@@ -9674,7 +10053,7 @@
   },
   {
     "ticker": "SATL",
-    "checked_at": "2026-06-19T14:20:32.448253+00:00",
+    "checked_at": "2026-06-19T15:59:12.559064+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9696,7 +10075,7 @@
   },
   {
     "ticker": "SBFM",
-    "checked_at": "2026-06-19T14:20:32.448421+00:00",
+    "checked_at": "2026-06-19T15:59:12.559283+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9713,7 +10092,7 @@
   },
   {
     "ticker": "SCOR",
-    "checked_at": "2026-06-19T14:20:32.448718+00:00",
+    "checked_at": "2026-06-19T15:59:12.559696+00:00",
     "status": "info",
     "issues": [
       {
@@ -9750,7 +10129,7 @@
   },
   {
     "ticker": "SCYX",
-    "checked_at": "2026-06-19T14:20:32.448917+00:00",
+    "checked_at": "2026-06-19T15:59:12.559979+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9782,7 +10161,7 @@
   },
   {
     "ticker": "SD",
-    "checked_at": "2026-06-19T14:20:32.449300+00:00",
+    "checked_at": "2026-06-19T15:59:12.560529+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9834,13 +10213,13 @@
   },
   {
     "ticker": "SDGR",
-    "checked_at": "2026-06-19T14:20:32.449389+00:00",
+    "checked_at": "2026-06-19T15:59:12.560651+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SEAT",
-    "checked_at": "2026-06-19T14:20:32.449490+00:00",
+    "checked_at": "2026-06-19T15:59:12.560764+00:00",
     "status": "error",
     "issues": [
       {
@@ -9882,7 +10261,7 @@
   },
   {
     "ticker": "SEG",
-    "checked_at": "2026-06-19T14:20:32.449540+00:00",
+    "checked_at": "2026-06-19T15:59:12.560825+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9899,7 +10278,7 @@
   },
   {
     "ticker": "SENEA",
-    "checked_at": "2026-06-19T14:20:32.449824+00:00",
+    "checked_at": "2026-06-19T15:59:12.561226+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9916,7 +10295,7 @@
   },
   {
     "ticker": "SENEB",
-    "checked_at": "2026-06-19T14:20:32.450111+00:00",
+    "checked_at": "2026-06-19T15:59:12.561609+00:00",
     "status": "warn",
     "issues": [
       {
@@ -9933,7 +10312,7 @@
   },
   {
     "ticker": "SENS",
-    "checked_at": "2026-06-19T14:20:32.450298+00:00",
+    "checked_at": "2026-06-19T15:59:12.561854+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10010,31 +10389,48 @@
   },
   {
     "ticker": "SERA",
-    "checked_at": "2026-06-19T14:20:32.450370+00:00",
+    "checked_at": "2026-06-19T15:59:12.561945+00:00",
     "status": "ok",
     "issues": []
   },
   {
+    "ticker": "SES",
+    "checked_at": "2026-06-19T15:59:12.562000+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "ni_exceeds_revenue",
+        "detail": "FY2025 |Net Income| -73M > 1.5× Revenue 21M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "yoy_revenue_jump",
+        "detail": "FY2024→FY2025 revenue 2M → 21M (10.3×, not M&A-flagged)"
+      }
+    ]
+  },
+  {
     "ticker": "SG",
-    "checked_at": "2026-06-19T14:20:32.450456+00:00",
+    "checked_at": "2026-06-19T15:59:12.562102+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SGHT",
-    "checked_at": "2026-06-19T14:20:32.450529+00:00",
+    "checked_at": "2026-06-19T15:59:12.562198+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SHAZ",
-    "checked_at": "2026-06-19T14:20:32.450553+00:00",
+    "checked_at": "2026-06-19T15:59:12.562229+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SHPH",
-    "checked_at": "2026-06-19T14:20:32.450582+00:00",
+    "checked_at": "2026-06-19T15:59:12.562266+00:00",
     "status": "error",
     "issues": [
       {
@@ -10061,13 +10457,13 @@
   },
   {
     "ticker": "SIBN",
-    "checked_at": "2026-06-19T14:20:32.450697+00:00",
+    "checked_at": "2026-06-19T15:59:12.562422+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SIDU",
-    "checked_at": "2026-06-19T14:20:32.450772+00:00",
+    "checked_at": "2026-06-19T15:59:12.562521+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10099,7 +10495,7 @@
   },
   {
     "ticker": "SIEB",
-    "checked_at": "2026-06-19T14:20:32.451077+00:00",
+    "checked_at": "2026-06-19T15:59:12.562958+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10126,7 +10522,7 @@
   },
   {
     "ticker": "SIF",
-    "checked_at": "2026-06-19T14:20:32.451378+00:00",
+    "checked_at": "2026-06-19T15:59:12.563393+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10143,7 +10539,7 @@
   },
   {
     "ticker": "SIGA",
-    "checked_at": "2026-06-19T14:20:32.451556+00:00",
+    "checked_at": "2026-06-19T15:59:12.563611+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10175,9 +10571,14 @@
   },
   {
     "ticker": "SINT",
-    "checked_at": "2026-06-19T14:20:32.451764+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.563904+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -10222,7 +10623,7 @@
   },
   {
     "ticker": "SJT",
-    "checked_at": "2026-06-19T14:20:32.451794+00:00",
+    "checked_at": "2026-06-19T15:59:12.563946+00:00",
     "status": "error",
     "issues": [
       {
@@ -10269,7 +10670,7 @@
   },
   {
     "ticker": "SLAI",
-    "checked_at": "2026-06-19T14:20:32.451823+00:00",
+    "checked_at": "2026-06-19T15:59:12.563986+00:00",
     "status": "error",
     "issues": [
       {
@@ -10315,8 +10716,50 @@
     ]
   },
   {
+    "ticker": "SLDP",
+    "checked_at": "2026-06-19T15:59:12.564101+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "no_gross_profit_source",
+        "detail": "neither Gross Profit nor Cost of Revenue fetched — Gross Margin will show n/a"
+      },
+      {
+        "severity": "warn",
+        "rule": "ni_exceeds_revenue",
+        "detail": "FY2023 |Net Income| -66M > 1.5× Revenue 17M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "ni_exceeds_revenue",
+        "detail": "FY2024 |Net Income| -97M > 1.5× Revenue 20M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "ni_exceeds_revenue",
+        "detail": "FY2025 |Net Income| -93M > 1.5× Revenue 22M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "yoy_revenue_jump",
+        "detail": "FY2021→FY2022 revenue 3M → 12M (4.3×, not M&A-flagged)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2021 reported EPS 0.11 vs NI/shares 0.19 (+72%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2022 reported EPS -0.05 vs NI/shares -0.05 (-10%)"
+      }
+    ]
+  },
+  {
     "ticker": "SLE",
-    "checked_at": "2026-06-19T14:20:32.451933+00:00",
+    "checked_at": "2026-06-19T15:59:12.564271+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10348,7 +10791,7 @@
   },
   {
     "ticker": "SLNH",
-    "checked_at": "2026-06-19T14:20:32.452199+00:00",
+    "checked_at": "2026-06-19T15:59:12.564643+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10415,13 +10858,80 @@
   },
   {
     "ticker": "SLP",
-    "checked_at": "2026-06-19T14:20:32.452490+00:00",
+    "checked_at": "2026-06-19T15:59:12.565032+00:00",
     "status": "ok",
     "issues": []
   },
   {
+    "ticker": "SMP",
+    "checked_at": "2026-06-19T15:59:12.565530+00:00",
+    "status": "info",
+    "issues": [
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2009 reported EPS 0.31 vs NI/shares 0.18 (-42%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2010 reported EPS 1.09 vs NI/shares 0.97 (-11%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2014 reported EPS 2.28 vs NI/shares 1.85 (-19%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2017 reported EPS 1.88 vs NI/shares 1.64 (-13%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2018 reported EPS 2.48 vs NI/shares 1.88 (-24%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2019 reported EPS 3.03 vs NI/shares 2.54 (-16%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2020 reported EPS 3.52 vs NI/shares 2.51 (-29%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2021 reported EPS 4.39 vs NI/shares 4.02 (-8%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2022 reported EPS 3.30 vs NI/shares 2.50 (-24%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2023 reported EPS 2.85 vs NI/shares 1.54 (-46%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2024 reported EPS 2.41 vs NI/shares 1.24 (-49%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2025 reported EPS 3.52 vs NI/shares 1.84 (-48%)"
+      }
+    ]
+  },
+  {
     "ticker": "SMRT",
-    "checked_at": "2026-06-19T14:20:32.452569+00:00",
+    "checked_at": "2026-06-19T15:59:12.565642+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10438,7 +10948,7 @@
   },
   {
     "ticker": "SMSI",
-    "checked_at": "2026-06-19T14:20:32.452902+00:00",
+    "checked_at": "2026-06-19T15:59:12.566123+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10465,7 +10975,7 @@
   },
   {
     "ticker": "SMTI",
-    "checked_at": "2026-06-19T14:20:32.453171+00:00",
+    "checked_at": "2026-06-19T15:59:12.566506+00:00",
     "status": "info",
     "issues": [
       {
@@ -10487,7 +10997,7 @@
   },
   {
     "ticker": "SNBR",
-    "checked_at": "2026-06-19T14:20:32.453517+00:00",
+    "checked_at": "2026-06-19T15:59:12.566981+00:00",
     "status": "info",
     "issues": [
       {
@@ -10499,7 +11009,7 @@
   },
   {
     "ticker": "SNOA",
-    "checked_at": "2026-06-19T14:20:32.453803+00:00",
+    "checked_at": "2026-06-19T15:59:12.567352+00:00",
     "status": "info",
     "issues": [
       {
@@ -10510,19 +11020,24 @@
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
-        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-60%)"
+        "detail": "Stage-1 mcap 0.00B vs price×shares 0.00B (-71%)"
       }
     ]
   },
   {
     "ticker": "SNWV",
-    "checked_at": "2026-06-19T14:20:32.454069+00:00",
+    "checked_at": "2026-06-19T15:59:12.567723+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2021 |Net Income| -27M > 1.5× Revenue 13M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "warn",
@@ -10548,7 +11063,7 @@
   },
   {
     "ticker": "SONM",
-    "checked_at": "2026-06-19T14:20:32.454175+00:00",
+    "checked_at": "2026-06-19T15:59:12.567864+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10580,13 +11095,13 @@
   },
   {
     "ticker": "SPAI",
-    "checked_at": "2026-06-19T14:20:32.454212+00:00",
+    "checked_at": "2026-06-19T15:59:12.567912+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SPCE",
-    "checked_at": "2026-06-19T14:20:32.454340+00:00",
+    "checked_at": "2026-06-19T15:59:12.568099+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10618,7 +11133,7 @@
   },
   {
     "ticker": "SPOK",
-    "checked_at": "2026-06-19T14:20:32.454687+00:00",
+    "checked_at": "2026-06-19T15:59:12.568575+00:00",
     "status": "info",
     "issues": [
       {
@@ -10630,13 +11145,13 @@
   },
   {
     "ticker": "SPT",
-    "checked_at": "2026-06-19T14:20:32.454785+00:00",
+    "checked_at": "2026-06-19T15:59:12.568708+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SRG",
-    "checked_at": "2026-06-19T14:20:32.454950+00:00",
+    "checked_at": "2026-06-19T15:59:12.568944+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10677,10 +11192,37 @@
     ]
   },
   {
-    "ticker": "SRTS",
-    "checked_at": "2026-06-19T14:20:32.455113+00:00",
-    "status": "info",
+    "ticker": "SRI",
+    "checked_at": "2026-06-19T15:59:12.569438+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "q_sum_vs_annual",
+        "detail": "FY2012 annual rev 612M vs Σ4-quarters 939M (+53%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2013 reported EPS 0.70 vs NI/shares 0.56 (-21%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2014 reported EPS -1.40 vs NI/shares -1.75 (-25%)"
+      }
+    ]
+  },
+  {
+    "ticker": "SRTS",
+    "checked_at": "2026-06-19T15:59:12.569657+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -10690,7 +11232,7 @@
   },
   {
     "ticker": "SRXH",
-    "checked_at": "2026-06-19T14:20:32.455315+00:00",
+    "checked_at": "2026-06-19T15:59:12.569946+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10727,19 +11269,19 @@
   },
   {
     "ticker": "SSTI",
-    "checked_at": "2026-06-19T14:20:32.455477+00:00",
+    "checked_at": "2026-06-19T15:59:12.570160+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SSTK",
-    "checked_at": "2026-06-19T14:20:32.455631+00:00",
+    "checked_at": "2026-06-19T15:59:12.570370+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "STEX",
-    "checked_at": "2026-06-19T14:20:32.455701+00:00",
+    "checked_at": "2026-06-19T15:59:12.570461+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10756,7 +11298,7 @@
   },
   {
     "ticker": "STHO",
-    "checked_at": "2026-06-19T14:20:32.455762+00:00",
+    "checked_at": "2026-06-19T15:59:12.570543+00:00",
     "status": "error",
     "issues": [
       {
@@ -10778,13 +11320,13 @@
   },
   {
     "ticker": "STIM",
-    "checked_at": "2026-06-19T14:20:32.455903+00:00",
+    "checked_at": "2026-06-19T15:59:12.570736+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "STKS",
-    "checked_at": "2026-06-19T14:20:32.456120+00:00",
+    "checked_at": "2026-06-19T15:59:12.571042+00:00",
     "status": "info",
     "issues": [
       {
@@ -10800,8 +11342,14 @@
     ]
   },
   {
+    "ticker": "STRT",
+    "checked_at": "2026-06-19T15:59:12.571462+00:00",
+    "status": "ok",
+    "issues": []
+  },
+  {
     "ticker": "STSS",
-    "checked_at": "2026-06-19T14:20:32.456155+00:00",
+    "checked_at": "2026-06-19T15:59:12.571507+00:00",
     "status": "info",
     "issues": [
       {
@@ -10818,7 +11366,7 @@
   },
   {
     "ticker": "STXS",
-    "checked_at": "2026-06-19T14:20:32.456479+00:00",
+    "checked_at": "2026-06-19T15:59:12.571946+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10865,13 +11413,13 @@
   },
   {
     "ticker": "SVCO",
-    "checked_at": "2026-06-19T14:20:32.456522+00:00",
+    "checked_at": "2026-06-19T15:59:12.571999+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "SWBI",
-    "checked_at": "2026-06-19T14:20:32.456855+00:00",
+    "checked_at": "2026-06-19T15:59:12.572459+00:00",
     "status": "warn",
     "issues": [
       {
@@ -10913,7 +11461,7 @@
   },
   {
     "ticker": "SWMR",
-    "checked_at": "2026-06-19T14:20:32.456876+00:00",
+    "checked_at": "2026-06-19T15:59:12.572484+00:00",
     "status": "error",
     "issues": [
       {
@@ -10954,14 +11502,26 @@
     ]
   },
   {
+    "ticker": "SYPR",
+    "checked_at": "2026-06-19T15:59:12.572926+00:00",
+    "status": "info",
+    "issues": [
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2012 reported EPS 0.50 vs NI/shares 0.16 (-69%)"
+      }
+    ]
+  },
+  {
     "ticker": "TALK",
-    "checked_at": "2026-06-19T14:20:32.456958+00:00",
+    "checked_at": "2026-06-19T15:59:12.573051+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "TAOX",
-    "checked_at": "2026-06-19T14:20:32.457005+00:00",
+    "checked_at": "2026-06-19T15:59:12.573130+00:00",
     "status": "info",
     "issues": [
       {
@@ -10998,13 +11558,13 @@
   },
   {
     "ticker": "TASK",
-    "checked_at": "2026-06-19T14:20:32.457087+00:00",
+    "checked_at": "2026-06-19T15:59:12.573255+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "TATT",
-    "checked_at": "2026-06-19T14:20:32.457130+00:00",
+    "checked_at": "2026-06-19T15:59:12.573301+00:00",
     "status": "error",
     "issues": [
       {
@@ -11051,13 +11611,13 @@
   },
   {
     "ticker": "TBRG",
-    "checked_at": "2026-06-19T14:20:32.457519+00:00",
+    "checked_at": "2026-06-19T15:59:12.573821+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "TCI",
-    "checked_at": "2026-06-19T14:20:32.457697+00:00",
+    "checked_at": "2026-06-19T15:59:12.574101+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11104,7 +11664,7 @@
   },
   {
     "ticker": "TCMD",
-    "checked_at": "2026-06-19T14:20:32.457892+00:00",
+    "checked_at": "2026-06-19T15:59:12.574413+00:00",
     "status": "info",
     "issues": [
       {
@@ -11121,7 +11681,7 @@
   },
   {
     "ticker": "TEAD",
-    "checked_at": "2026-06-19T14:20:32.457978+00:00",
+    "checked_at": "2026-06-19T15:59:12.574540+00:00",
     "status": "info",
     "issues": [
       {
@@ -11143,13 +11703,18 @@
   },
   {
     "ticker": "TELA",
-    "checked_at": "2026-06-19T14:20:32.458091+00:00",
+    "checked_at": "2026-06-19T15:59:12.574703+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2020 |Net Income| -29M > 1.5× Revenue 18M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -11165,7 +11730,7 @@
   },
   {
     "ticker": "TGL",
-    "checked_at": "2026-06-19T14:20:32.458159+00:00",
+    "checked_at": "2026-06-19T15:59:12.574800+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11191,8 +11756,35 @@
     ]
   },
   {
+    "ticker": "THRM",
+    "checked_at": "2026-06-19T15:59:12.575270+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "yoy_revenue_jump",
+        "detail": "FY2010→FY2011 revenue 112M → 370M (3.3×, not M&A-flagged)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2011 reported EPS 0.06 vs NI/shares 0.41 (+586%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2012 reported EPS 0.39 vs NI/shares 0.62 (+59%)"
+      },
+      {
+        "severity": "info",
+        "rule": "eps_mismatch",
+        "detail": "FY2013 reported EPS 0.94 vs NI/shares 0.99 (+5%)"
+      }
+    ]
+  },
+  {
     "ticker": "THRY",
-    "checked_at": "2026-06-19T14:20:32.458341+00:00",
+    "checked_at": "2026-06-19T15:59:12.575549+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11204,7 +11796,7 @@
   },
   {
     "ticker": "TIVC",
-    "checked_at": "2026-06-19T14:20:32.458414+00:00",
+    "checked_at": "2026-06-19T15:59:12.575631+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11221,7 +11813,7 @@
   },
   {
     "ticker": "TKNO",
-    "checked_at": "2026-06-19T14:20:32.458492+00:00",
+    "checked_at": "2026-06-19T15:59:12.575742+00:00",
     "status": "info",
     "issues": [
       {
@@ -11233,7 +11825,7 @@
   },
   {
     "ticker": "TLPH",
-    "checked_at": "2026-06-19T14:20:32.458756+00:00",
+    "checked_at": "2026-06-19T15:59:12.576193+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11300,7 +11892,7 @@
   },
   {
     "ticker": "TLS",
-    "checked_at": "2026-06-19T14:20:32.459088+00:00",
+    "checked_at": "2026-06-19T15:59:12.576698+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11317,7 +11909,7 @@
   },
   {
     "ticker": "TLSI",
-    "checked_at": "2026-06-19T14:20:32.459149+00:00",
+    "checked_at": "2026-06-19T15:59:12.576782+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11329,6 +11921,11 @@
         "severity": "warn",
         "rule": "ni_exceeds_revenue",
         "detail": "FY2023 |Net Income| -59M > 1.5× Revenue 19M — heavy cash burn"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -11359,7 +11956,7 @@
   },
   {
     "ticker": "TMCI",
-    "checked_at": "2026-06-19T14:20:32.459236+00:00",
+    "checked_at": "2026-06-19T15:59:12.576894+00:00",
     "status": "info",
     "issues": [
       {
@@ -11376,9 +11973,14 @@
   },
   {
     "ticker": "TNON",
-    "checked_at": "2026-06-19T14:20:32.459298+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.576976+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "mcap_reconciliation",
@@ -11388,7 +11990,7 @@
   },
   {
     "ticker": "TONX",
-    "checked_at": "2026-06-19T14:20:32.459447+00:00",
+    "checked_at": "2026-06-19T15:59:12.577168+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11435,7 +12037,7 @@
   },
   {
     "ticker": "TPET",
-    "checked_at": "2026-06-19T14:20:32.459486+00:00",
+    "checked_at": "2026-06-19T15:59:12.577218+00:00",
     "status": "info",
     "issues": [
       {
@@ -11447,7 +12049,7 @@
   },
   {
     "ticker": "TRAK",
-    "checked_at": "2026-06-19T14:20:32.459762+00:00",
+    "checked_at": "2026-06-19T15:59:12.577602+00:00",
     "status": "info",
     "issues": [
       {
@@ -11519,7 +12121,7 @@
   },
   {
     "ticker": "TSSI",
-    "checked_at": "2026-06-19T14:20:32.460050+00:00",
+    "checked_at": "2026-06-19T15:59:12.578006+00:00",
     "status": "info",
     "issues": [
       {
@@ -11536,13 +12138,13 @@
   },
   {
     "ticker": "TTEC",
-    "checked_at": "2026-06-19T14:20:32.460203+00:00",
+    "checked_at": "2026-06-19T15:59:12.578225+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "TTGT",
-    "checked_at": "2026-06-19T14:20:32.460263+00:00",
+    "checked_at": "2026-06-19T15:59:12.578307+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11559,7 +12161,7 @@
   },
   {
     "ticker": "TXMD",
-    "checked_at": "2026-06-19T14:20:32.460591+00:00",
+    "checked_at": "2026-06-19T15:59:12.578744+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11641,7 +12243,7 @@
   },
   {
     "ticker": "TXO",
-    "checked_at": "2026-06-19T14:20:32.460656+00:00",
+    "checked_at": "2026-06-19T15:59:12.578824+00:00",
     "status": "error",
     "issues": [
       {
@@ -11658,7 +12260,7 @@
   },
   {
     "ticker": "TZOO",
-    "checked_at": "2026-06-19T14:20:32.460821+00:00",
+    "checked_at": "2026-06-19T15:59:12.579047+00:00",
     "status": "info",
     "issues": [
       {
@@ -11680,7 +12282,7 @@
   },
   {
     "ticker": "UIS",
-    "checked_at": "2026-06-19T14:20:32.461164+00:00",
+    "checked_at": "2026-06-19T15:59:12.579542+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11702,7 +12304,7 @@
   },
   {
     "ticker": "UPLD",
-    "checked_at": "2026-06-19T14:20:32.461423+00:00",
+    "checked_at": "2026-06-19T15:59:12.579898+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11724,7 +12326,7 @@
   },
   {
     "ticker": "UPXI",
-    "checked_at": "2026-06-19T14:20:32.461506+00:00",
+    "checked_at": "2026-06-19T15:59:12.580007+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11751,7 +12353,7 @@
   },
   {
     "ticker": "USEG",
-    "checked_at": "2026-06-19T14:20:32.461780+00:00",
+    "checked_at": "2026-06-19T15:59:12.580390+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11813,7 +12415,7 @@
   },
   {
     "ticker": "USIO",
-    "checked_at": "2026-06-19T14:20:32.462051+00:00",
+    "checked_at": "2026-06-19T15:59:12.580768+00:00",
     "status": "info",
     "issues": [
       {
@@ -11825,13 +12427,13 @@
   },
   {
     "ticker": "USNA",
-    "checked_at": "2026-06-19T14:20:32.462371+00:00",
+    "checked_at": "2026-06-19T15:59:12.581230+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "UTMD",
-    "checked_at": "2026-06-19T14:20:32.462703+00:00",
+    "checked_at": "2026-06-19T15:59:12.581676+00:00",
     "status": "error",
     "issues": [
       {
@@ -11848,19 +12450,19 @@
   },
   {
     "ticker": "UTZ",
-    "checked_at": "2026-06-19T14:20:32.462794+00:00",
+    "checked_at": "2026-06-19T15:59:12.581799+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "VEEA",
-    "checked_at": "2026-06-19T14:20:32.462833+00:00",
+    "checked_at": "2026-06-19T15:59:12.581852+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "VENU",
-    "checked_at": "2026-06-19T14:20:32.462879+00:00",
+    "checked_at": "2026-06-19T15:59:12.581910+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11892,7 +12494,7 @@
   },
   {
     "ticker": "VERI",
-    "checked_at": "2026-06-19T14:20:32.463029+00:00",
+    "checked_at": "2026-06-19T15:59:12.582125+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11924,7 +12526,7 @@
   },
   {
     "ticker": "VHC",
-    "checked_at": "2026-06-19T14:20:32.463178+00:00",
+    "checked_at": "2026-06-19T15:59:12.582324+00:00",
     "status": "warn",
     "issues": [
       {
@@ -11936,7 +12538,7 @@
   },
   {
     "ticker": "VIRC",
-    "checked_at": "2026-06-19T14:20:32.463503+00:00",
+    "checked_at": "2026-06-19T15:59:12.582772+00:00",
     "status": "info",
     "issues": [
       {
@@ -11948,19 +12550,24 @@
   },
   {
     "ticker": "VMD",
-    "checked_at": "2026-06-19T14:20:32.463616+00:00",
+    "checked_at": "2026-06-19T15:59:12.582919+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "VNRX",
-    "checked_at": "2026-06-19T14:20:32.463742+00:00",
+    "checked_at": "2026-06-19T15:59:12.583097+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "warn",
         "rule": "no_gross_profit_source",
         "detail": "neither Gross Profit nor Cost of Revenue fetched — Gross Margin will show n/a"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -11971,7 +12578,7 @@
   },
   {
     "ticker": "VOC",
-    "checked_at": "2026-06-19T14:20:32.463772+00:00",
+    "checked_at": "2026-06-19T15:59:12.583139+00:00",
     "status": "error",
     "issues": [
       {
@@ -12018,7 +12625,7 @@
   },
   {
     "ticker": "VREX",
-    "checked_at": "2026-06-19T14:20:32.463939+00:00",
+    "checked_at": "2026-06-19T15:59:12.583352+00:00",
     "status": "info",
     "issues": [
       {
@@ -12030,13 +12637,13 @@
   },
   {
     "ticker": "VS",
-    "checked_at": "2026-06-19T14:20:32.463988+00:00",
+    "checked_at": "2026-06-19T15:59:12.583420+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "VSEE",
-    "checked_at": "2026-06-19T14:20:32.464035+00:00",
+    "checked_at": "2026-06-19T15:59:12.583486+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12053,7 +12660,7 @@
   },
   {
     "ticker": "VSTD",
-    "checked_at": "2026-06-19T14:20:32.464089+00:00",
+    "checked_at": "2026-06-19T15:59:12.583557+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12075,13 +12682,18 @@
   },
   {
     "ticker": "VTAK",
-    "checked_at": "2026-06-19T14:20:32.464201+00:00",
+    "checked_at": "2026-06-19T15:59:12.583712+00:00",
     "status": "warn",
     "issues": [
       {
         "severity": "warn",
         "rule": "gross_margin_out_of_range",
         "detail": "FY2019 Gross Margin -23% outside expected [0, 100%]"
+      },
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
       },
       {
         "severity": "info",
@@ -12092,7 +12704,7 @@
   },
   {
     "ticker": "VTS",
-    "checked_at": "2026-06-19T14:20:32.464267+00:00",
+    "checked_at": "2026-06-19T15:59:12.583800+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12109,7 +12721,7 @@
   },
   {
     "ticker": "VTSI",
-    "checked_at": "2026-06-19T14:20:32.464422+00:00",
+    "checked_at": "2026-06-19T15:59:12.583992+00:00",
     "status": "info",
     "issues": [
       {
@@ -12121,9 +12733,14 @@
   },
   {
     "ticker": "VVOS",
-    "checked_at": "2026-06-19T14:20:32.464511+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.584119+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -12143,7 +12760,7 @@
   },
   {
     "ticker": "VWAV",
-    "checked_at": "2026-06-19T14:20:32.464530+00:00",
+    "checked_at": "2026-06-19T15:59:12.584144+00:00",
     "status": "error",
     "issues": [
       {
@@ -12165,7 +12782,7 @@
   },
   {
     "ticker": "WEAV",
-    "checked_at": "2026-06-19T14:20:32.464613+00:00",
+    "checked_at": "2026-06-19T15:59:12.584256+00:00",
     "status": "info",
     "issues": [
       {
@@ -12182,7 +12799,7 @@
   },
   {
     "ticker": "WEST",
-    "checked_at": "2026-06-19T14:20:32.464687+00:00",
+    "checked_at": "2026-06-19T15:59:12.584353+00:00",
     "status": "info",
     "issues": [
       {
@@ -12209,7 +12826,7 @@
   },
   {
     "ticker": "WETO",
-    "checked_at": "2026-06-19T14:20:32.464707+00:00",
+    "checked_at": "2026-06-19T15:59:12.584385+00:00",
     "status": "error",
     "issues": [
       {
@@ -12255,8 +12872,25 @@
     ]
   },
   {
+    "ticker": "WKSP",
+    "checked_at": "2026-06-19T15:59:12.584718+00:00",
+    "status": "warn",
+    "issues": [
+      {
+        "severity": "warn",
+        "rule": "yoy_revenue_jump",
+        "detail": "FY2023→FY2024 revenue 2M → 8M (5.5×, not M&A-flagged)"
+      },
+      {
+        "severity": "info",
+        "rule": "mcap_reconciliation",
+        "detail": "Stage-1 mcap 0.01B vs price×shares 0.00B (-65%)"
+      }
+    ]
+  },
+  {
     "ticker": "WTI",
-    "checked_at": "2026-06-19T14:20:32.465046+00:00",
+    "checked_at": "2026-06-19T15:59:12.585200+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12273,13 +12907,13 @@
   },
   {
     "ticker": "WYFI",
-    "checked_at": "2026-06-19T14:20:32.465077+00:00",
+    "checked_at": "2026-06-19T15:59:12.585243+00:00",
     "status": "ok",
     "issues": []
   },
   {
     "ticker": "WYY",
-    "checked_at": "2026-06-19T14:20:32.465358+00:00",
+    "checked_at": "2026-06-19T15:59:12.585856+00:00",
     "status": "info",
     "issues": [
       {
@@ -12291,7 +12925,7 @@
   },
   {
     "ticker": "XAIR",
-    "checked_at": "2026-06-19T14:20:32.465460+00:00",
+    "checked_at": "2026-06-19T15:59:12.586014+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12328,7 +12962,7 @@
   },
   {
     "ticker": "XBP",
-    "checked_at": "2026-06-19T14:20:32.465506+00:00",
+    "checked_at": "2026-06-19T15:59:12.586095+00:00",
     "status": "info",
     "issues": [
       {
@@ -12350,7 +12984,7 @@
   },
   {
     "ticker": "XPER",
-    "checked_at": "2026-06-19T14:20:32.465579+00:00",
+    "checked_at": "2026-06-19T15:59:12.586234+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12362,7 +12996,7 @@
   },
   {
     "ticker": "XTIA",
-    "checked_at": "2026-06-19T14:20:32.465796+00:00",
+    "checked_at": "2026-06-19T15:59:12.586707+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12429,9 +13063,14 @@
   },
   {
     "ticker": "XTNT",
-    "checked_at": "2026-06-19T14:20:32.466064+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.587311+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-09-30 is 262 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -12441,7 +13080,7 @@
   },
   {
     "ticker": "XWIN",
-    "checked_at": "2026-06-19T14:20:32.466333+00:00",
+    "checked_at": "2026-06-19T15:59:12.587901+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12488,7 +13127,7 @@
   },
   {
     "ticker": "YCBD",
-    "checked_at": "2026-06-19T14:20:32.466495+00:00",
+    "checked_at": "2026-06-19T15:59:12.588219+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12545,9 +13184,14 @@
   },
   {
     "ticker": "YEXT",
-    "checked_at": "2026-06-19T14:20:32.466668+00:00",
-    "status": "info",
+    "checked_at": "2026-06-19T15:59:12.588589+00:00",
+    "status": "warn",
     "issues": [
+      {
+        "severity": "warn",
+        "rule": "stale_filings",
+        "detail": "latest quarterly period 2025-10-31 is 231 days old (>180)"
+      },
       {
         "severity": "info",
         "rule": "eps_mismatch",
@@ -12557,7 +13201,7 @@
   },
   {
     "ticker": "YYAI",
-    "checked_at": "2026-06-19T14:20:32.466787+00:00",
+    "checked_at": "2026-06-19T15:59:12.588833+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12599,7 +13243,7 @@
   },
   {
     "ticker": "ZBAI",
-    "checked_at": "2026-06-19T14:20:32.466840+00:00",
+    "checked_at": "2026-06-19T15:59:12.588936+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12611,7 +13255,7 @@
   },
   {
     "ticker": "ZDGE",
-    "checked_at": "2026-06-19T14:20:32.467004+00:00",
+    "checked_at": "2026-06-19T15:59:12.589298+00:00",
     "status": "warn",
     "issues": [
       {
@@ -12628,7 +13272,7 @@
   },
   {
     "ticker": "ZIP",
-    "checked_at": "2026-06-19T14:20:32.467087+00:00",
+    "checked_at": "2026-06-19T15:59:12.589466+00:00",
     "status": "info",
     "issues": [
       {
@@ -12645,7 +13289,7 @@
   },
   {
     "ticker": "ZSQR",
-    "checked_at": "2026-06-19T14:20:32.467138+00:00",
+    "checked_at": "2026-06-19T15:59:12.589558+00:00",
     "status": "info",
     "issues": [
       {
