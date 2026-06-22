@@ -16,6 +16,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import type { RecentDigest } from '@/api/types';
+import { useLastViewed } from '@/hooks/useLastViewed';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
 
@@ -32,12 +33,15 @@ function firstSentence(md: string, max: number = 180): string {
 export function DigestBanner({ digest }: { digest: RecentDigest }) {
   const c = useColors();
   const router = useRouter();
+  const { lastBatch, setLastBatch } = useLastViewed();
   if (!digest || !digest.ticker_count) return null;
 
+  const isLastViewed = digest.date === lastBatch;
   const teaser = firstSentence(digest.summary_md);
   const eyebrow = digest.is_latest ? "TODAY'S BATCH" : 'PAST BATCH';
 
   const goToDetail = () => {
+    setLastBatch(digest.date);
     if (digest.is_latest) {
       router.push('/digest');
     } else if (digest.slug) {
@@ -51,17 +55,16 @@ export function DigestBanner({ digest }: { digest: RecentDigest }) {
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: pressed ? c.border : c.surface,
-          borderColor: c.border,
-          // Subtle highlight on the latest entry so the eye lands there first.
-          borderLeftWidth: digest.is_latest ? 3 : StyleSheet.hairlineWidth,
-          borderLeftColor: digest.is_latest ? c.brand : c.border,
+          backgroundColor: pressed ? c.border : isLastViewed ? c.statusOkBg : c.surface,
+          borderColor: isLastViewed ? c.brand : c.border,
+          borderLeftWidth: (digest.is_latest || isLastViewed) ? 3 : StyleSheet.hairlineWidth,
+          borderLeftColor: isLastViewed ? c.brand : digest.is_latest ? c.brand : c.border,
         },
       ]}
     >
       <View style={styles.headerRow}>
-        <Text style={[styles.eyebrow, { color: digest.is_latest ? c.brand : c.textMuted }]}>
-          {eyebrow}
+        <Text style={[styles.eyebrow, { color: (digest.is_latest || isLastViewed) ? c.brand : c.textMuted }]}>
+          {isLastViewed ? 'LAST VIEWED' : eyebrow}
         </Text>
         <Text style={[styles.count, { color: c.textMuted }]}>
           {digest.ticker_count} {digest.ticker_count === 1 ? 'ticker' : 'tickers'}

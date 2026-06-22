@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 
 import type { TickerRow as TickerRowData } from '@/api/types';
+import { PriceSparkline } from './PriceSparkline';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 import { formatMoney, formatRatio } from '@/utils/format';
 
@@ -13,8 +14,9 @@ const COL_FLEX = {
   kpi: 1,
 } as const;
 
-export function TickerRowHeader() {
+export function TickerRowHeader({ showChart = false }: { showChart?: boolean }) {
   const c = useColors();
+  const firstCol = showChart ? '1Y Price' : 'Mcap';
   return (
     <View
       style={[
@@ -29,7 +31,7 @@ export function TickerRowHeader() {
       <View style={[styles.left, { flex: COL_FLEX.identity }]}>
         <Text style={[styles.headerLabel, { color: c.textMuted }]}>Ticker</Text>
       </View>
-      {(['Mcap', 'P/E', 'P/B', 'Q NI', 'Q OCF'] as const).map((label) => (
+      {([firstCol, 'P/E', 'P/B', 'Q NI', 'Q OCF'] as const).map((label) => (
         <View key={label} style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
           <Text style={[styles.headerLabel, { color: c.textMuted }]}>{label}</Text>
         </View>
@@ -38,7 +40,15 @@ export function TickerRowHeader() {
   );
 }
 
-export function TickerRow({ row, highlighted = false }: { row: TickerRowData; highlighted?: boolean }) {
+export function TickerRow({
+  row,
+  highlighted = false,
+  showChart = false,
+}: {
+  row: TickerRowData;
+  highlighted?: boolean;
+  showChart?: boolean;
+}) {
   const c = useColors();
   const router = useRouter();
   const segments = useSegments();
@@ -82,7 +92,11 @@ export function TickerRow({ row, highlighted = false }: { row: TickerRowData; hi
         </Text>
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatMoney(row.market_cap)}</Text>
+        {showChart ? (
+          <PriceSparkline ticker={row.ticker} />
+        ) : (
+          <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatMoney(row.market_cap)}</Text>
+        )}
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
         <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatRatio(row.ttm_pe)}</Text>

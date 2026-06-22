@@ -92,6 +92,7 @@ export default function HomeScreen() {
               <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
                 INDUSTRIES
               </Text>
+
             </View>
           )}
         </>
@@ -99,6 +100,7 @@ export default function HomeScreen() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
       }
+      extraData={lastIndustry}
       renderItem={({ item }) => {
         const isLastViewed = item.slug === lastIndustry;
         return (
@@ -106,6 +108,7 @@ export default function HomeScreen() {
           onPress={() => router.push(`/industry/${item.slug}`)}
           style={({ pressed }) => [
             styles.industryRow,
+            isLastViewed && styles.industryRowHighlighted,
             {
               backgroundColor: pressed
                 ? c.surface
@@ -118,7 +121,9 @@ export default function HomeScreen() {
           ]}
         >
           <View style={{ flex: 1 }}>
-            <Text style={[styles.industryName, { color: c.textPrimary }]}>{item.name}</Text>
+            <Text style={[styles.industryName, { color: isLastViewed ? c.brand : c.textPrimary }]}>
+              {item.name}
+            </Text>
             {isLastViewed ? (
               <Text style={[styles.lastViewed, { color: c.brand }]}>LAST VIEWED</Text>
             ) : (
@@ -168,6 +173,9 @@ const styles = StyleSheet.create({
     // Constant left border (transparent unless highlighted) so toggling the
     // last-viewed highlight never shifts row content sideways.
     borderLeftWidth: 3,
+  },
+  industryRowHighlighted: {
+    borderLeftWidth: 4,
   },
   industryName: { fontSize: fontSize.md, fontWeight: '600' },
   industryMeta: { fontSize: fontSize.xs, marginTop: 4, letterSpacing: 0.5 },

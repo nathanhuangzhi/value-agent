@@ -21,7 +21,9 @@ import { useNavigation } from 'expo-router';
 import { useLatestDigest } from '@/api/hooks';
 import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
+import { useLastViewed } from '@/hooks/useLastViewed';
 import { useColors, fontSize, spacing } from '@/theme/colors';
+
 
 
 export default function DigestScreen() {
@@ -29,6 +31,7 @@ export default function DigestScreen() {
   const navigation = useNavigation();
   const device = useDeviceClass();
   const digest = useLatestDigest();
+  const { lastCompany } = useLastViewed();
 
   useEffect(() => {
     // Skip on iPad-landscape: the screen renders inside SplitLayout's
@@ -62,7 +65,13 @@ export default function DigestScreen() {
       style={{ backgroundColor: c.background }}
       sections={[{ data: data.tickers, key: 'all' }]}
       keyExtractor={(t) => t.ticker}
-      renderItem={({ item }) => <TickerRow row={item} />}
+      renderItem={({ item }) => (
+        <TickerRow
+          row={item}
+          highlighted={item.ticker === lastCompany}
+          showChart
+        />
+      )}
       refreshControl={
         <RefreshControl refreshing={digest.loading} onRefresh={digest.refresh} tintColor={c.brand} />
       }
@@ -98,7 +107,7 @@ export default function DigestScreen() {
           </Text>
         </View>
       }
-      renderSectionHeader={() => <TickerRowHeader />}
+      renderSectionHeader={() => <TickerRowHeader showChart />}
       stickySectionHeadersEnabled
     />
   );
