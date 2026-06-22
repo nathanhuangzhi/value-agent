@@ -5,6 +5,14 @@
     "scheme": "valueland",
     "version": "1.0.0",
     "orientation": "portrait",
+    "updates": {
+      "url": "https://u.expo.dev/4a8c66e9-78b9-4040-a64a-4c579a4c2168",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -34,7 +42,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true
