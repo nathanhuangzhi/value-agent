@@ -65,11 +65,12 @@ export default function DigestScreen() {
       style={{ backgroundColor: c.background }}
       sections={[{ data: data.tickers, key: 'all' }]}
       keyExtractor={(t) => t.ticker}
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <TickerRow
           row={item}
           highlighted={item.ticker === lastCompany}
           showChart
+          chartDelay={index * 80}
         />
       )}
       refreshControl={

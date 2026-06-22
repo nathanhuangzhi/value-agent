@@ -102,13 +102,18 @@ export default function IndustryScreen() {
           ) : null}
         </View>
       }
-      renderSectionHeader={() => <TickerRowHeader />}
+      renderSectionHeader={() => <TickerRowHeader showChart />}
       stickySectionHeadersEnabled
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.brand} />
       }
-      renderItem={({ item }) => (
-        <TickerRow row={item} highlighted={item.ticker === lastCompany} />
+      renderItem={({ item, index }) => (
+        <TickerRow
+          row={item}
+          highlighted={item.ticker === lastCompany}
+          showChart
+          chartDelay={index * 80}
+        />
       )}
     />
   );

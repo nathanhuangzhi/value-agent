@@ -44,10 +44,12 @@ export function TickerRow({
   row,
   highlighted = false,
   showChart = false,
+  chartDelay = 0,
 }: {
   row: TickerRowData;
   highlighted?: boolean;
   showChart?: boolean;
+  chartDelay?: number;
 }) {
   const c = useColors();
   const router = useRouter();
@@ -93,7 +95,7 @@ export function TickerRow({
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
         {showChart ? (
-          <PriceSparkline ticker={row.ticker} />
+          <PriceSparkline ticker={row.ticker} delay={chartDelay} />
         ) : (
           <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatMoney(row.market_cap)}</Text>
         )}

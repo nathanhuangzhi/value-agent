@@ -4,6 +4,7 @@
  * Fetches from the shared price-history cache — no duplicate requests
  * if the ticker was already prefetched.
  */
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -14,9 +15,16 @@ const W = 54;
 const H = 28;
 const PAD = 2;
 
-export function PriceSparkline({ ticker }: { ticker: string }) {
+export function PriceSparkline({ ticker, delay = 0 }: { ticker: string; delay?: number }) {
   const c = useColors();
-  const { data } = usePriceHistory(ticker);
+  const [ready, setReady] = useState(delay === 0);
+  useEffect(() => {
+    if (delay === 0) return;
+    const t = setTimeout(() => setReady(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  const { data } = usePriceHistory(ready ? ticker : undefined);
 
   if (!data || data.data.length < 2) {
     return <View style={{ width: W, height: H }} />;
