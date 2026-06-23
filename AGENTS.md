@@ -134,9 +134,11 @@ Most of `app/tools/` and `scripts/` maps obviously to a pipeline stage (see Arch
 - `app/tools/sec_xbrl_tools.py` — SEC XBRL fetcher + period extractor. Holds `_fiscal_year_from_end` (52-week year heuristic) and `extract_quarterly_cash_flow` (YTD differencing). See Gotchas — both are easy to break.
 - `app/tools/validation.py` — pure data-quality rules; each is `(sec_row, analyzed_row, today) -> list[Issue]`. `validate_ticker(...)` runs all 15 rules across 4 tiers (presence / sanity ranges / cross-period / cross-source).
 
-## Data files (all gitignored, under `data/`)
+## Data files (under `data/`)
 
-`companies.jsonl` (universe) → `companies_classified.json` → `companies_filtered.json` → `companies_analyzed.json` (narratives + price history). Financial statements live in **sidecars**, not in the analyzed row: `companies_sec.json` (primary, SEC XBRL) and `companies_yfinance.json` (gap-fill, same shape). `companies_validation.json` holds per-ticker issue lists. The renderer reads all three and surfaces a banner when validation status ≥ warn. `reports/` holds rendered HTML (per-ticker + `index.html` + `<industry-slug>.html`; `_digest.html` is the email body).
+`.gitignore` ignores `data/*` then whitelists the pipeline **state files**, so those are tracked (a fresh clone / the cron box starts with the candidate universe already on disk). Tracked: `companies.jsonl`, `companies_classified.json`, `companies_filtered.json`, `companies_analyzed.json`, `companies_validation.json`, `companies_digest.json`, `daily_industry_log.json`, `classify_probes.json`, `companies_classify_failures.json`, and `yfinance/*.json`. **Not** tracked: `companies_sec.json` (large, re-fetchable SEC cache) and `reports/*.html` (those publish to the separate hosting repo).
+
+Flow: `companies.jsonl` (universe) → `companies_classified.json` → `companies_filtered.json` → `companies_analyzed.json` (narratives + price history). Financial statements live in **sidecars**, not in the analyzed row: `companies_sec.json` (primary, SEC XBRL) and the yfinance gap-fill (same shape). `companies_validation.json` holds per-ticker issue lists. The renderer reads all three and surfaces a banner when validation status ≥ warn. `reports/` holds rendered HTML (per-ticker + `index.html` + `<industry-slug>.html`; `_digest.html` is the email body).
 
 **Per-row schema in `companies_analyzed.json`:**
 - Identity / context: `ticker`, `analyzed_date`, `name`, `sector`, `industry`, `market_cap`, `country`, `exchange`, `business_overview`
