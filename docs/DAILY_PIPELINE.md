@@ -89,10 +89,12 @@ git commit -m "Add daily GitHub Actions workflow + initial pipeline state"
 git push
 ```
 
-Derived files (`companies_sec.json`, `companies_yfinance.json`,
-`companies_filtered.json`, `companies_validation.json`,
-`data/reports/*.html`) stay gitignored — the workflow regenerates them
-on every run from external APIs and from the committed state.
+Derived files `companies_sec.json` and `data/reports/*.html` stay
+gitignored — the workflow regenerates them on every run from external
+APIs and from the committed state. (The other pipeline state files —
+`companies_filtered.json`, `companies_validation.json`, the
+`data/yfinance/*.json` shards, etc. — are whitelisted in `.gitignore`
+and committed, so a fresh run starts from known state.)
 
 ## Verifying the workflow
 

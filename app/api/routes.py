@@ -3,7 +3,7 @@
 Every endpoint composes data from the existing pipeline outputs:
   - companies_analyzed.json  — per-ticker identity + narrative + price
   - companies_sec.json       — SEC XBRL financial statements
-  - companies_yfinance.json  — yfinance gap-fill
+  - data/yfinance/*.json     — yfinance gap-fill (sharded one file per industry)
   - companies_validation.json — data-quality status
   - daily_industry_log.json  — daily-scan record
 

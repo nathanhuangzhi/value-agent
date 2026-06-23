@@ -168,8 +168,8 @@ def main():
     if not args.skip_fetch:
         _run_stage("fetch_sec_annual", ["-m", "scripts.fetch_sec_annual"])
         # yfinance gap-fill is the secondary data source — the renderer reads
-        # companies_yfinance.json and blends it with SEC at every cell, so a
-        # daily SEC-only fetch leaves the yfinance side stale for any new
+        # the data/yfinance/<industry>.json shards and blends them with SEC at
+        # every cell, so a daily SEC-only fetch leaves the yfinance side stale for any new
         # tickers. Keep it on the same `--skip-fetch` toggle.
         _run_stage("fetch_yfinance_statements", ["-m", "scripts.fetch_yfinance_statements"])
 

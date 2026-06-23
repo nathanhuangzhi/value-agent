@@ -3,7 +3,7 @@ existing report renderer expects, plus blend yfinance data as a gap-filler.
 
 Two source files feed in:
 - SEC EDGAR (`companies_sec.json`) — authoritative, deeper history.
-- yfinance (`companies_yfinance.json`) — fills gaps where SEC has nothing.
+- yfinance (`data/yfinance/<industry>.json` shards) — fills gaps where SEC has nothing.
 
 Per-cell merge policy:
 - If SEC has a value for that (metric, period), SEC wins.
@@ -252,7 +252,7 @@ def _normalize_annual_keys(d: dict) -> dict:
 
 def sec_to_yfinance_annual(sec_row: dict, yfinance_row: dict | None = None) -> dict:
     """Take one row from companies_sec.json (and optionally one from
-    companies_yfinance.json) and return three period-lists shaped like
+    a data/yfinance/<industry>.json shard) and return three period-lists shaped like
     yfinance's `financial_statements.{income_statement, balance_sheet,
     cash_flow}.annual`. Each period dict carries a parallel `sources` map
     indicating per-cell origin."""
@@ -307,7 +307,7 @@ def sec_to_yfinance_quarterly(sec_row: dict, *, last_n: int = 8,
 
 def load_sec_by_ticker(path) -> dict:
     """Load companies_sec.json (or any same-shaped sidecar like
-    companies_yfinance.json) into a dict keyed by ticker."""
+    a data/yfinance/<industry>.json shard) into a dict keyed by ticker."""
     import json
     from pathlib import Path
     p = Path(path)
