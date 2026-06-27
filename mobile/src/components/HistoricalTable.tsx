@@ -62,10 +62,13 @@ type RawRow = {
   label: string;
   source: StatementSource;
   keys: string[];             // candidate item keys in priority order
-  /** millions: raw $ value divided by 1e6 → "1,234". Also used for raw
-   * share counts since the math is identical (count ÷ 1e6 → "1,234").
+  /** money: adaptive units — picks K/M/B/T per value so a micro-cap keeps
+   * precision ("-77K") while a large cap stays compact ("11M"). Mirrors the
+   * digest's formatMoney so the same figure reads identically on both
+   * screens (the whole point of this format — see the ACFN bug).
+   * shares: raw share count ÷ 1e6 → millions ("1,234").
    * per_share: typical EPS/BVPS scale → "$1.23" or "$123". */
-  format: 'millions' | 'per_share';
+  format: 'money' | 'shares' | 'per_share';
   abs?: boolean;
 };
 
@@ -225,13 +228,39 @@ function pickSource(sources: Record<string, string> | undefined, keys: string[])
   return undefined;
 }
 
+/**
+ * Compact $-value for a table cell with adaptive units. Picks the largest
+ * unit that keeps the number readable (K/M/B/T) and shows one decimal only
+ * when the scaled magnitude is < 10 — mirroring the web report's `_fmt` and
+ * the digest's `formatMoney`. No "$" prefix: the cell stays narrow and the
+ * unit suffix carries the scale. Examples: -77000 → "-77K", 2_227_000 →
+ * "2.2M", 11_478_000 → "11M". Sub-$1,000 values render raw ("500").
+ */
+function formatMoneyCell(value: number): string {
+  const abs = Math.abs(value);
+  let scaled = value;
+  let suffix = '';
+  if (abs >= 1e12) { scaled = value / 1e12; suffix = 'T'; }
+  else if (abs >= 1e9) { scaled = value / 1e9; suffix = 'B'; }
+  else if (abs >= 1e6) { scaled = value / 1e6; suffix = 'M'; }
+  else if (abs >= 1e3) { scaled = value / 1e3; suffix = 'K'; }
+  const decs = suffix && Math.abs(scaled) < 10 ? 1 : 0;
+  return scaled.toLocaleString(undefined, {
+    minimumFractionDigits: decs,
+    maximumFractionDigits: decs,
+  }) + suffix;
+}
+
 function formatCell(value: number | null, row: RawRow): string {
   if (value == null) return '—';
   const v = row.abs ? Math.abs(value) : value;
   if (row.format === 'per_share') {
     return Math.abs(v) < 10 ? v.toFixed(1) : Math.round(v).toLocaleString();
   }
-  return Math.round(v / 1e6).toLocaleString();
+  if (row.format === 'shares') {
+    return Math.round(v / 1e6).toLocaleString();
+  }
+  return formatMoneyCell(v);
 }
 
 function formatMargin(num: number | null, den: number | null): string {
@@ -370,12 +399,12 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
   // included when we have a price history to ground the math.
   const sections: Section[] = [
     {
-      title: 'Income Statement ($M)',
+      title: 'Income Statement ($)',
       rows: [
-        { kind: 'raw', label: 'Revenue',          source: 'income', keys: ['Total Revenue', 'Operating Revenue'], format: 'millions' },
-        { kind: 'raw', label: 'Gross Profit',     source: 'income', keys: ['Gross Profit'], format: 'millions' },
-        { kind: 'raw', label: 'Operating Income', source: 'income', keys: ['Operating Income', 'Total Operating Income As Reported'], format: 'millions' },
-        { kind: 'raw', label: 'Net Income',       source: 'income', keys: ['Net Income', 'Net Income Common Stockholders'], format: 'millions' },
+        { kind: 'raw', label: 'Revenue',          source: 'income', keys: ['Total Revenue', 'Operating Revenue'], format: 'money' },
+        { kind: 'raw', label: 'Gross Profit',     source: 'income', keys: ['Gross Profit'], format: 'money' },
+        { kind: 'raw', label: 'Operating Income', source: 'income', keys: ['Operating Income', 'Total Operating Income As Reported'], format: 'money' },
+        { kind: 'raw', label: 'Net Income',       source: 'income', keys: ['Net Income', 'Net Income Common Stockholders'], format: 'money' },
       ],
     },
     {
@@ -423,30 +452,30 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
       ],
     },
     {
-      title: 'Balance Sheet ($M)',
+      title: 'Balance Sheet ($)',
       rows: [
-        { kind: 'raw', label: 'Total Assets',        source: 'balance', keys: ['Total Assets'], format: 'millions' },
-        { kind: 'raw', label: 'Cash & Equivalents',  source: 'balance', keys: ['Cash And Cash Equivalents', 'Cash Cash Equivalents And Short Term Investments'], format: 'millions' },
+        { kind: 'raw', label: 'Total Assets',        source: 'balance', keys: ['Total Assets'], format: 'money' },
+        { kind: 'raw', label: 'Cash & Equivalents',  source: 'balance', keys: ['Cash And Cash Equivalents', 'Cash Cash Equivalents And Short Term Investments'], format: 'money' },
         // Dynamic top-asset rows for this specific ticker (e.g. Goodwill, PPE)
         ...assetKeys.map<RawRow>((key) => ({
-          kind: 'raw', label: key, source: 'balance', keys: [key], format: 'millions',
+          kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
-        { kind: 'raw', label: 'Total Debt',          source: 'balance', keys: ['Total Debt', 'Long Term Debt'], format: 'millions' },
-        { kind: 'raw', label: 'Stockholders Equity', source: 'balance', keys: ['Common Stock Equity', 'Stockholders Equity'], format: 'millions' },
+        { kind: 'raw', label: 'Total Debt',          source: 'balance', keys: ['Total Debt', 'Long Term Debt'], format: 'money' },
+        { kind: 'raw', label: 'Stockholders Equity', source: 'balance', keys: ['Common Stock Equity', 'Stockholders Equity'], format: 'money' },
       ],
     },
     {
-      title: 'Cash Flow ($M)',
+      title: 'Cash Flow ($)',
       rows: [
-        { kind: 'raw', label: 'Operating CF',  source: 'cash_flow', keys: ['Cash Flow From Continuing Operating Activities', 'Operating Cash Flow'], format: 'millions' },
-        { kind: 'raw', label: 'Capex',         source: 'cash_flow', keys: ['Capital Expenditure'], format: 'millions', abs: true },
-        { kind: 'raw', label: 'Free CF',       source: 'cash_flow', keys: ['Free Cash Flow'], format: 'millions' },
+        { kind: 'raw', label: 'Operating CF',  source: 'cash_flow', keys: ['Cash Flow From Continuing Operating Activities', 'Operating Cash Flow'], format: 'money' },
+        { kind: 'raw', label: 'Capex',         source: 'cash_flow', keys: ['Capital Expenditure'], format: 'money', abs: true },
+        { kind: 'raw', label: 'Free CF',       source: 'cash_flow', keys: ['Free Cash Flow'], format: 'money' },
       ],
     },
     {
       title: 'Per Share',
       rows: [
-        { kind: 'raw',   label: 'Diluted Shares (M)', source: 'income', keys: SHARES_KEYS, format: 'millions' },
+        { kind: 'raw',   label: 'Diluted Shares (M)', source: 'income', keys: SHARES_KEYS, format: 'shares' },
         { kind: 'raw',   label: 'Diluted EPS',        source: 'income', keys: ['Diluted EPS', 'Basic EPS'], format: 'per_share' },
         // Sales Per Share = Revenue / Diluted Shares (with quarterly-shares
         // fallback for tickers whose annual income statement omits shares).

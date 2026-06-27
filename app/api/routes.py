@@ -175,11 +175,20 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
     # Prefer the recomputed mcap (price × diluted shares), fall back to
     # the Stage-1 stored value if we couldn't recompute.
     out["market_cap"] = out.get("market_cap") or analyzed_row.get("market_cap")
+    # Anchor both headline quarterly figures to the SAME quarter — the
+    # latest income-statement period, which is exactly the rightmost column
+    # the company-page table renders. OCF is read at that same date rather
+    # than from the cash-flow statement's own latest period, so a digest row
+    # can't mix two different quarters/sources when SEC fiscal dates and
+    # yfinance calendar dates don't align (e.g. JACK, whose income reports
+    # through a mid-month fiscal quarter the cash flow statement lacks).
+    inc = q["income_statement"]
+    anchor = inc[-1].get("period") if inc else None
     out["latest_q_ni"] = _latest_q_value(
-        q["income_statement"], ["Net Income", "Net Income Common Stockholders"]
+        inc, ["Net Income", "Net Income Common Stockholders"]
     )
-    out["latest_q_ocf"] = _latest_q_value(
-        q["cash_flow"],
+    out["latest_q_ocf"] = _value_at_period(
+        q["cash_flow"], anchor,
         ["Cash Flow From Continuing Operating Activities", "Operating Cash Flow"],
     )
     return out
@@ -196,6 +205,25 @@ def _latest_q_value(periods: list[dict], names: list[str]) -> float | None:
         v = items.get(name)
         if v is not None:
             return v
+    return None
+
+
+def _value_at_period(periods: list[dict], period: str | None,
+                     names: list[str]) -> float | None:
+    """Value for the first matching item name in the period dated exactly
+    `period`. Returns None when there's no statement row at that date —
+    mirroring the company-page table, which keys every column by the
+    income-statement date and shows "—" where a statement has no entry."""
+    if not period:
+        return None
+    for p in periods:
+        if p.get("period") == period:
+            items = p.get("items") or {}
+            for name in names:
+                v = items.get(name)
+                if v is not None:
+                    return v
+            return None
     return None
 
 
