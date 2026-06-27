@@ -152,17 +152,20 @@ Flow: `companies.jsonl` (universe) → `companies_classified.json` → `companie
 
 ## Cron (daily automation)
 
-Two cron jobs, 30 minutes apart, run the full daily pipeline:
+Two cron jobs, 30 minutes apart, run the full daily pipeline. Both go through
+`scripts/cron_daily.sh`, which `git pull --ff-only`s `main` before running — so a
+push to `main` auto-deploys on the next run; no manual pull on the prod box.
 
 ```cron
 # 06:00 — pick an industry, narrate today's batch
-0 6 * * * cd /home/hz911224/projects/value-agent && ./venv/bin/python -m scripts.daily_scan >> /tmp/value-agent-daily.log 2>&1
+0 6 * * * /home/hz911224/projects/value-agent/scripts/cron_daily.sh scripts.daily_scan >> /tmp/value-agent-daily.log 2>&1
 
 # 06:30 — fetch SEC + yfinance, validate, render, email digest, push to Vercel repo
-30 6 * * * cd /home/hz911224/projects/value-agent && ./venv/bin/python -m scripts.daily_digest --publish-dir /home/hz911224/value-agent-reports >> /tmp/value-agent-digest.log 2>&1
+30 6 * * * /home/hz911224/projects/value-agent/scripts/cron_daily.sh scripts.daily_digest --publish-dir /home/hz911224/value-agent-reports >> /tmp/value-agent-digest.log 2>&1
 ```
 
 Notes:
+- The wrapper's pull is non-fatal: a dirty tree / offline / non-ff pull is logged to the job's log but the run proceeds on the existing checkout (better stale than skipped). Keep the prod checkout clean so `--ff-only` succeeds.
 - Cron inherits a minimal `PATH` and no `.env` — every script calls `load_dotenv(ENV_FILE)` explicitly with the repo's `.env` path, so API keys + Gmail creds resolve correctly.
 - The pipeline is idempotent: `daily_scan` skips tickers already in `companies_analyzed.json`; `fetch_sec_annual` + `fetch_yfinance_statements` skip tickers already on disk; `build_index` and `digest` are pure regenerations.
 - Tail `/tmp/value-agent-digest.log` to confirm the cron job is firing and pushing.
