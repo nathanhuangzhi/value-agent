@@ -150,25 +150,24 @@ Flow: `companies.jsonl` (universe) → `companies_classified.json` → `companie
 
 `run_value_agent` returns a dict (not a string) — see its docstring. Cost estimates use the approximate per-million-token rates in `app.tools.llm_router._PRICING_USD_PER_M_TOKENS` — verify against DeepSeek's pricing page.
 
-## Cron (daily automation)
+## Daily automation (GitHub Actions)
 
-Two cron jobs, 30 minutes apart, run the full daily pipeline. Both go through
-`scripts/cron_daily.sh`, which `git pull --ff-only`s `main` before running — so a
-push to `main` auto-deploys on the next run; no manual pull on the prod box.
+The daily pipeline runs as a GitHub Actions workflow — `.github/workflows/daily.yml`,
+**not** a cron box. Actions checks out `main` fresh every run, so a push to `main`
+auto-deploys on the next run; there's nothing to pull or restart.
 
-```cron
-# 06:00 — pick an industry, narrate today's batch
-0 6 * * * /home/hz911224/projects/value-agent/scripts/cron_daily.sh scripts.daily_scan >> /tmp/value-agent-daily.log 2>&1
+- **Schedule:** `0 13 * * *` (13:00 UTC = 5am PST year-round). Manual run: Actions tab → "Daily pipeline" → "Run workflow" (optional `dry_run` builds everything but skips the email send + publish push).
+- **CI gate:** a *scheduled* run aborts unless the latest `ci.yml` run on `main` is green — avoids spending DeepSeek $ on a broken build. (Skipped on manual dispatch so you can force a run while iterating.)
+- **Steps:** classify → filter → daily_scan → `daily_digest --publish-dir` (SEC fetch + yfinance gap-fill + validate + reports + index + bake `/api` + email + publish), then commits the whitelisted state files back to this repo as `value-agent-bot` (rebase-on-push retry loop guards against racing a manual push).
+- **Secrets** (repo → Settings → Actions): `DEEPSEEK_API_KEY`, `EXA_API_KEY`, `GEMINI_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_RECIPIENT`, `REPORT_BASE_URL`, and `REPORTS_REPO_TOKEN` (a PAT with Contents:read+write on `value-agent-reports`, used to clone + push the archive).
+- **`companies_sec.json` is NOT committed** (it grew past GitHub's 100 MB/file limit), so `fetch_sec_annual` cold-fetches SEC XBRL fresh each run. The yfinance shards + validation/digest sidecars ARE committed back, so the next run starts warm (incremental yfinance sync); the shards are also mirrored to a rolling `yfinance-data` Release asset.
+- **Publish:** the run clones `value-agent-reports`, seeds `data/reports/` from it (so the published set doesn't shrink to just today's tickers), then `daily_digest --publish-dir` copies the HTML + `api/` tree and pushes (Vercel deploys).
+- The pipeline is idempotent: `daily_scan` skips tickers already in `companies_analyzed.json`; `fetch_yfinance_statements` skips tickers already on disk; `build_index` + digest + `bake_api` are pure regenerations.
 
-# 06:30 — fetch SEC + yfinance, validate, render, email digest, push to Vercel repo
-30 6 * * * /home/hz911224/projects/value-agent/scripts/cron_daily.sh scripts.daily_digest --publish-dir /home/hz911224/value-agent-reports >> /tmp/value-agent-digest.log 2>&1
-```
-
-Notes:
-- The wrapper's pull is non-fatal: a dirty tree / offline / non-ff pull is logged to the job's log but the run proceeds on the existing checkout (better stale than skipped). Keep the prod checkout clean so `--ff-only` succeeds.
-- Cron inherits a minimal `PATH` and no `.env` — every script calls `load_dotenv(ENV_FILE)` explicitly with the repo's `.env` path, so API keys + Gmail creds resolve correctly.
-- The pipeline is idempotent: `daily_scan` skips tickers already in `companies_analyzed.json`; `fetch_sec_annual` + `fetch_yfinance_statements` skip tickers already on disk; `build_index` and `digest` are pure regenerations.
-- Tail `/tmp/value-agent-digest.log` to confirm the cron job is firing and pushing.
+> Note: a local crontab is no longer used. Because `companies_sec.json` is not in
+> git, a dev checkout has only a partial SEC cache — **never bake + publish `/api`
+> from a dev box** (it would regress tickers the local cache is missing). Let the
+> Actions run, which cold-fetches the full universe, do the publish.
 
 ## Environment
 
