@@ -252,6 +252,42 @@ def test_quarterly_blends_period_end_date_keys():
     assert inc[1]["sources"]["Total Revenue"] == "sec"
 
 
+def test_quarterly_snaps_yfinance_calendar_date_to_sec_fiscal_date():
+    """A 52/53-week filer ends a quarter mid-month (SEC 2026-04-12) while
+    yfinance buckets the same quarter to a calendar date (2026-03-31). Within
+    tolerance they collapse onto ONE SEC-dated column: SEC wins revenue, and
+    yfinance fills OCF (which SEC lacks) at that same period instead of
+    spawning a near-duplicate column."""
+    sec_row = {"quarterly": {
+        "revenue": {"2026-04-12": _sec_entry(500, end="2026-04-12")},
+    }}
+    yf_row = {"quarterly": {
+        "revenue": {"2026-03-31": _yf_entry(490, end="2026-03-31")},
+        "operating_cf": {"2026-03-31": _yf_entry(60, end="2026-03-31")},
+    }}
+    q = sec_to_yfinance_quarterly(sec_row, yfinance_row=yf_row)
+    inc, cf = q["income_statement"], q["cash_flow"]
+    # One income column, dated by the SEC fiscal end; SEC value wins.
+    assert [p["period"] for p in inc] == ["2026-04-12"]
+    assert inc[0]["items"]["Total Revenue"] == 500
+    assert inc[0]["sources"]["Total Revenue"] == "sec"
+    # OCF (yfinance-only) lands on the SAME SEC-dated period.
+    assert [p["period"] for p in cf] == ["2026-04-12"]
+    assert cf[0]["items"]["Cash Flow From Continuing Operating Activities"] == 60
+    assert cf[0]["sources"]["Cash Flow From Continuing Operating Activities"] == "yfinance"
+
+
+def test_quarterly_keeps_distant_yfinance_date_separate():
+    """A yfinance date beyond the alignment tolerance is a genuinely
+    SEC-uncovered quarter and must stay its own column (no false merge) —
+    even when SEC has an exact match for a *different* nearby date."""
+    sec_row = {"quarterly": {"revenue": {"2025-03-31": _sec_entry(100, end="2025-03-31")}}}
+    # 30 days out — past tolerance; a real yfinance-only period (cf. CD).
+    yf_row = {"quarterly": {"revenue": {"2025-04-30": _yf_entry(80, end="2025-04-30")}}}
+    inc = sec_to_yfinance_quarterly(sec_row, yfinance_row=yf_row)["income_statement"]
+    assert [p["period"] for p in inc] == ["2025-03-31", "2025-04-30"]
+
+
 # ===== load_sec_by_ticker =====
 
 def test_load_sec_by_ticker_returns_empty_for_missing_file(tmp_path):

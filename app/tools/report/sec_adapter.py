@@ -25,6 +25,8 @@ Output shape (per statement, annual or quarterly):
 
 from __future__ import annotations
 
+from datetime import date
+
 # Map SEC metric keys → yfinance item labels. The label is what the
 # renderer's _pick_first() looks up.
 SEC_TO_YFINANCE_INCOME = {
@@ -55,6 +57,84 @@ SEC_TO_YFINANCE_BALANCE = {
     "inventory": "Inventory",
     "receivables": "Accounts Receivable",
 }
+
+
+# Max gap (days) between a SEC fiscal quarter-end and a yfinance calendar
+# quarter-end for them to be treated as the SAME quarter. Empirically the
+# fiscal-vs-calendar drift for 52/53-week filers tops out around 20 days
+# (e.g. RRGB's 2025-04-20 vs yfinance 2025-03-31); the next-nearest real
+# divergence in the dataset is ~30 days (a genuinely yfinance-only period),
+# and distinct quarters are ~91 days apart — so 25 sits in a wide empty band.
+_QUARTER_ALIGN_TOLERANCE_DAYS = 25
+
+
+def _parse_iso(s) -> date | None:
+    try:
+        return date.fromisoformat(str(s)[:10])
+    except (ValueError, TypeError):
+        return None
+
+
+def _align_quarterly_keys(sec_section: dict, yf_section: dict) -> dict:
+    """Snap yfinance quarterly date-keys onto nearby SEC fiscal-period keys.
+
+    SEC keys a quarter by its true fiscal end (a 52/53-week filer like JACK
+    ends 2026-04-12); yfinance buckets the same quarter to a calendar date
+    (2026-03-31). Left unaligned the per-cell merge emits two near-duplicate
+    columns. We map each yfinance date to the *nearest* SEC date within
+    `_QUARTER_ALIGN_TOLERANCE_DAYS` and rewrite the entry's key (and its `end`)
+    to that SEC date, so the merge collapses them onto one SEC-dated column
+    (SEC still wins each shared cell). yfinance dates with no SEC date in range
+    keep their own key — those are quarters SEC doesn't cover.
+
+    Returns a new section dict; the input `yf_section` (a cached object) is
+    never mutated.
+    """
+    sec_dates = sorted({d for m in (sec_section or {}).values() for d in (m or {})})
+    yf_dates = sorted({d for m in (yf_section or {}).values() for d in (m or {})})
+    if not sec_dates or not yf_dates:
+        return yf_section or {}
+
+    sec_parsed = [(s, _parse_iso(s)) for s in sec_dates]
+    sec_parsed = [(s, d) for s, d in sec_parsed if d is not None]
+
+    # Map each yfinance date to its nearest in-tolerance SEC date. If two
+    # yfinance dates would claim the same SEC date, the closer one wins and
+    # the other keeps its own key.
+    remap: dict[str, str] = {}
+    claimed: dict[str, tuple[str, int]] = {}  # sec_date -> (yf_date, dist)
+    for y in yf_dates:
+        yd = _parse_iso(y)
+        if yd is None:
+            continue
+        best: tuple[str, int] | None = None
+        for s, sd in sec_parsed:
+            dist = abs((sd - yd).days)
+            if dist <= _QUARTER_ALIGN_TOLERANCE_DAYS and (best is None or dist < best[1]):
+                best = (s, dist)
+        if best is None or best[0] == y:
+            continue
+        s, dist = best
+        prior = claimed.get(s)
+        if prior is None or dist < prior[1]:
+            if prior is not None:
+                remap.pop(prior[0], None)
+            remap[y] = s
+            claimed[s] = (y, dist)
+
+    if not remap:
+        return yf_section or {}
+
+    aligned: dict = {}
+    for metric, periods in (yf_section or {}).items():
+        new_periods: dict = {}
+        for pk, entry in (periods or {}).items():
+            tgt = remap.get(pk, pk)
+            if tgt != pk and isinstance(entry, dict):
+                entry = {**entry, "end": tgt}  # copy — don't touch cached yf
+            new_periods[tgt] = entry
+        aligned[metric] = new_periods
+    return aligned
 
 
 def _merge_period_dicts(sec_section: dict, yf_section: dict) -> tuple[dict, dict]:
@@ -286,6 +366,9 @@ def sec_to_yfinance_quarterly(sec_row: dict, *, last_n: int = 8,
     the report's table width reasonable."""
     sec_q = (sec_row or {}).get("quarterly") or {}
     yf_q = (yfinance_row or {}).get("quarterly") or {}
+    # Snap yfinance calendar dates onto nearby SEC fiscal dates first, so a
+    # 52/53-week filer's quarter doesn't show up as two near-duplicate columns.
+    yf_q = _align_quarterly_keys(sec_q, yf_q)
     merged, sources = _merge_period_dicts(sec_q, yf_q)
     full = {
         "income_statement": _to_period_list(
