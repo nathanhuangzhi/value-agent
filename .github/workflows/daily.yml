@@ -176,6 +176,7 @@ jobs:
           git add \
             data/companies.jsonl \
             data/companies_classified.json \
+            data/companies_filtered.json \
             data/companies_analyzed.json \
             data/companies_classify_failures.json \
             data/classify_probes.json \
@@ -195,7 +196,12 @@ jobs:
             # rebase window itself.
             for attempt in 1 2 3; do
               git fetch origin main
-              git rebase origin/main || {
+              # --autostash so a tracked file that was regenerated this run but
+              # isn't in the `git add` list above (e.g. a future new state file)
+              # can't abort the rebase with "cannot rebase: unstaged changes"
+              # and silently freeze the committed state — the bug that stalled
+              # daily commit-backs 06/23–06/27 (companies_filtered.json).
+              git rebase --autostash origin/main || {
                 echo "::error::Rebase failed unexpectedly — manual intervention required."
                 git rebase --abort || true
                 exit 1
