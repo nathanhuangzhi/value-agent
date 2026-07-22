@@ -1,117 +1,2332 @@
 [
   {
     "ticker": "HOUR",
-    "fetched_at": "2026-07-21T15:27:12+00:00",
+    "fetched_at": "2026-07-22T15:24:50+00:00",
     "source": "yfinance",
     "annual": {
-      "revenue": {},
-      "cost_of_revenue": {},
-      "gross_profit": {},
-      "operating_income": {},
-      "net_income": {},
-      "diluted_eps": {},
-      "diluted_shares": {},
+      "revenue": {
+        "2025": {
+          "val": 142440236.0,
+          "end": "2025-12-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 138252861.0,
+          "end": "2024-12-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 132124202.0,
+          "end": "2023-12-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 95930091.0,
+          "end": "2022-12-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        }
+      },
+      "cost_of_revenue": {
+        "2025": {
+          "val": 67806565.0,
+          "end": "2025-12-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 66242153.0,
+          "end": "2024-12-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 65606947.0,
+          "end": "2023-12-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 46942770.0,
+          "end": "2022-12-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        }
+      },
+      "gross_profit": {
+        "2025": {
+          "val": 74633671.0,
+          "end": "2025-12-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 72010708.0,
+          "end": "2024-12-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 66517255.0,
+          "end": "2023-12-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 48987321.0,
+          "end": "2022-12-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        }
+      },
+      "operating_income": {
+        "2025": {
+          "val": 2460930.0,
+          "end": "2025-12-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 730940.0,
+          "end": "2024-12-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -3003423.0,
+          "end": "2023-12-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -1915786.0,
+          "end": "2022-12-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        }
+      },
+      "net_income": {
+        "2025": {
+          "val": 1704849.0,
+          "end": "2025-12-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 657447.0,
+          "end": "2024-12-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -2429694.0,
+          "end": "2023-12-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -1477623.0,
+          "end": "2022-12-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        }
+      },
+      "diluted_eps": {
+        "2025": {
+          "val": 0.05,
+          "end": "2025-12-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 0.02,
+          "end": "2024-12-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -0.07,
+          "end": "2023-12-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -0.04,
+          "end": "2022-12-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        }
+      },
+      "diluted_shares": {
+        "2025": {
+          "val": 35164886.0,
+          "end": "2025-12-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 35119761.0,
+          "end": "2024-12-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 35066592.0,
+          "end": "2023-12-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 34991666.0,
+          "end": "2022-12-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        }
+      },
       "rd_expense": {},
-      "sga_expense": {},
-      "selling_marketing_expense": {},
-      "general_admin_expense": {},
-      "cash": {},
-      "total_assets": {},
-      "stockholders_equity": {},
+      "sga_expense": {
+        "2025": {
+          "val": 72172741.0,
+          "end": "2025-12-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 71279768.0,
+          "end": "2024-12-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 69520678.0,
+          "end": "2023-12-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 50903107.0,
+          "end": "2022-12-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        }
+      },
+      "selling_marketing_expense": {
+        "2025": {
+          "val": 62400787.0,
+          "end": "2025-12-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 61808979.0,
+          "end": "2024-12-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 61135227.0,
+          "end": "2023-12-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 42221425.0,
+          "end": "2022-12-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        }
+      },
+      "general_admin_expense": {
+        "2025": {
+          "val": 9771954.0,
+          "end": "2025-12-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 9470789.0,
+          "end": "2024-12-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 8385451.0,
+          "end": "2023-12-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 8681682.0,
+          "end": "2022-12-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        }
+      },
+      "cash": {
+        "2025": {
+          "val": 3792033.0,
+          "end": "2025-12-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 2119581.0,
+          "end": "2024-12-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 2484153.0,
+          "end": "2023-12-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 4562589.0,
+          "end": "2022-12-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        }
+      },
+      "total_assets": {
+        "2025": {
+          "val": 23821437.0,
+          "end": "2025-12-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 19966964.0,
+          "end": "2024-12-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 19550280.0,
+          "end": "2023-12-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 25731976.0,
+          "end": "2022-12-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        }
+      },
+      "stockholders_equity": {
+        "2025": {
+          "val": 6993859.0,
+          "end": "2025-12-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 5159742.0,
+          "end": "2024-12-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 4452897.0,
+          "end": "2023-12-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 6832856.0,
+          "end": "2022-12-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        }
+      },
       "goodwill": {},
-      "ppe_net": {},
-      "inventory": {},
-      "receivables": {},
-      "long_term_debt": {},
-      "short_term_debt": {},
-      "debt_total_legacy": {},
-      "operating_cf": {},
-      "capex": {}
+      "ppe_net": {
+        "2025": {
+          "val": 265285.0,
+          "end": "2025-12-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 168206.0,
+          "end": "2024-12-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 232734.0,
+          "end": "2023-12-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 724916.0,
+          "end": "2022-12-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        }
+      },
+      "inventory": {
+        "2025": {
+          "val": 18298935.0,
+          "end": "2025-12-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 14640632.0,
+          "end": "2024-12-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 14276555.0,
+          "end": "2023-12-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 18801529.0,
+          "end": "2022-12-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        }
+      },
+      "receivables": {
+        "2025": {
+          "val": 235959.0,
+          "end": "2025-12-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 1650547.0,
+          "end": "2024-12-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 747650.0,
+          "end": "2023-12-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 352379.0,
+          "end": "2022-12-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        }
+      },
+      "long_term_debt": {
+        "2023": {
+          "val": 4170418.0,
+          "end": "2023-12-31",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 4170418.0,
+          "end": "2022-12-31",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        }
+      },
+      "short_term_debt": {
+        "2025": {
+          "val": 637348.0,
+          "end": "2025-12-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 610967.0,
+          "end": "2024-12-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 652422.0,
+          "end": "2023-12-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 652316.0,
+          "end": "2022-12-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        }
+      },
+      "debt_total_legacy": {
+        "2025": {
+          "val": 812981.0,
+          "end": "2025-12-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 725507.0,
+          "end": "2024-12-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 4907472.0,
+          "end": "2023-12-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 5272895.0,
+          "end": "2022-12-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        }
+      },
+      "operating_cf": {
+        "2025": {
+          "val": 2581256.0,
+          "end": "2025-12-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 313140.0,
+          "end": "2024-12-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -2063375.0,
+          "end": "2023-12-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -11603176.0,
+          "end": "2022-12-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        }
+      },
+      "capex": {
+        "2025": {
+          "val": -78113.0,
+          "end": "2025-12-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -35996.0,
+          "end": "2024-12-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -14823.0,
+          "end": "2023-12-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -339518.0,
+          "end": "2022-12-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        }
+      }
     },
     "quarterly": {
-      "revenue": {},
-      "cost_of_revenue": {},
-      "gross_profit": {},
-      "operating_income": {},
-      "net_income": {},
-      "diluted_eps": {},
-      "diluted_shares": {},
+      "revenue": {
+        "2026-03-31": {
+          "val": 29930342.0,
+          "end": "2026-03-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 56075337.0,
+          "end": "2025-12-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 33424703.0,
+          "end": "2025-09-30",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 27103106.0,
+          "end": "2025-06-30",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 25837090.0,
+          "end": "2025-03-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        }
+      },
+      "cost_of_revenue": {
+        "2026-03-31": {
+          "val": 13912567.0,
+          "end": "2026-03-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 28259624.0,
+          "end": "2025-12-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 16249395.0,
+          "end": "2025-09-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 11605754.0,
+          "end": "2025-06-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 11691792.0,
+          "end": "2025-03-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        }
+      },
+      "gross_profit": {
+        "2026-03-31": {
+          "val": 16017775.0,
+          "end": "2026-03-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 27815713.0,
+          "end": "2025-12-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 17175308.0,
+          "end": "2025-09-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 15497352.0,
+          "end": "2025-06-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 14145298.0,
+          "end": "2025-03-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        }
+      },
+      "operating_income": {
+        "2026-03-31": {
+          "val": 1142128.0,
+          "end": "2026-03-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -822792.0,
+          "end": "2025-12-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 742006.0,
+          "end": "2025-09-30",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 1620851.0,
+          "end": "2025-06-30",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 920865.0,
+          "end": "2025-03-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        }
+      },
+      "net_income": {
+        "2026-03-31": {
+          "val": 823482.0,
+          "end": "2026-03-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -657260.0,
+          "end": "2025-12-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 530591.0,
+          "end": "2025-09-30",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 1177001.0,
+          "end": "2025-06-30",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 654517.0,
+          "end": "2025-03-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        }
+      },
+      "diluted_eps": {
+        "2026-03-31": {
+          "val": 0.02,
+          "end": "2026-03-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 0.01,
+          "end": "2025-09-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 0.04,
+          "end": "2025-06-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 0.02,
+          "end": "2025-03-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        }
+      },
+      "diluted_shares": {
+        "2026-03-31": {
+          "val": 35183554.0,
+          "end": "2026-03-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 35171320.0,
+          "end": "2025-09-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 35160095.0,
+          "end": "2025-06-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 35151351.0,
+          "end": "2025-03-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        }
+      },
       "rd_expense": {},
-      "sga_expense": {},
-      "selling_marketing_expense": {},
-      "general_admin_expense": {},
-      "cash": {},
-      "total_assets": {},
-      "stockholders_equity": {},
+      "sga_expense": {
+        "2026-03-31": {
+          "val": 14875647.0,
+          "end": "2026-03-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 28638505.0,
+          "end": "2025-12-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 16433302.0,
+          "end": "2025-09-30",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 13876501.0,
+          "end": "2025-06-30",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 13224433.0,
+          "end": "2025-03-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        }
+      },
+      "selling_marketing_expense": {
+        "2026-03-31": {
+          "val": 12598641.0,
+          "end": "2026-03-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 24772812.0,
+          "end": "2025-12-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 14665407.0,
+          "end": "2025-09-30",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 11715571.0,
+          "end": "2025-06-30",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 11246997.0,
+          "end": "2025-03-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        }
+      },
+      "general_admin_expense": {
+        "2026-03-31": {
+          "val": 2277006.0,
+          "end": "2026-03-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3865693.0,
+          "end": "2025-12-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 1767895.0,
+          "end": "2025-09-30",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 2160930.0,
+          "end": "2025-06-30",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 1977436.0,
+          "end": "2025-03-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        }
+      },
+      "cash": {
+        "2026-03-31": {
+          "val": 992886.0,
+          "end": "2026-03-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3792033.0,
+          "end": "2025-12-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 796307.0,
+          "end": "2025-09-30",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 325354.0,
+          "end": "2025-06-30",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 1260122.0,
+          "end": "2025-03-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        }
+      },
+      "total_assets": {
+        "2026-03-31": {
+          "val": 24392349.0,
+          "end": "2026-03-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 23821437.0,
+          "end": "2025-12-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 31620271.0,
+          "end": "2025-09-30",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 22960533.0,
+          "end": "2025-06-30",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 19077473.0,
+          "end": "2025-03-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        }
+      },
+      "stockholders_equity": {
+        "2026-03-31": {
+          "val": 7814724.0,
+          "end": "2026-03-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 6993859.0,
+          "end": "2025-12-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 7669673.0,
+          "end": "2025-09-30",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 7162664.0,
+          "end": "2025-06-30",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 5815723.0,
+          "end": "2025-03-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        }
+      },
       "goodwill": {},
-      "ppe_net": {},
-      "inventory": {},
-      "receivables": {},
+      "ppe_net": {
+        "2026-03-31": {
+          "val": 233090.0,
+          "end": "2026-03-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 265285.0,
+          "end": "2025-12-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 192149.0,
+          "end": "2025-09-30",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 178039.0,
+          "end": "2025-06-30",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 97737.0,
+          "end": "2025-03-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        }
+      },
+      "inventory": {
+        "2026-03-31": {
+          "val": 21087764.0,
+          "end": "2026-03-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 18298935.0,
+          "end": "2025-12-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 28876262.0,
+          "end": "2025-09-30",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 20940746.0,
+          "end": "2025-06-30",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 15889482.0,
+          "end": "2025-03-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        }
+      },
+      "receivables": {
+        "2026-03-31": {
+          "val": 865136.0,
+          "end": "2026-03-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 235959.0,
+          "end": "2025-12-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 546474.0,
+          "end": "2025-09-30",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 477955.0,
+          "end": "2025-06-30",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 394242.0,
+          "end": "2025-03-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        }
+      },
       "long_term_debt": {},
-      "short_term_debt": {},
-      "debt_total_legacy": {},
-      "operating_cf": {},
-      "capex": {}
+      "short_term_debt": {
+        "2026-03-31": {
+          "val": 626076.0,
+          "end": "2026-03-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 637348.0,
+          "end": "2025-12-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 658003.0,
+          "end": "2025-09-30",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 683760.0,
+          "end": "2025-06-30",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 3263645.0,
+          "end": "2025-03-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        }
+      },
+      "debt_total_legacy": {
+        "2026-03-31": {
+          "val": 776885.0,
+          "end": "2026-03-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 812981.0,
+          "end": "2025-12-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 772904.0,
+          "end": "2025-09-30",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 820991.0,
+          "end": "2025-06-30",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 3320123.0,
+          "end": "2025-03-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        }
+      },
+      "operating_cf": {
+        "2026-03-31": {
+          "val": -2201403.0,
+          "end": "2026-03-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3006256.0,
+          "end": "2025-12-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 500430.0,
+          "end": "2025-09-30",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": -901539.0,
+          "end": "2025-06-30",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": -23891.0,
+          "end": "2025-03-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        }
+      },
+      "capex": {
+        "2026-03-31": {
+          "val": -5662.0,
+          "end": "2026-03-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -26134.0,
+          "end": "2025-12-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -51178.0,
+          "end": "2025-09-30",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": -81.0,
+          "end": "2025-06-30",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": -720.0,
+          "end": "2025-03-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        }
+      }
     }
   },
   {
     "ticker": "IPW",
-    "fetched_at": "2026-07-21T15:27:15+00:00",
+    "fetched_at": "2026-07-22T15:25:58+00:00",
     "source": "yfinance",
     "annual": {
-      "revenue": {},
-      "cost_of_revenue": {},
-      "gross_profit": {},
-      "operating_income": {},
-      "net_income": {},
-      "diluted_eps": {},
-      "diluted_shares": {},
+      "revenue": {
+        "2024": {
+          "val": 86071485.0,
+          "end": "2024-06-30",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 88902048.0,
+          "end": "2023-06-30",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 79418473.0,
+          "end": "2022-06-30",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        }
+      },
+      "cost_of_revenue": {
+        "2024": {
+          "val": 47950117.0,
+          "end": "2024-06-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 54104587.0,
+          "end": "2023-06-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 46218580.0,
+          "end": "2022-06-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        }
+      },
+      "gross_profit": {
+        "2024": {
+          "val": 38121368.0,
+          "end": "2024-06-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 34797461.0,
+          "end": "2023-06-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 33199893.0,
+          "end": "2022-06-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        }
+      },
+      "operating_income": {
+        "2024": {
+          "val": -962892.0,
+          "end": "2024-06-30",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -10423509.0,
+          "end": "2023-06-30",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 2312037.0,
+          "end": "2022-06-30",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        }
+      },
+      "net_income": {
+        "2024": {
+          "val": -1528159.0,
+          "end": "2024-06-30",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -11965390.0,
+          "end": "2023-06-30",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 1517875.0,
+          "end": "2022-06-30",
+          "concept": "Net Income",
+          "source": "yfinance"
+        }
+      },
+      "diluted_eps": {
+        "2025": {
+          "val": -38.4,
+          "end": "2025-06-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -12.0,
+          "end": "2024-06-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -96.72,
+          "end": "2023-06-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 12.0,
+          "end": "2022-06-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        }
+      },
+      "diluted_shares": {
+        "2025": {
+          "val": 131023.0,
+          "end": "2025-06-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 124492.0,
+          "end": "2024-06-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 123805.0,
+          "end": "2023-06-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 115756.0,
+          "end": "2022-06-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        }
+      },
       "rd_expense": {},
-      "sga_expense": {},
-      "selling_marketing_expense": {},
-      "general_admin_expense": {},
-      "cash": {},
-      "total_assets": {},
-      "stockholders_equity": {},
-      "goodwill": {},
-      "ppe_net": {},
-      "inventory": {},
-      "receivables": {},
-      "long_term_debt": {},
-      "short_term_debt": {},
-      "debt_total_legacy": {},
-      "operating_cf": {},
-      "capex": {}
+      "sga_expense": {
+        "2024": {
+          "val": 39084260.0,
+          "end": "2024-06-30",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 45220970.0,
+          "end": "2023-06-30",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 30887856.0,
+          "end": "2022-06-30",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        }
+      },
+      "selling_marketing_expense": {
+        "2024": {
+          "val": 26963291.0,
+          "end": "2024-06-30",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 32427972.0,
+          "end": "2023-06-30",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 19180390.0,
+          "end": "2022-06-30",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        }
+      },
+      "general_admin_expense": {
+        "2024": {
+          "val": 12120969.0,
+          "end": "2024-06-30",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 12792998.0,
+          "end": "2023-06-30",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 11707466.0,
+          "end": "2022-06-30",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        }
+      },
+      "cash": {
+        "2024": {
+          "val": 7377837.0,
+          "end": "2024-06-30",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 3735642.0,
+          "end": "2023-06-30",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 1821947.0,
+          "end": "2022-06-30",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        }
+      },
+      "total_assets": {
+        "2024": {
+          "val": 51295857.0,
+          "end": "2024-06-30",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 60094287.0,
+          "end": "2023-06-30",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 78581467.0,
+          "end": "2022-06-30",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        }
+      },
+      "stockholders_equity": {
+        "2024": {
+          "val": 23054237.0,
+          "end": "2024-06-30",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 20889656.0,
+          "end": "2023-06-30",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 32410062.0,
+          "end": "2022-06-30",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        }
+      },
+      "goodwill": {
+        "2024": {
+          "val": 3034110.0,
+          "end": "2024-06-30",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 3034110.0,
+          "end": "2023-06-30",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 6094144.0,
+          "end": "2022-06-30",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        }
+      },
+      "ppe_net": {
+        "2024": {
+          "val": 6495050.0,
+          "end": "2024-06-30",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 8373763.0,
+          "end": "2023-06-30",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 10997915.0,
+          "end": "2022-06-30",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        }
+      },
+      "inventory": {
+        "2024": {
+          "val": 10546273.0,
+          "end": "2024-06-30",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 20593889.0,
+          "end": "2023-06-30",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 30433766.0,
+          "end": "2022-06-30",
+          "concept": "Inventory",
+          "source": "yfinance"
+        }
+      },
+      "receivables": {
+        "2024": {
+          "val": 14740093.0,
+          "end": "2024-06-30",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 14071543.0,
+          "end": "2023-06-30",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 17432287.0,
+          "end": "2022-06-30",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        }
+      },
+      "long_term_debt": {
+        "2023": {
+          "val": 9791191.0,
+          "end": "2023-06-30",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 14096332.0,
+          "end": "2022-06-30",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        }
+      },
+      "short_term_debt": {
+        "2024": {
+          "val": 6341953.0,
+          "end": "2024-06-30",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 2017852.0,
+          "end": "2023-06-30",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 1879065.0,
+          "end": "2022-06-30",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        }
+      },
+      "debt_total_legacy": {
+        "2024": {
+          "val": 12891063.0,
+          "end": "2024-06-30",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 20074263.0,
+          "end": "2023-06-30",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 26823941.0,
+          "end": "2022-06-30",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        }
+      },
+      "operating_cf": {
+        "2024": {
+          "val": 6164077.0,
+          "end": "2024-06-30",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 9211269.0,
+          "end": "2023-06-30",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -16603005.0,
+          "end": "2022-06-30",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        }
+      },
+      "capex": {
+        "2024": {
+          "val": 0.0,
+          "end": "2024-06-30",
+          "concept": "Purchase Of PPE",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -140813.0,
+          "end": "2023-06-30",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -484172.0,
+          "end": "2022-06-30",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        }
+      }
     },
     "quarterly": {
-      "revenue": {},
-      "cost_of_revenue": {},
-      "gross_profit": {},
-      "operating_income": {},
-      "net_income": {},
-      "diluted_eps": {},
-      "diluted_shares": {},
+      "revenue": {
+        "2026-03-31": {
+          "val": 3498681.0,
+          "end": "2026-03-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 7133602.0,
+          "end": "2025-12-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 12017467.0,
+          "end": "2025-09-30",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 16041672.0,
+          "end": "2025-03-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 19072571.0,
+          "end": "2024-12-31",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        }
+      },
+      "cost_of_revenue": {
+        "2026-03-31": {
+          "val": 2743132.0,
+          "end": "2026-03-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3994680.0,
+          "end": "2025-12-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 7210943.0,
+          "end": "2025-09-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 9186212.0,
+          "end": "2025-03-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 10682685.0,
+          "end": "2024-12-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        }
+      },
+      "gross_profit": {
+        "2026-03-31": {
+          "val": 755549.0,
+          "end": "2026-03-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3138922.0,
+          "end": "2025-12-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 4806524.0,
+          "end": "2025-09-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 6855460.0,
+          "end": "2025-03-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 8389886.0,
+          "end": "2024-12-31",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        }
+      },
+      "operating_income": {
+        "2026-03-31": {
+          "val": -1144261.0,
+          "end": "2026-03-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -2437977.0,
+          "end": "2025-12-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -1695179.0,
+          "end": "2025-09-30",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": -334504.0,
+          "end": "2025-03-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 683607.0,
+          "end": "2024-12-31",
+          "concept": "Operating Income",
+          "source": "yfinance"
+        }
+      },
+      "net_income": {
+        "2026-03-31": {
+          "val": -3454878.0,
+          "end": "2026-03-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -1193281.0,
+          "end": "2025-12-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -533648.0,
+          "end": "2025-09-30",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": -339599.0,
+          "end": "2025-03-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 218819.0,
+          "end": "2024-12-31",
+          "concept": "Net Income",
+          "source": "yfinance"
+        }
+      },
+      "diluted_eps": {
+        "2026-03-31": {
+          "val": -19.04,
+          "end": "2026-03-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -8.64,
+          "end": "2025-12-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -4.07592,
+          "end": "2025-09-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": -2.64,
+          "end": "2025-03-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 2.4,
+          "end": "2024-12-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        }
+      },
+      "diluted_shares": {
+        "2026-03-31": {
+          "val": 181734.0,
+          "end": "2026-03-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 137797.0,
+          "end": "2025-12-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 131330.0,
+          "end": "2025-09-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 131063.0,
+          "end": "2025-03-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 130989.0,
+          "end": "2024-12-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        }
+      },
       "rd_expense": {},
-      "sga_expense": {},
-      "selling_marketing_expense": {},
-      "general_admin_expense": {},
-      "cash": {},
-      "total_assets": {},
-      "stockholders_equity": {},
-      "goodwill": {},
-      "ppe_net": {},
-      "inventory": {},
-      "receivables": {},
-      "long_term_debt": {},
-      "short_term_debt": {},
-      "debt_total_legacy": {},
-      "operating_cf": {},
-      "capex": {}
+      "sga_expense": {
+        "2026-03-31": {
+          "val": 1899810.0,
+          "end": "2026-03-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 5576899.0,
+          "end": "2025-12-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 6501703.0,
+          "end": "2025-09-30",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 7189964.0,
+          "end": "2025-03-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 7706279.0,
+          "end": "2024-12-31",
+          "concept": "Selling General And Administration",
+          "source": "yfinance"
+        }
+      },
+      "selling_marketing_expense": {
+        "2026-03-31": {
+          "val": 991037.0,
+          "end": "2026-03-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3075161.0,
+          "end": "2025-12-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 5180190.0,
+          "end": "2025-09-30",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 5373932.0,
+          "end": "2025-03-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 4628914.0,
+          "end": "2024-12-31",
+          "concept": "Selling And Marketing Expense",
+          "source": "yfinance"
+        }
+      },
+      "general_admin_expense": {
+        "2026-03-31": {
+          "val": 908773.0,
+          "end": "2026-03-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 2501738.0,
+          "end": "2025-12-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 1321513.0,
+          "end": "2025-09-30",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 1816032.0,
+          "end": "2025-03-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 3077365.0,
+          "end": "2024-12-31",
+          "concept": "General And Administrative Expense",
+          "source": "yfinance"
+        }
+      },
+      "cash": {
+        "2026-03-31": {
+          "val": 713685.0,
+          "end": "2026-03-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 2011738.0,
+          "end": "2025-12-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 903975.0,
+          "end": "2025-09-30",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 2192254.0,
+          "end": "2025-03-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 2877457.0,
+          "end": "2024-12-31",
+          "concept": "Cash And Cash Equivalents",
+          "source": "yfinance"
+        }
+      },
+      "total_assets": {
+        "2026-03-31": {
+          "val": 31306588.0,
+          "end": "2026-03-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 33997288.0,
+          "end": "2025-12-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 28592294.0,
+          "end": "2025-09-30",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 40506481.0,
+          "end": "2025-03-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 43869572.0,
+          "end": "2024-12-31",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        }
+      },
+      "stockholders_equity": {
+        "2026-03-31": {
+          "val": 17198086.0,
+          "end": "2026-03-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 18031804.0,
+          "end": "2025-12-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 17964962.0,
+          "end": "2025-09-30",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 20764916.0,
+          "end": "2025-03-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 21748124.0,
+          "end": "2024-12-31",
+          "concept": "Common Stock Equity",
+          "source": "yfinance"
+        }
+      },
+      "goodwill": {
+        "2026-03-31": {
+          "val": 0.0,
+          "end": "2026-03-31",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3034110.0,
+          "end": "2025-12-31",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 3034110.0,
+          "end": "2025-09-30",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 3034110.0,
+          "end": "2025-03-31",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 3034110.0,
+          "end": "2024-12-31",
+          "concept": "Goodwill",
+          "source": "yfinance"
+        }
+      },
+      "ppe_net": {
+        "2026-03-31": {
+          "val": 3132643.0,
+          "end": "2026-03-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3474124.0,
+          "end": "2025-12-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 3954137.0,
+          "end": "2025-09-30",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 4553095.0,
+          "end": "2025-03-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 5060488.0,
+          "end": "2024-12-31",
+          "concept": "Net PPE",
+          "source": "yfinance"
+        }
+      },
+      "inventory": {
+        "2026-03-31": {
+          "val": 2536961.0,
+          "end": "2026-03-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3611859.0,
+          "end": "2025-12-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 4332605.0,
+          "end": "2025-09-30",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 9772699.0,
+          "end": "2025-03-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 9183631.0,
+          "end": "2024-12-31",
+          "concept": "Inventory",
+          "source": "yfinance"
+        }
+      },
+      "receivables": {
+        "2026-03-31": {
+          "val": 7064189.0,
+          "end": "2026-03-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 5168143.0,
+          "end": "2025-12-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 5106192.0,
+          "end": "2025-09-30",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 10179237.0,
+          "end": "2025-03-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 13926432.0,
+          "end": "2024-12-31",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        }
+      },
+      "long_term_debt": {
+        "2026-03-31": {
+          "val": 4470518.0,
+          "end": "2026-03-31",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 4381531.0,
+          "end": "2025-12-31",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 3573896.0,
+          "end": "2025-03-31",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 4042400.0,
+          "end": "2024-12-31",
+          "concept": "Long Term Debt",
+          "source": "yfinance"
+        }
+      },
+      "short_term_debt": {
+        "2026-03-31": {
+          "val": 1450340.0,
+          "end": "2026-03-31",
+          "concept": "Current Debt And Capital Lease Obligation",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 2563278.0,
+          "end": "2025-12-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 1949438.0,
+          "end": "2025-09-30",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 1392146.0,
+          "end": "2025-03-31",
+          "concept": "Current Debt And Capital Lease Obligation",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 350000.0,
+          "end": "2024-12-31",
+          "concept": "Current Debt",
+          "source": "yfinance"
+        }
+      },
+      "debt_total_legacy": {
+        "2026-03-31": {
+          "val": 7738011.0,
+          "end": "2026-03-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 10557567.0,
+          "end": "2025-12-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 5895376.0,
+          "end": "2025-09-30",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 8233533.0,
+          "end": "2025-03-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 9545780.0,
+          "end": "2024-12-31",
+          "concept": "Total Debt",
+          "source": "yfinance"
+        }
+      },
+      "operating_cf": {
+        "2026-03-31": {
+          "val": -333507.0,
+          "end": "2026-03-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -922557.0,
+          "end": "2025-12-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 1686463.0,
+          "end": "2025-09-30",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 887712.0,
+          "end": "2025-03-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 27717.0,
+          "end": "2024-12-31",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        }
+      },
+      "capex": {
+        "2025-12-31": {
+          "val": -2347356.0,
+          "end": "2025-12-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -583633.0,
+          "end": "2025-09-30",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": -855562.0,
+          "end": "2025-03-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": -462226.0,
+          "end": "2024-12-31",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        }
+      }
     }
   },
   {
     "ticker": "NEGG",
-    "fetched_at": "2026-07-21T15:27:31+00:00",
+    "fetched_at": "2026-07-22T15:27:09+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {},
@@ -166,7 +2381,7 @@
   },
   {
     "ticker": "NHTC",
-    "fetched_at": "2026-07-21T15:27:31+00:00",
+    "fetched_at": "2026-07-22T15:27:09+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {},
@@ -221,7 +2436,7 @@
   },
   {
     "ticker": "TDUP",
-    "fetched_at": "2026-07-21T15:28:40+00:00",
+    "fetched_at": "2026-07-22T15:29:01+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
