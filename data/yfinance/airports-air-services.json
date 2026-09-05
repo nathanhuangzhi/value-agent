@@ -1,7 +1,7 @@
 [
   {
     "ticker": "ASLE",
-    "fetched_at": "2026-09-04T16:58:39+00:00",
+    "fetched_at": "2026-09-05T16:03:41+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -1170,7 +1170,7 @@
   },
   {
     "ticker": "SOAR",
-    "fetched_at": "2026-09-04T17:08:24+00:00",
+    "fetched_at": "2026-09-05T16:13:49+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -1688,6 +1688,12 @@
     },
     "quarterly": {
       "revenue": {
+        "2026-06-30": {
+          "val": 965000.0,
+          "end": "2026-06-30",
+          "concept": "Operating Revenue",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 997000.0,
           "end": "2026-03-31",
@@ -1720,6 +1726,12 @@
         }
       },
       "cost_of_revenue": {
+        "2026-06-30": {
+          "val": 292000.0,
+          "end": "2026-06-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 294000.0,
           "end": "2026-03-31",
@@ -1747,11 +1759,17 @@
         "2025-03-31": {
           "val": 20987000.0,
           "end": "2025-03-31",
-          "concept": "Cost Of Revenue",
+          "concept": "Reconciled Cost Of Revenue",
           "source": "yfinance"
         }
       },
       "gross_profit": {
+        "2026-06-30": {
+          "val": 673000.0,
+          "end": "2026-06-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 703000.0,
           "end": "2026-03-31",
@@ -1773,12 +1791,6 @@
         "2025-06-30": {
           "val": 3767000.0,
           "end": "2025-06-30",
-          "concept": "Gross Profit",
-          "source": "yfinance"
-        },
-        "2025-03-31": {
-          "val": 4496000.0,
-          "end": "2025-03-31",
           "concept": "Gross Profit",
           "source": "yfinance"
         }
@@ -1816,6 +1828,12 @@
         }
       },
       "net_income": {
+        "2026-06-30": {
+          "val": -2154000.0,
+          "end": "2026-06-30",
+          "concept": "Net Income Continuous Operations",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": -2634000.0,
           "end": "2026-03-31",
@@ -1874,6 +1892,12 @@
         }
       },
       "diluted_shares": {
+        "2026-06-30": {
+          "val": 34809790.0,
+          "end": "2026-06-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 14862487.0,
           "end": "2026-03-31",
@@ -1967,6 +1991,12 @@
         }
       },
       "total_assets": {
+        "2026-06-30": {
+          "val": 13537000.0,
+          "end": "2026-06-30",
+          "concept": "Total Assets",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 7906000.0,
           "end": "2026-03-31",
@@ -1988,12 +2018,6 @@
         "2025-06-30": {
           "val": 13048000.0,
           "end": "2025-06-30",
-          "concept": "Total Assets",
-          "source": "yfinance"
-        },
-        "2025-03-31": {
-          "val": 23408000.0,
-          "end": "2025-03-31",
           "concept": "Total Assets",
           "source": "yfinance"
         }
@@ -2072,6 +2096,12 @@
       },
       "inventory": {},
       "receivables": {
+        "2026-06-30": {
+          "val": 12000.0,
+          "end": "2026-06-30",
+          "concept": "Accounts Receivable",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 31000.0,
           "end": "2026-03-31",
@@ -2097,9 +2127,9 @@
           "source": "yfinance"
         },
         "2025-03-31": {
-          "val": 1000.0,
+          "val": 57000.0,
           "end": "2025-03-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         }
       },
@@ -2169,6 +2199,12 @@
         }
       },
       "operating_cf": {
+        "2026-06-30": {
+          "val": -282000.0,
+          "end": "2026-06-30",
+          "concept": "Operating Cash Flow",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": -2573000.0,
           "end": "2026-03-31",
@@ -2196,11 +2232,17 @@
         "2025-03-31": {
           "val": -312000.0,
           "end": "2025-03-31",
-          "concept": "Operating Cash Flow",
+          "concept": "Cash Flow From Continuing Operating Activities",
           "source": "yfinance"
         }
       },
       "capex": {
+        "2026-06-30": {
+          "val": -180000.0,
+          "end": "2026-06-30",
+          "concept": "Capital Expenditure",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": -176000.0,
           "end": "2026-03-31",
@@ -2224,19 +2266,13 @@
           "end": "2025-06-30",
           "concept": "Purchase Of PPE",
           "source": "yfinance"
-        },
-        "2025-03-31": {
-          "val": 0.0,
-          "end": "2025-03-31",
-          "concept": "Purchase Of PPE",
-          "source": "yfinance"
         }
       }
     }
   },
   {
     "ticker": "UP",
-    "fetched_at": "2026-09-04T17:09:37+00:00",
+    "fetched_at": "2026-09-05T16:15:05+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {

@@ -1,7 +1,7 @@
 [
   {
     "ticker": "CULP",
-    "fetched_at": "2026-09-04T17:00:40+00:00",
+    "fetched_at": "2026-09-05T16:05:46+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -1108,7 +1108,7 @@
   },
   {
     "ticker": "UFI",
-    "fetched_at": "2026-09-04T17:09:31+00:00",
+    "fetched_at": "2026-09-05T16:14:58+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -1772,6 +1772,12 @@
         }
       },
       "diluted_eps": {
+        "2026-06-30": {
+          "val": -0.06,
+          "end": "2026-06-30",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": -0.12,
           "end": "2026-03-31",
@@ -1799,11 +1805,17 @@
         "2025-03-31": {
           "val": -0.92,
           "end": "2025-03-31",
-          "concept": "Diluted EPS",
+          "concept": "Basic EPS",
           "source": "yfinance"
         }
       },
       "diluted_shares": {
+        "2026-06-30": {
+          "val": 18587000.0,
+          "end": "2026-06-30",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 18584000.0,
           "end": "2026-03-31",
@@ -1831,7 +1843,7 @@
         "2025-03-31": {
           "val": 18352000.0,
           "end": "2025-03-31",
-          "concept": "Diluted Average Shares",
+          "concept": "Basic Average Shares",
           "source": "yfinance"
         }
       },

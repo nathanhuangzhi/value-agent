@@ -1,7 +1,7 @@
 [
   {
     "ticker": "CSV",
-    "fetched_at": "2026-09-04T17:00:34+00:00",
+    "fetched_at": "2026-09-05T16:05:40+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -1232,7 +1232,7 @@
   },
   {
     "ticker": "MED",
-    "fetched_at": "2026-09-04T17:04:45+00:00",
+    "fetched_at": "2026-09-05T16:09:58+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -2239,7 +2239,7 @@
   },
   {
     "ticker": "RGS",
-    "fetched_at": "2026-09-04T17:07:20+00:00",
+    "fetched_at": "2026-09-05T16:12:41+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -3464,7 +3464,7 @@
   },
   {
     "ticker": "TRNR",
-    "fetched_at": "2026-09-04T17:09:19+00:00",
+    "fetched_at": "2026-09-05T16:14:47+00:00",
     "source": "yfinance",
     "annual": {
       "revenue": {
@@ -4050,6 +4050,12 @@
     },
     "quarterly": {
       "revenue": {
+        "2026-06-30": {
+          "val": 6647000.0,
+          "end": "2026-06-30",
+          "concept": "Total Revenue",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 5141000.0,
           "end": "2026-03-31",
@@ -4077,11 +4083,17 @@
         "2025-03-31": {
           "val": 1356000.0,
           "end": "2025-03-31",
-          "concept": "Total Revenue",
+          "concept": "Operating Revenue",
           "source": "yfinance"
         }
       },
       "cost_of_revenue": {
+        "2026-06-30": {
+          "val": 3432000.0,
+          "end": "2026-06-30",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 3532000.0,
           "end": "2026-03-31",
@@ -4105,15 +4117,15 @@
           "end": "2025-06-30",
           "concept": "Cost Of Revenue",
           "source": "yfinance"
-        },
-        "2025-03-31": {
-          "val": 1660000.0,
-          "end": "2025-03-31",
-          "concept": "Cost Of Revenue",
-          "source": "yfinance"
         }
       },
       "gross_profit": {
+        "2026-06-30": {
+          "val": 3215000.0,
+          "end": "2026-06-30",
+          "concept": "Gross Profit",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 1609000.0,
           "end": "2026-03-31",
@@ -4135,12 +4147,6 @@
         "2025-06-30": {
           "val": -194000.0,
           "end": "2025-06-30",
-          "concept": "Gross Profit",
-          "source": "yfinance"
-        },
-        "2025-03-31": {
-          "val": -304000.0,
-          "end": "2025-03-31",
           "concept": "Gross Profit",
           "source": "yfinance"
         }
@@ -4178,6 +4184,12 @@
         }
       },
       "net_income": {
+        "2026-06-30": {
+          "val": -7104000.0,
+          "end": "2026-06-30",
+          "concept": "Net Income Continuous Operations",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": -10743000.0,
           "end": "2026-03-31",
@@ -4242,6 +4254,12 @@
         }
       },
       "diluted_shares": {
+        "2026-06-30": {
+          "val": 408871.0,
+          "end": "2026-06-30",
+          "concept": "Basic Average Shares",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": 149922.0,
           "end": "2026-03-31",
@@ -4754,6 +4772,12 @@
         }
       },
       "capex": {
+        "2026-06-30": {
+          "val": -237000.0,
+          "end": "2026-06-30",
+          "concept": "Purchase Of PPE",
+          "source": "yfinance"
+        },
         "2026-03-31": {
           "val": -498000.0,
           "end": "2026-03-31",
