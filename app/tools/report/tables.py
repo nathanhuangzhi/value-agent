@@ -19,6 +19,7 @@ from app.tools.report.ratios import (
     _other_opex_amount,
     _prior_year_label,
     _top_asset_keys,
+    _top_liability_keys,
     _yoy_cell_style,
 )
 
@@ -98,6 +99,7 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
         cash, cash_src = _pick_first_with_source(bs_items, bs_src, ["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments"])
         debt, debt_src = _pick_first_with_source(bs_items, bs_src, ["Total Debt", "Long Term Debt"])
         assets, assets_src = _pick_first_with_source(bs_items, bs_src, ["Total Assets"])
+        liabilities, liabilities_src = _pick_first_with_source(bs_items, bs_src, ["Total Liabilities"])
         rd = _pick_first(items, ["Research And Development"])
         sm = _pick_first(items, ["Selling And Marketing Expense"])
         ga = _pick_first(items, ["General And Administrative Expense"])
@@ -139,7 +141,7 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
             "sps": _div(rev, shares_for_mcap),
             "bvps": _div(bv, shares_for_mcap),
             "ocf": ocf, "fcf": fcf, "capex": capex,
-            "cash": cash, "debt": debt, "assets": assets,
+            "cash": cash, "debt": debt, "assets": assets, "liabilities": liabilities,
             "gm": _div(gp, rev), "om": _div(op, rev), "nm": _div(ni, rev),
             "rd_r": _div(rd, rev), "sm_r": _div(sm, rev), "ga_r": _div(ga, rev), "sga_r": _div(sga, rev),
             "other_r": _div(other, rev),
@@ -155,6 +157,7 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
                 "eps": eps_src, "shares": shares_src,
                 "ocf": ocf_src, "fcf": fcf_src, "capex": capex_src,
                 "cash": cash_src, "debt": debt_src, "assets": assets_src,
+                "liabilities": liabilities_src,
             },
         }
         for key in (extra_bs_keys or []):
@@ -174,7 +177,7 @@ def _empty_col(extra_keys):
     empty dash for each cell."""
     metric_keys = (
         "rev", "gp", "op", "ni", "eps", "shares", "sps", "bvps",
-        "ocf", "fcf", "capex", "cash", "debt", "assets",
+        "ocf", "fcf", "capex", "cash", "debt", "assets", "liabilities",
         "gm", "om", "nm",
         "rd_r", "sm_r", "ga_r", "sga_r", "other_r",
         "static_pe", "static_ps", "pb",
@@ -209,22 +212,24 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
     valuation chart upstream still sees the full history — this fixed
     width is a table-presentation concern only."""
     top_asset_keys = _top_asset_keys(bs_annual, bs_quarterly, top_n=2)
+    top_liability_keys = _top_liability_keys(bs_annual, bs_quarterly, top_n=3)
+    extra_keys = top_asset_keys + top_liability_keys
     annual_cols = _collect_table_columns(
         inc_annual, bs_annual, cf_annual, _fy_label,
         price_history=price_history,
         fallback_inc=inc_quarterly,
         fallback_bs=bs_quarterly,
         static_annual_inc=inc_annual,
-        extra_bs_keys=top_asset_keys,
+        extra_bs_keys=extra_keys,
     )
     quarterly_cols = _collect_table_columns(
         inc_quarterly, bs_quarterly, cf_quarterly, _quarter_label,
         price_history=price_history,
         static_annual_inc=inc_annual,
-        extra_bs_keys=top_asset_keys,
+        extra_bs_keys=extra_keys,
     )
-    annual_cols = _slice_and_pad(annual_cols, _TABLE_ANNUAL_COLS, top_asset_keys)
-    quarterly_cols = _slice_and_pad(quarterly_cols, _TABLE_QUARTERLY_COLS, top_asset_keys)
+    annual_cols = _slice_and_pad(annual_cols, _TABLE_ANNUAL_COLS, extra_keys)
+    quarterly_cols = _slice_and_pad(quarterly_cols, _TABLE_QUARTERLY_COLS, extra_keys)
     cols = annual_cols + quarterly_cols
     if not cols or all(c["label"] == "" for c in cols):
         return ""
@@ -278,6 +283,8 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         ("Total Assets", "assets", money_m),
         ("Cash & Equivalents", "cash", money_m),
         *[(key, key, money_m) for key in top_asset_keys],
+        ("Total Liabilities", "liabilities", money_m),
+        *[(key, key, money_m) for key in top_liability_keys],
         ("Total Debt", "debt", money_m),
         ("group", "Cash Flow ($M)"),
         ("Operating CF", "ocf", money_m),

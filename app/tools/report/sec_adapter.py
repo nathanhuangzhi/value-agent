@@ -56,6 +56,16 @@ SEC_TO_YFINANCE_BALANCE = {
     "ppe_net": "Net PPE",
     "inventory": "Inventory",
     "receivables": "Accounts Receivable",
+    # Liability side. The two debt buckets are also summed into the derived
+    # "Total Debt" (see _resolve_total_debt); exposing them individually lets
+    # the balance-sheet section rank the largest liabilities.
+    "total_liabilities": "Total Liabilities",
+    "long_term_debt": "Long Term Debt",
+    "short_term_debt": "Current Debt",
+    "accounts_payable": "Accounts Payable",
+    "accrued_liabilities": "Accrued Liabilities",
+    "deferred_revenue": "Deferred Revenue",
+    "lease_liabilities": "Lease Obligations",
 }
 
 

@@ -114,10 +114,16 @@ _ANNUAL_LINES = [
     ("cash_flow", "Capital Expenditure", "Capex"),
     ("cash_flow", "Free Cash Flow", "Free cash flow"),
     ("balance_sheet", "Cash And Cash Equivalents", "Cash"),
-    ("balance_sheet", "Total Debt", "Total debt"),
     ("balance_sheet", "Total Assets", "Total assets"),
-    ("balance_sheet", "Common Stock Equity", "Equity"),
     ("balance_sheet", "Goodwill", "Goodwill"),
+    ("balance_sheet", "Total Liabilities", "Total liabilities"),
+    ("balance_sheet", "Accounts Payable", "Accounts payable"),
+    ("balance_sheet", "Deferred Revenue", "Deferred revenue"),
+    ("balance_sheet", "Lease Obligations", "Lease obligations"),
+    ("balance_sheet", "Current Debt", "Current debt"),
+    ("balance_sheet", "Long Term Debt", "Long-term debt"),
+    ("balance_sheet", "Total Debt", "Total debt"),
+    ("balance_sheet", "Common Stock Equity", "Equity"),
 ]
 
 _RATIO_LABELS = [

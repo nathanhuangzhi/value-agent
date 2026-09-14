@@ -34,6 +34,9 @@ def main():
     ap.add_argument("--ticker", help="One ticker to fetch (else: all in companies_analyzed.json).")
     ap.add_argument("--limit", type=int, help="Process only the first N tickers.")
     ap.add_argument("--output", type=Path, default=COMPANIES_SEC)
+    ap.add_argument("--refresh", action="store_true",
+                    help="Re-fetch tickers already in the cache (e.g. after adding "
+                         "XBRL concepts to sec_xbrl_tools). Default: skip cached.")
     args = ap.parse_args()
 
     # Pick target tickers from the analyzed roster; look up CIKs from
@@ -60,7 +63,7 @@ def main():
 
     results = dict(existing)
     for i, ticker in enumerate(todo, 1):
-        if ticker in results and not args.ticker:
+        if ticker in results and not args.ticker and not args.refresh:
             continue
         u = universe.get(ticker)
         if not u or not u.get("cik"):

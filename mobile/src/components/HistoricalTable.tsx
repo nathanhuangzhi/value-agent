@@ -193,6 +193,33 @@ function topAssetKeys(annualBS: Period[], quarterlyBS: Period[], topN: number = 
   return scored.slice(0, topN).map((x) => x.key);
 }
 
+// ====== Top-liability detection (port of ratios._top_liability_keys) ======
+
+const LIABILITY_CANDIDATE_KEYS = [
+  'Long Term Debt',
+  'Current Debt',
+  'Accounts Payable',
+  'Accrued Liabilities',
+  'Deferred Revenue',
+  'Lease Obligations',
+];
+
+function topLiabilityKeys(annualBS: Period[], quarterlyBS: Period[], topN: number = 3): string[] {
+  const newestQ = [...quarterlyBS].sort((a, b) => b.period.localeCompare(a.period));
+  const newestA = [...annualBS].sort((a, b) => b.period.localeCompare(a.period));
+  for (const p of [...newestQ, ...newestA]) {
+    const items = p.items as Record<string, number | null>;
+    const scored = LIABILITY_CANDIDATE_KEYS
+      .filter((k) => items[k] != null && (items[k] as number) > 0)
+      .map((k) => ({ key: k, value: items[k] as number }));
+    if (scored.length) {
+      scored.sort((a, b) => b.value - a.value);
+      return scored.slice(0, topN).map((x) => x.key);
+    }
+  }
+  return [];
+}
+
 
 // ====== Label / formatting helpers ======
 
@@ -343,6 +370,12 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     () => topAssetKeys(statements.balance_sheet, quarterly.balance_sheet),
     [statements.balance_sheet, quarterly.balance_sheet],
   );
+  // Top 3 liability lines (e.g. ['Long Term Debt', 'Accounts Payable',
+  // 'Deferred Revenue']) — the liability-side counterpart of assetKeys.
+  const liabilityKeys = useMemo(
+    () => topLiabilityKeys(statements.balance_sheet, quarterly.balance_sheet),
+    [statements.balance_sheet, quarterly.balance_sheet],
+  );
 
   // Does this ticker report S&M and G&A separately (≥2 periods each)? If
   // so, the opex section breaks them out; otherwise it collapses to
@@ -458,6 +491,11 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
         { kind: 'raw', label: 'Cash & Equivalents',  source: 'balance', keys: ['Cash And Cash Equivalents', 'Cash Cash Equivalents And Short Term Investments'], format: 'money' },
         // Dynamic top-asset rows for this specific ticker (e.g. Goodwill, PPE)
         ...assetKeys.map<RawRow>((key) => ({
+          kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
+        })),
+        { kind: 'raw', label: 'Total Liabilities',   source: 'balance', keys: ['Total Liabilities'], format: 'money' },
+        // Dynamic top-liability rows for this ticker (e.g. LT debt, payables)
+        ...liabilityKeys.map<RawRow>((key) => ({
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
         { kind: 'raw', label: 'Total Debt',          source: 'balance', keys: ['Total Debt', 'Long Term Debt'], format: 'money' },

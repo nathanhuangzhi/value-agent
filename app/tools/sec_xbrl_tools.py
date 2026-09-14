@@ -385,6 +385,25 @@ BALANCE_SHEET_METRICS: dict[str, list[str]] = {
         "LoansPayable",
     ],
     "total_assets": ["Assets"],
+    # Liability lines beyond debt, so the balance-sheet section can show the
+    # largest liabilities the way it shows the largest assets.
+    "total_liabilities": ["Liabilities"],
+    "accounts_payable": [
+        "AccountsPayableCurrent",
+        "AccountsPayableTradeCurrent",
+        "AccountsPayableAndAccruedLiabilitiesCurrent",
+    ],
+    "accrued_liabilities": ["AccruedLiabilitiesCurrent"],
+    "deferred_revenue": [
+        "ContractWithCustomerLiabilityCurrent",
+        "DeferredRevenueCurrent",
+        "ContractWithCustomerLiability",
+    ],
+    "lease_liabilities": [
+        "OperatingLeaseLiabilityNoncurrent",
+        "OperatingLeaseLiability",
+        "FinanceLeaseLiabilityNoncurrent",
+    ],
     "stockholders_equity": [
         "StockholdersEquity",
         "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",

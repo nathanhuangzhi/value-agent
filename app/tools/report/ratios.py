@@ -123,6 +123,35 @@ def _top_asset_keys(bs_annual, bs_quarterly, top_n=2):
     return [k for k, _ in scored[:top_n]]
 
 
+# Liability line items the balance-sheet section may surface, largest
+# first. Labels are the adapter's item names (SEC_TO_YFINANCE_BALANCE).
+_LIABILITY_CANDIDATE_KEYS = [
+    "Long Term Debt",
+    "Current Debt",
+    "Accounts Payable",
+    "Accrued Liabilities",
+    "Deferred Revenue",
+    "Lease Obligations",
+]
+
+
+def _top_liability_keys(bs_annual, bs_quarterly, top_n=3):
+    """Top-N largest liability line items from the most recent balance
+    sheet (quarterly preferred), by value descending. Counterpart of
+    `_top_asset_keys`; no alias dedup needed since each candidate is one
+    adapter item."""
+    sorted_q = sorted([p for p in (bs_quarterly or []) if p.get("period")], key=lambda p: p["period"], reverse=True)
+    sorted_a = sorted([p for p in (bs_annual or []) if p.get("period")], key=lambda p: p["period"], reverse=True)
+    for p in sorted_q + sorted_a:
+        items = p.get("items") or {}
+        scored = [(k, items[k]) for k in _LIABILITY_CANDIDATE_KEYS
+                  if items.get(k) is not None and items[k] > 0]
+        if scored:
+            scored.sort(key=lambda x: x[1], reverse=True)
+            return [k for k, _ in scored[:top_n]]
+    return []
+
+
 def _prior_year_label(label):
     """For YoY comparison: 'FY2025' → 'FY2024'; '2026 Q1' → '2025 Q1'."""
     if label.startswith("FY"):

@@ -54,6 +54,11 @@ _BALANCE_LABELS: dict[str, list[str]] = {
     "long_term_debt": ["Long Term Debt"],
     "short_term_debt": ["Current Debt", "Current Debt And Capital Lease Obligation"],
     "debt_total_legacy": ["Total Debt"],
+    "total_liabilities": ["Total Liabilities Net Minority Interest"],
+    "accounts_payable": ["Accounts Payable", "Payables"],
+    "accrued_liabilities": ["Current Accrued Expenses"],
+    "deferred_revenue": ["Current Deferred Revenue"],
+    "lease_liabilities": ["Long Term Capital Lease Obligation", "Capital Lease Obligations"],
 }
 
 _CASHFLOW_LABELS: dict[str, list[str]] = {
