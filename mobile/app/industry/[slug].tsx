@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import { api, ApiError } from '@/api/client';
+import { SHOW_LLM_ANALYSIS } from '@/config';
 import type { IndustryDetailResponse } from '@/api/types';
 import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
@@ -85,7 +86,7 @@ export default function IndustryScreen() {
             {data.ticker_count} {data.ticker_count === 1 ? 'ticker' : 'tickers'}
             {data.summary_date ? ` · ${data.summary_date}` : ''}
           </Text>
-          {data.summary_md ? (
+          {SHOW_LLM_ANALYSIS && data.summary_md ? (
             <View style={styles.summaryBlock}>
               <Text
                 style={[

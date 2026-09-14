@@ -19,6 +19,7 @@ import {
 import { useNavigation } from 'expo-router';
 
 import { useLatestDigest } from '@/api/hooks';
+import { SHOW_LLM_ANALYSIS } from '@/config';
 import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useLastViewed } from '@/hooks/useLastViewed';
@@ -82,7 +83,7 @@ export default function DigestScreen() {
             {data.date} · {industriesLabel} · {data.ticker_count} tickers
           </Text>
 
-          {data.summary_md ? (
+          {!SHOW_LLM_ANALYSIS ? null : data.summary_md ? (
             <View style={styles.storiesBlock}>
               <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
                 STORIES OF THE DAY

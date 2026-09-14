@@ -16,6 +16,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import type { RecentDigest } from '@/api/types';
+import { SHOW_LLM_ANALYSIS } from '@/config';
 import { useLastViewed } from '@/hooks/useLastViewed';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
@@ -37,7 +38,7 @@ export function DigestBanner({ digest }: { digest: RecentDigest }) {
   if (!digest || !digest.ticker_count) return null;
 
   const isLastViewed = digest.date === lastBatch;
-  const teaser = firstSentence(digest.summary_md);
+  const teaser = SHOW_LLM_ANALYSIS ? firstSentence(digest.summary_md) : '';
   const eyebrow = digest.is_latest ? "TODAY'S BATCH" : 'PAST BATCH';
 
   const goToDetail = () => {

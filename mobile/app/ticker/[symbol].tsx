@@ -38,6 +38,7 @@ import {
   usePriceHistory,
 } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
+import { SHOW_LLM_ANALYSIS } from '@/config';
 import {
   HISTORICAL_TABLE_HEADER_HEIGHT,
   HistoricalTable,
@@ -240,16 +241,18 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
           </Section>
         </View>
 
-        <Section title="Investment Narrative">
-          {latestSourceDate ? (
-            <Text style={[styles.metaSmall, { color: c.textMuted, marginBottom: spacing.sm }]}>
-              Most recent source: {latestSourceDate}
+        {SHOW_LLM_ANALYSIS && (
+          <Section title="Investment Narrative">
+            {latestSourceDate ? (
+              <Text style={[styles.metaSmall, { color: c.textMuted, marginBottom: spacing.sm }]}>
+                Most recent source: {latestSourceDate}
+              </Text>
+            ) : null}
+            <Text style={[styles.body, { color: c.textPrimary }]}>
+              {data.narrative.text || '(no narrative available)'}
             </Text>
-          ) : null}
-          <Text style={[styles.body, { color: c.textPrimary }]}>
-            {data.narrative.text || '(no narrative available)'}
-          </Text>
-        </Section>
+          </Section>
+        )}
 
         {(data.validation.status === 'warn' || data.validation.status === 'error') && (
           <View
@@ -289,7 +292,8 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
             For research and educational purposes only. Not investment advice.
           </Text>
           <Text style={[styles.metaSmall, { color: c.textMuted }]}>
-            Analyzed {formatDate(data.analyzed_date)} · {data.narrative.model || 'unknown model'}
+            Analyzed {formatDate(data.analyzed_date)}
+            {SHOW_LLM_ANALYSIS ? ` · ${data.narrative.model || 'unknown model'}` : ''}
           </Text>
         </View>
       </ScrollView>
