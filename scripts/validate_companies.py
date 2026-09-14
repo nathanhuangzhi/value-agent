@@ -19,7 +19,28 @@ from pathlib import Path
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
 from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_SEC, COMPANIES_VALIDATION, COMPANIES_YFINANCE_DIR
 from app.tools.report.sec_adapter import _ads_normalized, load_sharded_by_ticker
+from app.tools.sec_6k import load_all_stores, sixk_as_source_row
 from app.tools.validation import validate_ticker, worst_severity
+
+
+def _with_sixk(sec_row: dict | None, sixk_row: dict | None) -> dict | None:
+    """SEC row with 6-K quarterly entries filling periods XBRL lacks
+    (same reporting currency only)."""
+    if not sixk_row:
+        return sec_row
+    if not sec_row:
+        return {"ticker": sixk_row["ticker"], "currency": sixk_row["financial_currency"],
+                "annual": {}, "quarterly": sixk_row["quarterly"]}
+    if (sec_row.get("currency") or "USD") != sixk_row["financial_currency"]:
+        return sec_row
+    import copy
+    out = copy.deepcopy(sec_row)
+    q = out.setdefault("quarterly", {})
+    for metric, periods in sixk_row["quarterly"].items():
+        d = q.setdefault(metric, {})
+        for pk, entry in periods.items():
+            d.setdefault(pk, entry)
+    return out
 
 
 def main():
@@ -49,8 +70,12 @@ def main():
     # ADS filers: SEC shares/EPS are per ordinary share; bring them onto the
     # ADS basis (what the price refers to) before the price×shares checks.
     yf = load_sharded_by_ticker(COMPANIES_YFINANCE_DIR)
+    sixk = load_all_stores()
     for t in targets:
         sec_row = _ads_normalized(sec.get(t), yf.get(t)) if sec.get(t) else None
+        # Foreign filers have no quarterly XBRL; their 6-K extractions ARE the
+        # SEC quarterly record, so fold them in before the quarterly rules run.
+        sec_row = _with_sixk(sec_row, sixk_as_source_row(sixk.get(t)))
         issues = validate_ticker(sec_row, analyzed.get(t), today=today)
         status = worst_severity(issues)
         counts[status] += 1
