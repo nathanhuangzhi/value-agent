@@ -68,12 +68,20 @@ export function DigestBanner({ digest }: { digest: RecentDigest }) {
           {isLastViewed ? 'LAST VIEWED' : eyebrow}
         </Text>
         <Text style={[styles.count, { color: c.textMuted }]}>
-          {digest.ticker_count} {digest.ticker_count === 1 ? 'ticker' : 'tickers'}
+          {digest.date} · {digest.ticker_count} {digest.ticker_count === 1 ? 'ticker' : 'tickers'}
         </Text>
       </View>
-      <Text style={[styles.headline, { color: c.textPrimary }]}>
-        {digest.industries.join(', ') || 'Mixed'} · {digest.date}
+      {/* The date lives in the header row above so it's always visible;
+          a long industry list (a 13-industry padding day) is clamped to
+          two lines and ellipsised. */}
+      <Text style={[styles.headline, { color: c.textPrimary }]} numberOfLines={2} ellipsizeMode="tail">
+        {digest.industries.join(', ') || 'Mixed'}
       </Text>
+      {digest.industries.length > 1 ? (
+        <Text style={[styles.count, { color: c.textMuted, marginTop: 2 }]}>
+          {digest.industries.length} industries
+        </Text>
+      ) : null}
       {teaser ? (
         <Text style={[styles.teaser, { color: c.textPrimary }]} numberOfLines={3}>
           {teaser}
