@@ -22,11 +22,13 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from app.tools.daily_selector import display_industries
+from app.tools.fx import currency_meta, load_fx, reporting_currency, to_usd_statements
 from app.tools.json_io import read_jsonl
 from app.tools.paths import (
     COMPANIES_ANALYZED,
     COMPANIES_DIGEST,
     COMPANIES_JSONL,
+    FX_RATES,
     COMPANIES_SEC,
     COMPANIES_VALIDATION,
     COMPANIES_YFINANCE_DIR,
@@ -54,6 +56,7 @@ class _DataPaths:
     validation: Path = COMPANIES_VALIDATION
     daily_log: Path = DAILY_LOG
     digest: Path = COMPANIES_DIGEST
+    fx: Path = FX_RATES                        # USD→reporting-currency rates
     universe: Path = COMPANIES_JSONL          # Stage 1 NYSE+Nasdaq universe
 
 
@@ -147,14 +150,23 @@ def _load_yf() -> dict:
     return _mtime_load(_paths.yfinance, load_sharded_by_ticker, mtime_key=_dir_mtime)
 
 
+def _load_fx() -> dict:
+    """USD→reporting-currency rates. mtime-cached."""
+    return _mtime_load(_paths.fx, lambda p: load_fx())
+
+
 def _blended_quarterly(sec_row, yf_row):
     """Mirror what the renderer does: blend SEC + yfinance for the last
-    8 quarters across all three statements."""
-    return sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row)
+    8 quarters across all three statements, then convert a non-USD
+    reporting currency to USD (app/tools/fx.py) so every downstream
+    number — ratios, rows, the app's tables — is in one currency."""
+    stmts = sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row)
+    return to_usd_statements(stmts, reporting_currency(yf_row), _load_fx())
 
 
 def _blended_annual(sec_row, yf_row):
-    return sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row)
+    stmts = sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row)
+    return to_usd_statements(stmts, reporting_currency(yf_row), _load_fx())
 
 
 def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
@@ -427,6 +439,9 @@ def ticker_detail(symbol: str):
         },
         "validation": validation.get(ticker) or {"status": "ok", "issues": []},
         "analyzed_date": row.get("analyzed_date") or "",
+        # Non-USD filers: statements above are converted to USD at this rate;
+        # None for USD reporters. per_usd None → no rate on file, values native.
+        "currency": currency_meta(reporting_currency(yf_row), _load_fx()),
     }
 
 

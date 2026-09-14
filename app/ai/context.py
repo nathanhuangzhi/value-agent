@@ -240,6 +240,16 @@ def company_block(ticker: str, *, max_chars: int = 14000) -> str:
              f"{d.get('exchange') or ''} · {d.get('sector') or ''} / {d.get('industry') or ''} · "
              f"{d.get('country') or ''} · last scanned {d.get('analyzed_date') or '?'}"]
 
+    ccy = d.get("currency")
+    if ccy:
+        if ccy.get("per_usd"):
+            parts.append(f"**Currency:** statements reported in {ccy['code']}; all figures below are "
+                         f"converted to USD at {ccy['per_usd']:.4f} {ccy['code']}/USD (as of {ccy.get('as_of')}). "
+                         f"Multiply by that rate to quote {ccy['code']}.")
+        else:
+            parts.append(f"**Currency:** statements are in {ccy['code']} (no USD rate on file) — "
+                         f"market cap is USD, so valuation ratios may be off.")
+
     overview = (d.get("business_overview") or "").strip()
     if overview:
         parts.append("**Business:** " + (overview[:900] + "…" if len(overview) > 900 else overview))

@@ -76,6 +76,7 @@ commit_state() {
     data/classify_probes.json \
     data/daily_industry_log.json \
     data/watchlist.json \
+    data/fx_rates.json \
     data/yfinance/ \
     data/companies_validation.json \
     data/companies_digest.json

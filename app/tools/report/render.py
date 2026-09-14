@@ -11,6 +11,7 @@ from markdown_it import MarkdownIt
 
 from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE_DIR
 from app.tools.report.charts import _chart_valuation_monthly
+from app.tools.fx import currency_meta, reporting_currency, to_usd_statements
 from app.tools.report.format import (
     AMBER,
     MUTED,
@@ -101,12 +102,17 @@ def _extract_blended_statements(row: dict) -> dict:
 
     sec_row = _get_sec_data().get(ticker)
     yf_row = _get_yfinance_data().get(ticker)
+    currency = reporting_currency(yf_row)
     if sec_row or yf_row:
-        blended_annual = sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row)
+        # Non-USD filers are converted to USD right here so every section
+        # below (ratios, chart, table) sees one currency. See app/tools/fx.py.
+        blended_annual = to_usd_statements(
+            sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row), currency)
         inc_annual = blended_annual["income_statement"] or inc_annual
         bs_annual = blended_annual["balance_sheet"] or bs_annual
         cf_annual = blended_annual["cash_flow"] or cf_annual
-        blended_q = sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row)
+        blended_q = to_usd_statements(
+            sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row), currency)
         inc_quarterly = blended_q["income_statement"] or inc_quarterly
         bs_quarterly = blended_q["balance_sheet"] or bs_quarterly
         cf_quarterly = blended_q["cash_flow"] or cf_quarterly
@@ -115,6 +121,7 @@ def _extract_blended_statements(row: dict) -> dict:
         "inc_annual": inc_annual, "bs_annual": bs_annual, "cf_annual": cf_annual,
         "inc_quarterly": inc_quarterly, "bs_quarterly": bs_quarterly, "cf_quarterly": cf_quarterly,
         "price_history": (row.get("price_history") or {}).get("data") or [],
+        "currency": currency_meta(currency),
     }
 
 
@@ -143,6 +150,9 @@ def _assemble_report_body(row: dict, stmts: dict, validation: dict | None,
     banner = _validation_banner(validation)
     if banner:
         parts.append(banner)
+    fx_note = _currency_note(stmts.get("currency"))
+    if fx_note:
+        parts.append(fx_note)
     parts.append(_render_top_two_col(
         snapshot_html=_render_snapshot(
             stmts["inc_quarterly"], stmts["bs_quarterly"],
@@ -220,6 +230,23 @@ def _wrap_document(body: str, title: str) -> str:
         f"style='margin:0 auto;background:#ffffff;border:1px solid {RULE};max-width:720px;'>"
         f"{body}"
         f"</table></body></html>"
+    )
+
+
+def _currency_note(meta: dict | None) -> str:
+    """One-line notice for non-USD filers: which currency the statements
+    were reported in and the rate used to show them in USD."""
+    if not meta:
+        return ""
+    code = html.escape(meta.get("code") or "")
+    if meta.get("per_usd"):
+        text = (f"Financial statements reported in {code}; shown in USD at "
+                f"{meta['per_usd']:.4f} {code}/USD (rate as of {html.escape(str(meta.get('as_of') or '?'))}).")
+    else:
+        text = f"Financial statements reported in {code} — no exchange rate on file, figures shown in {code}."
+    return (
+        f"<tr><td class='sec-pad' style='padding:10px 28px 0;font-size:12px;color:{MUTED};"
+        f"font-family:Helvetica,Arial,sans-serif;'>{text}</td></tr>"
     )
 
 

@@ -136,6 +136,8 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
     );
   }
 
+  const [showNative, setShowNative] = useState(false);
+
   if (!ticker.data) {
     return (
       <View style={[styles.center, { backgroundColor: c.background }]}>
@@ -146,6 +148,11 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
 
   const data = ticker.data;
   const latestSourceDate = pickLatestSourceDate(data.narrative.sources);
+  // Non-USD filer: the API serves USD; the chip flips the statement tables
+  // back to the reporting currency (multiplying by the baked daily rate).
+  const fxMeta = data.currency && data.currency.per_usd ? data.currency : null;
+  const fxFactor = fxMeta && showNative ? fxMeta.per_usd! : 1;
+  const currencyLabel = fxMeta && showNative ? fxMeta.code : 'USD';
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
@@ -191,6 +198,22 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
           </View>
           <SaveButton symbol={data.ticker} />
         </View>
+        {fxMeta ? (
+          <View style={styles.fxRow}>
+            <Pressable
+              onPress={() => setShowNative((v) => !v)}
+              style={[styles.fxChip, { borderColor: c.brand, backgroundColor: showNative ? c.brand : 'transparent' }]}
+              hitSlop={6}
+            >
+              <Text style={[styles.fxChipText, { color: showNative ? '#fff' : c.brand }]}>
+                {showNative ? `${fxMeta.code} → show USD` : `USD → show ${fxMeta.code}`}
+              </Text>
+            </Pressable>
+            <Text style={[styles.metaSmall, { color: c.textMuted, flex: 1 }]} numberOfLines={2}>
+              Reports in {fxMeta.code} · {fxMeta.per_usd!.toFixed(4)} {fxMeta.code}/USD as of {fxMeta.as_of}
+            </Text>
+          </View>
+        ) : null}
 
         <Section title="Business Overview">
           <BusinessOverview
@@ -230,6 +253,8 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
                 quarterly={data.quarterly}
                 priceHistory={priceHistory.data?.data}
                 externalScrollX={tableScrollX}
+                fxFactor={fxFactor}
+                currencyLabel={currencyLabel}
               />
             ) : (
               <View style={styles.chartLoading}>
@@ -532,6 +557,9 @@ const styles = StyleSheet.create({
   },
   headerRight: { alignItems: 'flex-end', marginLeft: spacing.md },
   saveBtn: { marginLeft: spacing.md, paddingTop: 2 },
+  fxRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  fxChip: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  fxChipText: { fontSize: fontSize.xs, fontWeight: '700' },
   companyName: { fontSize: fontSize.xl, fontWeight: '700', lineHeight: 28 },
   meta: { fontSize: fontSize.sm, marginTop: 4 },
   metaSmall: { fontSize: fontSize.xs, letterSpacing: 0.3 },

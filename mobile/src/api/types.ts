@@ -120,6 +120,9 @@ export type TickerDetail = {
   snapshot: Snapshot;
   annual: Statements;
   quarterly: Statements;
+  /** Non-USD filers: statements are converted to USD at `per_usd`
+   * (null when no rate is on file → figures are native). null for USD. */
+  currency?: { code: string; per_usd: number | null; as_of: string | null } | null;
   narrative: Narrative;
   validation: Validation;
   analyzed_date: string;

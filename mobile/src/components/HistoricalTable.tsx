@@ -278,9 +278,10 @@ function formatMoneyCell(value: number): string {
   }) + suffix;
 }
 
-function formatCell(value: number | null, row: RawRow): string {
+function formatCell(value: number | null, row: RawRow, fx: number = 1): string {
   if (value == null) return '—';
-  const v = row.abs ? Math.abs(value) : value;
+  const scaled = row.format === 'shares' ? value : value * fx;
+  const v = row.abs ? Math.abs(scaled) : scaled;
   if (row.format === 'per_share') {
     return Math.abs(v) < 10 ? v.toFixed(1) : Math.round(v).toLocaleString();
   }
@@ -298,9 +299,9 @@ function formatMargin(num: number | null, den: number | null): string {
   return Math.abs(pct) < 10 ? pct.toFixed(1) + '%' : Math.round(pct) + '%';
 }
 
-function formatPerShare(num: number | null, den: number | null): string {
+function formatPerShare(num: number | null, den: number | null, fx: number = 1): string {
   if (num == null || den == null || den === 0) return '—';
-  const v = num / den;
+  const v = (num / den) * fx;
   // Per-share values are in raw dollars (revenue / equity in $ ÷ share count).
   // <$10 gets 2 decimals (typical EPS / BVPS scale); ≥$10 rounds to integer.
   return Math.abs(v) < 10 ? `$${v.toFixed(2)}` : `$${Math.round(v).toLocaleString()}`;
@@ -345,10 +346,16 @@ type Props = {
    * it to drive a sticky FY/Q overlay's translateX so the overlay
    * tracks horizontal panning. */
   externalScrollX?: Animated.Value;
+  /** Multiply money / per-share cells by this before display. 1 (default)
+   * shows the USD figures the API serves; a non-USD filer's native
+   * currency is `currency.per_usd`. Ratio rows are unaffected. */
+  fxFactor?: number;
+  /** Unit label for the $-sections, e.g. 'USD' or 'CNY'. */
+  currencyLabel?: string;
 };
 
 
-export function HistoricalTable({ statements, quarterly, priceHistory, externalScrollX }: Props) {
+export function HistoricalTable({ statements, quarterly, priceHistory, externalScrollX, fxFactor = 1, currencyLabel = 'USD' }: Props) {
   const c = useColors();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -434,7 +441,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
   // included when we have a price history to ground the math.
   const sections: Section[] = [
     {
-      title: 'Income Statement ($)',
+      title: `Income Statement (${currencyLabel})`,
       rows: [
         { kind: 'raw', label: 'Revenue',          source: 'income', keys: ['Total Revenue', 'Operating Revenue'], format: 'money' },
         { kind: 'raw', label: 'Gross Profit',     source: 'income', keys: ['Gross Profit'], format: 'money' },
@@ -487,7 +494,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
       ],
     },
     {
-      title: 'Balance Sheet ($)',
+      title: `Balance Sheet (${currencyLabel})`,
       rows: [
         { kind: 'raw', label: 'Total Assets',        source: 'balance', keys: ['Total Assets'], format: 'money' },
         { kind: 'raw', label: 'Cash & Equivalents',  source: 'balance', keys: ['Cash And Cash Equivalents', 'Cash Cash Equivalents And Short Term Investments'], format: 'money' },
@@ -505,7 +512,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
       ],
     },
     {
-      title: 'Cash Flow ($)',
+      title: `Cash Flow (${currencyLabel})`,
       rows: [
         { kind: 'raw', label: 'Operating CF',  source: 'cash_flow', keys: ['Cash Flow From Continuing Operating Activities', 'Operating Cash Flow'], format: 'money' },
         { kind: 'raw', label: 'Capex',         source: 'cash_flow', keys: ['Capital Expenditure'], format: 'money', abs: true },
@@ -770,14 +777,14 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
 
                       if (row.kind === 'raw') {
                         const r = resolveRawCell(row, col);
-                        text = formatCell(r.value, row);
+                        text = formatCell(r.value, row, fxFactor);
                         yoy = yoyForRawRow(row, col, idx);
                         source = r.source;
                       } else if (row.kind === 'ratio') {
                         const r = resolveRatioCell(row, col);
                         text = row.format === 'percent'
                           ? formatMargin(r.num, r.den)
-                          : formatPerShare(r.num, r.den);
+                          : formatPerShare(r.num, r.den, fxFactor);
                         yoy = yoyForRatioRow(row, col, idx);
                       } else {
                         // valuation

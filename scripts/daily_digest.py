@@ -178,6 +178,8 @@ def main():
         # every cell, so a daily SEC-only fetch leaves the yfinance side stale for any new
         # tickers. Keep it on the same `--skip-fetch` toggle.
         _run_stage("fetch_yfinance_statements", ["-m", "scripts.fetch_yfinance_statements"])
+        # USD→reporting-currency rates for non-USD filers (used at blend time).
+        _run_stage("fetch_fx_rates", ["-m", "scripts.fetch_fx_rates"])
 
     # ---- 3. Validate ----
     if not args.skip_validate:

@@ -42,11 +42,11 @@ def _slug(s: str) -> str:
     return s or "uncategorized"
 
 
-def _fetch_one(ticker: str) -> tuple[str, dict | None, str | None]:
+def _fetch_one(ticker: str, known_currency: str | None = None) -> tuple[str, dict | None, str | None]:
     """Wrapper that catches exceptions per-ticker so one bad fetch doesn't
     kill the run. Returns (ticker, row_or_None, error_str_or_None)."""
     try:
-        return ticker, fetch_yfinance_statements(ticker), None
+        return ticker, fetch_yfinance_statements(ticker, known_currency=known_currency), None
     except Exception as e:
         return ticker, None, f"{type(e).__name__}: {e}"
 
@@ -96,7 +96,10 @@ def main():
     touched: set[str] = set()
     completed = 0
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
-        futures = {ex.submit(_fetch_one, t): t for t in targets}
+        futures = {
+            ex.submit(_fetch_one, t, (results.get(t) or {}).get("financial_currency")): t
+            for t in targets
+        }
         for fut in as_completed(futures):
             ticker, row, err = fut.result()
             completed += 1

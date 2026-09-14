@@ -16,6 +16,7 @@ ENV_FILE = REPO_ROOT / ".env"
 COMPANIES_JSONL = DATA_DIR / "companies.jsonl"                # Stage 1
 COMPANIES_CLASSIFIED = DATA_DIR / "companies_classified.json"  # Stage 2
 COMPANIES_FILTERED = DATA_DIR / "companies_filtered.json"      # Stage 3
+FX_RATES = DATA_DIR / "fx_rates.json"                          # USD→reporting-currency rates (app/tools/fx.py)
 WATCHLIST = DATA_DIR / "watchlist.json"                        # Saved-tab sync (see app/tools/watchlist.py)
 COMPANIES_ANALYZED = DATA_DIR / "companies_analyzed.json"      # Stage 4
 COMPANIES_SEC = DATA_DIR / "companies_sec.json"                # Stage 4b (SEC EDGAR enrichment)

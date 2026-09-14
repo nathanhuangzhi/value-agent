@@ -126,14 +126,24 @@ def _extract(df: pd.DataFrame, labels_by_metric: dict[str, list[str]],
     return out
 
 
-def fetch_yfinance_statements(ticker: str) -> dict | None:
+def fetch_yfinance_statements(ticker: str, *, known_currency: str | None = None) -> dict | None:
     """Pull annual + quarterly income/balance/cashflow for one ticker.
     Returns a row shaped like one entry of companies_sec.json (same
     metric keys; entries tagged with `source: "yfinance"`). Returns None
     on hard failure; returns a row with empty metric dicts when yfinance
-    simply has no data."""
+    simply has no data.
+
+    `financial_currency` (e.g. "CNY" for a Chinese ADR) comes from
+    `Ticker.info` — one extra request, so callers pass `known_currency`
+    from the previous fetch to skip it; a reporting currency doesn't change."""
     try:
         t = yf.Ticker(ticker)
+        currency = known_currency
+        if not currency:
+            try:
+                currency = (t.info or {}).get("financialCurrency") or None
+            except Exception:
+                currency = None
         annual_inc = t.income_stmt
         annual_bs = t.balance_sheet
         annual_cf = t.cashflow
@@ -163,6 +173,7 @@ def fetch_yfinance_statements(ticker: str) -> dict | None:
         "ticker": ticker,
         "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "yfinance",
+        "financial_currency": (currency or "USD").upper(),
         "annual": annual,
         "quarterly": quarterly,
     }
