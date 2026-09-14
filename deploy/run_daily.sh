@@ -15,12 +15,12 @@
 #   DRY_RUN=1 deploy/run_daily.sh  # build everything, skip email + commit-back
 #   LLM=on deploy/run_daily.sh     # re-enable the DeepSeek stages for one run
 #
-# LLM toggle: DeepSeek is OFF by default (decision 2026-09-13 — the candidate
-# pool is exhausted, so classify/daily_scan had nothing to do and
-# digest_summary was re-summarising the same 07-22 batch every day). With
-# LLM=off the run is free: SEC/yfinance refresh → validate → re-render →
-# publish → email (digest reuses the stored summary). Flip LLM_DEFAULT to
-# "on" (and push) to resume analysis.
+# LLM toggle: DeepSeek is OFF by default (decision 2026-09-13). With LLM=off
+# the run is free but still rotates: filter → daily_scan --no-llm (next
+# batch's price history, no narratives) → SEC/yfinance refresh → validate →
+# render → publish → email (no "Stories of the day" block). Only
+# classify_companies is skipped outright (it's LLM-only). Flip LLM_DEFAULT
+# to "on" (and push) to resume narratives + summaries.
 LLM_DEFAULT=off
 #
 # Requires: .env in the repo root, venv/ installed (uv venv + uv pip install -e .),
@@ -104,15 +104,17 @@ echo "LLM stages: $LLM"
 if [ "$LLM" = "on" ]; then
   STAGE="classify_companies"
   "$PY" -m scripts.classify_companies
-
-  STAGE="filter_companies"
-  "$PY" -m scripts.filter_companies
-
-  STAGE="daily_scan"
-  "$PY" -m scripts.daily_scan
 else
-  echo "LLM=off — skipping classify_companies / filter_companies / daily_scan (no DeepSeek calls this run)"
+  echo "LLM=off — skipping classify_companies; daily_scan runs with --no-llm (no DeepSeek calls this run)"
 fi
+
+STAGE="filter_companies"
+"$PY" -m scripts.filter_companies
+
+STAGE="daily_scan"
+SCAN_ARGS=()
+[ "$LLM" = "on" ] || SCAN_ARGS+=(--no-llm)
+"$PY" -m scripts.daily_scan "${SCAN_ARGS[@]}"
 
 STAGE="daily_digest"
 ARGS=(--publish-dir "$PUBLISH_DIR")

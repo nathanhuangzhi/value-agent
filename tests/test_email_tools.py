@@ -133,3 +133,13 @@ def test_digest_renders_summary_markdown_to_html():
 def test_digest_empty_rows_does_not_crash():
     html = build_summary_digest_html([], summary_md="no batch today", archive_url=None)
     assert "0 tickers" in html
+
+
+def test_summary_block_omitted_when_no_summary():
+    rows = [{"ticker": "QDEL", "name": "QuidelOrtho", "industry": "Medical Devices",
+             "market_cap": 7.3e8, "status": "ok"}]
+    for empty in ("", None, "   "):
+        html = build_summary_digest_html(rows, summary_md=empty, archive_url="https://x.test")
+        assert "STORIES OF THE DAY" not in html
+        assert "ALL COMPANIES" in html
+        assert "https://x.test/QDEL.html" in html

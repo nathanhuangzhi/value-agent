@@ -72,15 +72,19 @@ def build_summary_digest_html(
         one per ticker, sorted by the caller (we render in order received).
       summary_md: the LLM-generated synthesis text, in Markdown. Rendered to
         HTML and ticker mentions are linkified if `archive_url` is supplied.
+        Empty/None → the "Stories of the day" block is omitted entirely
+        (the LLM stages are off), leaving just the archive link + table.
       archive_url: base URL where per-ticker reports are hosted (e.g.
         `https://value-agent-reports.vercel.app`). When None, ticker cells
         render as plain text instead of links.
       title: used both as the `<title>` and as the H1 in the header band.
       industry, log_date: shown as chips in the header subtitle.
     """
-    summary_html = inline_styles(_MD.render(summary_md or ""))
-    if archive_url:
-        summary_html = _linkify_tickers(summary_html, [r["ticker"] for r in rows], archive_url)
+    summary_html = ""
+    if (summary_md or "").strip():
+        summary_html = inline_styles(_MD.render(summary_md))
+        if archive_url:
+            summary_html = _linkify_tickers(summary_html, [r["ticker"] for r in rows], archive_url)
 
     # Header subtitle chips
     chips = [c for c in (industry, log_date, f"{len(rows)} tickers") if c]
@@ -130,6 +134,15 @@ def build_summary_digest_html(
 
     table_html = "".join(table_rows_html)
 
+    if summary_html:
+        stories_block = (
+            f"<div style='font-size:11px;letter-spacing:2px;color:{AMBER};font-family:Helvetica,Arial,sans-serif;"
+            f"border-bottom:2px solid {AMBER};padding-bottom:6px;margin-bottom:14px;'>STORIES OF THE DAY</div>"
+            f"<div style='font-size:14px;line-height:1.6;color:{TEXT};font-family:Georgia,serif;'>{summary_html}</div>"
+        )
+    else:
+        stories_block = ""
+
     return f"""<!DOCTYPE html>
 <html><head>
 <meta charset='utf-8'>
@@ -144,8 +157,7 @@ def build_summary_digest_html(
     <div style='font-size:13px;opacity:0.85;margin-top:6px;font-family:Helvetica,Arial,sans-serif;'>{subtitle}</div>
   </td></tr>
   <tr><td style='padding:24px 28px 8px;'>
-    <div style='font-size:11px;letter-spacing:2px;color:{AMBER};font-family:Helvetica,Arial,sans-serif;border-bottom:2px solid {AMBER};padding-bottom:6px;margin-bottom:14px;'>STORIES OF THE DAY</div>
-    <div style='font-size:14px;line-height:1.6;color:{TEXT};font-family:Georgia,serif;'>{summary_html}</div>
+    {stories_block}
     {archive_block}
   </td></tr>
   <tr><td style='padding:20px 28px 8px;'>

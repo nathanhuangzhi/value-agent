@@ -14,7 +14,9 @@ row in place (`analyzed_date` = today, `narrative_rerun_at` set).
 
 Each chosen ticker gets:
   - yfinance price history (10y monthly closes for the valuation chart)
-  - run_value_agent narrative (Exa market commentary + DeepSeek)
+  - run_value_agent narrative (Exa market commentary + DeepSeek) — unless
+    --no-llm, which still rotates batches + refreshes price history but
+    makes no Exa/DeepSeek calls; an existing narrative on the row is kept.
 
 Financial statements (annual + quarterly) come from SEC EDGAR via the
 separate Stage 4b script (`scripts.fetch_sec_annual`), not from yfinance.
@@ -29,6 +31,7 @@ Run:
     python -m scripts.daily_scan
     python -m scripts.daily_scan --target 30 --workers 4
     python -m scripts.daily_scan --dry-run        # plan only, no LLM calls
+    python -m scripts.daily_scan --no-llm         # rotate + price history, no narratives
 """
 
 import argparse
@@ -94,18 +97,34 @@ def _build_analyzed_row(
     }
 
 
-def _process_ticker(universe_row: dict, today: str, fallback_model: str) -> dict:
+_NARRATIVE_FIELDS = ("narrative", "narrative_model", "narrative_provider",
+                     "narrative_sources", "usage", "analysis_error", "narrative_rerun_at")
+
+
+def _process_ticker(universe_row: dict, today: str, fallback_model: str,
+                    *, use_llm: bool = True, previous: dict | None = None) -> dict:
     """Per-ticker work: yfinance price history + the analysis pipeline.
 
     Pure function modulo network I/O — safe to run concurrently. Returns the
     fully-populated analyzed row ready to append to the output array.
     Financial statements (annual + quarterly) come from SEC EDGAR via the
     separate Stage 4b script (`fetch_sec_annual`), not from yfinance.
+
+    With `use_llm=False` no Exa/DeepSeek call is made; the narrative fields
+    are carried over from `previous` (the ticker's existing row) so a
+    refresh never discards a paid-for narrative.
     """
     ticker = universe_row["ticker"]
     prices = fetch_price_history(ticker)
-    analysis = run_value_agent(ticker)
-    return _build_analyzed_row(universe_row, today, prices, analysis, fallback_model)
+    if use_llm:
+        analysis = run_value_agent(ticker)
+        return _build_analyzed_row(universe_row, today, prices, analysis, fallback_model)
+    row = _build_analyzed_row(universe_row, today, prices, {}, fallback_model)
+    row["narrative_model"] = None
+    for k in _NARRATIVE_FIELDS:
+        if previous and previous.get(k) is not None:
+            row[k] = previous[k]
+    return row
 
 
 def main():
@@ -117,6 +136,9 @@ def main():
     ap.add_argument("--output", type=Path, default=COMPANIES_ANALYZED)
     ap.add_argument("--dry-run", action="store_true",
                     help="Print today's industry choice + ticker list. No LLM calls, no file writes.")
+    ap.add_argument("--no-llm", action="store_true",
+                    help="Rotate batches + refresh price history but skip Exa/DeepSeek; "
+                         "existing narratives are kept on the row.")
     args = ap.parse_args()
 
     today = date.today().isoformat()
@@ -180,9 +202,13 @@ def main():
         print(f"{today}: all {len(candidates)} tickers already analyzed. Nothing to do.")
         return
 
-    analysis_config, _ = load_prompt("analysis")
-    narrative_model = analysis_config.get("model", "unknown")
-    print(f"  narrative model: {narrative_model} | workers: {args.workers}")
+    if args.no_llm:
+        narrative_model = "none"
+        print(f"  narrative: skipped (--no-llm) | workers: {args.workers}")
+    else:
+        analysis_config, _ = load_prompt("analysis")
+        narrative_model = analysis_config.get("model", "unknown")
+        print(f"  narrative model: {narrative_model} | workers: {args.workers}")
     print()
 
     started = time.time()
@@ -197,7 +223,8 @@ def main():
 
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         futures = {
-            ex.submit(_process_ticker, row, today, narrative_model): row
+            ex.submit(_process_ticker, row, today, narrative_model,
+                      use_llm=not args.no_llm, previous=latest.get(row["ticker"])): row
             for row in todo
         }
         for i, fut in enumerate(as_completed(futures), 1):
@@ -212,14 +239,17 @@ def main():
 
             ticker = analyzed_row["ticker"]
             if ticker in row_index:
-                analyzed_row["narrative_rerun_at"] = datetime.now(timezone.utc).isoformat()
+                if not args.no_llm:
+                    analyzed_row["narrative_rerun_at"] = datetime.now(timezone.utc).isoformat()
                 analyzed[row_index[ticker]] = analyzed_row
             else:
                 row_index[ticker] = len(analyzed)
                 analyzed.append(analyzed_row)
             atomic_write_json(args.output, analyzed)
 
-            usage = analyzed_row.get("usage") or {}
+            # Carried-over usage on a --no-llm refresh is the *old* narrative's
+            # cost — don't report it as this run's spend.
+            usage = {} if args.no_llm else (analyzed_row.get("usage") or {})
             if usage.get("prompt_tokens"):
                 total_prompt_tokens += usage["prompt_tokens"]
             if usage.get("completion_tokens"):
