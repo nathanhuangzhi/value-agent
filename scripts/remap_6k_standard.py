@@ -26,7 +26,7 @@ from app.tools.sec_6k import Standard, _sixk_client, load_all_stores, save_store
 
 load_dotenv(ENV_FILE)
 
-STANDARD_VERSION = 2
+STANDARD_VERSION = 3
 
 
 def _lines(items: list[dict]) -> str:

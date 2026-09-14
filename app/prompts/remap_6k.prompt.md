@@ -19,17 +19,17 @@ Income statement (three-month period):
 - `diluted_ads`: weighted-average diluted ADS count (ordinary shares ÷ ratio when only ordinary shares are given; null if unknown).
 
 Balance sheet (period end):
-- `cash`: cash and cash equivalents only (exclude restricted cash and client/customer cash).
+- `cash`: cash and cash equivalents only (exclude restricted cash and client/customer cash). If the release only gives a combined line such as "Cash, cash equivalents and restricted cash", put that combined figure here and set `restricted_cash` to null.
 - `restricted_cash`: restricted cash + restricted deposits (current and non-current) + cash held on behalf of clients/customers.
 - `short_term_investments`: short-term investments + term/time deposits + securities purchased under agreements to resell + current financial assets at fair value / marketable securities.
-- `receivables`: ALL current receivables: accounts receivable, other receivables (and prepayments when combined in one line), amounts due from related parties, interest receivable, loans and advances (current), receivables from clients / brokers / clearing organizations / fund distributors. Exclude non-current loans.
+- `receivables`: ALL current receivables: accounts receivable, other receivables, receivables from online payment platforms, amounts due from related parties, interest receivable, loans and advances (current), receivables from clients / brokers / clearing organizations / fund distributors. EXCLUDE any line that starts with "Prepayments" / "Prepaid" ("Prepayments and other current assets", "Prepaid expenses and other current assets") even if it may contain receivables, and exclude non-current loans. Include "Other receivables and prepayments" only when the line is led by receivables.
 - `inventory`: inventories.
 - `ppe_net`: property and equipment, net — exclude land-use rights and right-of-use assets.
-- `goodwill`: goodwill.
-- `intangibles`: intangible assets, net + land-use rights.
+- `goodwill`: goodwill. If the release only gives a combined "Goodwill and intangible assets" line, set goodwill to null and put the combined figure in `intangibles`.
+- `intangibles`: intangible assets, net + land-use rights (+ the combined goodwill-and-intangibles line when goodwill isn't separate).
 - `long_term_investments`: all non-current investments: equity-method investees, long-term investments, long-term deposits, held-to-maturity and available-for-sale securities (non-current), other investments.
 - `total_assets`, `total_liabilities`: as stated (total liabilities excludes mezzanine equity).
-- `stockholders_equity`: equity attributable to the company's shareholders — EXCLUDING non-controlling interests and mezzanine equity ("Total <Company>'s shareholders' equity").
+- `stockholders_equity`: equity attributable to the company's shareholders — EXCLUDING non-controlling interests and mezzanine equity ("Total <Company>'s shareholders' equity"). If only a single total equity line is given, use it.
 - `short_term_debt`: short-term borrowings/loans + current portion of long-term debt + securities sold under agreements to repurchase + current convertible notes. Exclude lease liabilities and payables to clients/brokers.
 - `long_term_debt`: non-current borrowings, notes, bonds, convertible notes. Exclude lease liabilities.
 - `accounts_payable`: accounts payable (trade).
