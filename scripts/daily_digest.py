@@ -139,6 +139,10 @@ def main():
                          "checkout (e.g. a clone of value-agent-reports) the result is "
                          "also committed + pushed; a plain directory (served locally by "
                          "tailscale serve / nginx) is just copied into. Skipped if not provided.")
+    ap.add_argument("--skip-summary", action="store_true",
+                    help="don't call the digest_summary LLM; reuse the summary already "
+                         "stored in the daily log for this date (or a placeholder). "
+                         "Makes the whole run LLM-free.")
     ap.add_argument("--skip-email", action="store_true",
                     help="don't send the digest email (still builds it; useful with --publish-dir)")
     args = ap.parse_args()
@@ -188,7 +192,8 @@ def main():
     _run_stage("build_index", ["-m", "scripts.build_index"])
 
     # ---- 6. LLM-synthesised summary + one-pager digest ----
-    summary_md, table_rows = _build_digest_summary(tickers, log_date, industry_label)
+    summary_md, table_rows = _build_digest_summary(
+        tickers, log_date, industry_label, skip_llm=args.skip_summary)
 
     # ---- 6.5. Bake the /api/* JSON tree the mobile app reads from. The
     # publish step picks it up automatically because it lives under
@@ -212,9 +217,14 @@ def main():
     )
 
 
-def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str | None):
+def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str | None,
+                          *, skip_llm: bool = False):
     """Stage 6: gather narratives + assemble table rows, call the
-    digest_summary LLM prompt. Returns `(summary_md, table_rows)`."""
+    digest_summary LLM prompt. Returns `(summary_md, table_rows)`.
+
+    With `skip_llm`, no DeepSeek call is made: the summary previously stored
+    on this date's daily-log entry is reused (so a re-run of an old batch
+    keeps its synthesis), falling back to a placeholder."""
     print("\n=== Stage: digest_summary ===")
     analyzed = load_latest_by_ticker(COMPANIES_ANALYZED)
     validation = _load_validation_by_ticker()
@@ -241,7 +251,10 @@ def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str
     if not table_rows:
         sys.exit("No table rows assembled — every ticker missing from analyzed.json?")
 
-    if narrative_blocks:
+    if skip_llm:
+        summary_md = _stored_summary(log_date) or "_LLM summary disabled for this run._"
+        print(f"  summary: (LLM skipped — {'reused stored summary' if _stored_summary(log_date) else 'placeholder'})")
+    elif narrative_blocks:
         result = run_prompt(
             "digest_summary",
             date=log_date,
@@ -285,6 +298,12 @@ def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str
         print(f"  updated {DAILY_LOG.name} with summary for {log_date}")
 
     return summary_md, table_rows
+
+
+def _stored_summary(log_date: str) -> str | None:
+    """The `summary_md` a previous run wrote onto this date's daily-log entry."""
+    entry = _latest_log_entry(log_date)
+    return (entry or {}).get("summary_md") or None
 
 
 def _send_digest(table_rows: list[dict], summary_md: str, log_date: str,

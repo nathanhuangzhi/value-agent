@@ -38,7 +38,8 @@ crontab -e
 ## Operating
 
 ```bash
-deploy/run_daily.sh              # run today's pipeline now
+deploy/run_daily.sh              # run today's pipeline now (DeepSeek off — see LLM_DEFAULT)
+LLM=on deploy/run_daily.sh       # one run with the DeepSeek stages (classify/daily_scan/summary)
 DRY_RUN=1 deploy/run_daily.sh    # everything except email + commit-back
 tail -f logs/daily-$(date +%F).log
 ```
