@@ -182,16 +182,28 @@ class Extraction(BaseModel):
     standard: Standard = Standard()
 
 
+_client_singleton = None
+
+
+def _sixk_client():
+    """A full statement extraction is ~8k output tokens — well past the
+    classifier client's 30s read timeout — so use a long-timeout client."""
+    global _client_singleton
+    if _client_singleton is None:
+        from app.tools.llm_router import build_deepseek_client
+        _client_singleton = build_deepseek_client(read_timeout_s=300, max_retries=1)
+    return _client_singleton
+
+
 def extract_with_llm(text: str, *, ticker: str, company: str, filed: str, accession: str,
                      client=None) -> tuple[Extraction | None, dict, str | None]:
     """One JSON-mode DeepSeek call (+1 self-correcting retry on schema
     failure). Returns (extraction, usage, error)."""
-    from app.tools.classification_tools import _client as default_client
     from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS
 
     config, prompt = load_prompt("extract_6k", company=company, ticker=ticker,
                                  filed=filed, accession=accession, document=text)
-    client = client or default_client()
+    client = client or _sixk_client()
     model = config.get("model", "deepseek-v4-flash")
     messages = [{"role": "user", "content": prompt}]
     usage: dict = {}

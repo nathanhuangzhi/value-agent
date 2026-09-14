@@ -79,6 +79,12 @@ def main():
             print(f"  {t}: no CIK — skip")
             continue
         store = load_store(t)
+        # A filing whose extraction failed (timeout, schema) is dropped from
+        # the store so it's retried this run; skips and successes are final.
+        failed = {f["accession"] for f in store["filings"]
+                  if (f.get("skipped") or "").startswith("extraction failed")}
+        if failed:
+            store["filings"] = [f for f in store["filings"] if f["accession"] not in failed]
         seen = {f["accession"] for f in store["filings"]}
         try:
             filings = [f for f in list_filings(u["cik"], since=args.since) if f["accession"] not in seen]
