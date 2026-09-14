@@ -2,6 +2,7 @@
  * Bottom tab bar (phone + iPad portrait):
  *   - Daily Digest — the archive home: batch banners + industries list.
  *   - Saved        — the user's own watchlist, with a universe search bar.
+ *   - AI           — DeepSeek chat grounded in the archive's company data.
  *
  * Detail screens (digest / industry / ticker) live in the root Stack and
  * push over the tabs, so the tab bar hides while drilled in. iPad
@@ -36,6 +37,17 @@ export default function TabsLayout() {
           tabBarLabel: 'Daily Digest',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="newspaper-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="ai"
+        options={{
+          title: 'AI',
+          // The screen draws its own header (drawer button + model toggle).
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="sparkles-outline" color={color} size={size} />
           ),
         }}
       />
