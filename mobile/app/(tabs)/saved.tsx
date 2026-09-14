@@ -10,8 +10,9 @@
  * Saved companies that have been analyzed render as the same `TickerRow`
  * the industry pages use (1Y sparkline + KPIs), sourced from their
  * industry's `/api/industries/<slug>.json`; companies that haven't been
- * through a batch yet render as a plain identity row tagged "Not analyzed
- * yet". Long-press any saved row to remove it.
+ * through a batch yet render as a plain identity row tagged "Queued" —
+ * saving syncs the list to the pipeline box, whose next daily run fetches
+ * their data. Long-press any saved row to remove it.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
@@ -285,7 +286,7 @@ function PlainSavedRow({
         {pending ? (
           <ActivityIndicator size="small" color={c.textMuted} />
         ) : (
-          <Text style={[styles.notAnalyzed, { color: c.textMuted }]}>Not analyzed yet</Text>
+          <Text style={[styles.notAnalyzed, { color: c.textMuted }]}>Queued · data after next run</Text>
         )}
       </View>
     </Pressable>

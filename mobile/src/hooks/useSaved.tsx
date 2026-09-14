@@ -5,8 +5,15 @@
  *
  * Same shape as useLastViewed: a context provider at the root, a hook
  * anywhere below it. Writes are optimistic (state first, storage after).
+ *
+ * Every change is also mirrored to the pipeline box's /watchlist (best
+ * effort, no UI on failure) so the daily run fetches data for saved
+ * companies; the full list is re-sent once on startup to heal any missed
+ * sync.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { watchlistApi } from '@/api/watchlist';
 import {
   createContext,
   useCallback,
@@ -43,7 +50,9 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         const raw = await AsyncStorage.getItem(KEY);
         const parsed = raw ? (JSON.parse(raw) as unknown) : [];
         if (!cancelled && Array.isArray(parsed)) {
-          setTickers(parsed.filter((t): t is string => typeof t === 'string'));
+          const list = parsed.filter((t): t is string => typeof t === 'string');
+          setTickers(list);
+          if (list.length) watchlistApi.add(list).catch(() => {});
         }
       } catch {
         // Corrupt / unavailable storage: start empty, keep the app usable.
@@ -62,6 +71,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       if (prev.includes(sym)) return prev;
       const next = [sym, ...prev];
       AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+      watchlistApi.add([sym]).catch(() => {});
       return next;
     });
   }, []);
@@ -72,6 +82,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       if (!prev.includes(sym)) return prev;
       const next = prev.filter((t) => t !== sym);
       AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+      watchlistApi.remove(sym).catch(() => {});
       return next;
     });
   }, []);

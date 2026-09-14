@@ -12,6 +12,11 @@ re-running each ticker's price history + narrative so the archive is
 refreshed in the same deterministic order. Refreshed rows replace the old
 row in place (`analyzed_date` = today, `narrative_rerun_at` set).
 
+Watchlist: tickers the app's Saved tab synced to data/watchlist.json (see
+app/tools/watchlist.py) are folded into every day's batch when they haven't
+been analyzed in the current cycle — even if they're outside the filtered
+pool. `--watchlist-only` processes just those (no batch pick, no log entry).
+
 Each chosen ticker gets:
   - yfinance price history (10y monthly closes for the valuation chart)
   - run_value_agent narrative (Exa market commentary + DeepSeek) — unless
@@ -32,6 +37,7 @@ Run:
     python -m scripts.daily_scan --target 30 --workers 4
     python -m scripts.daily_scan --dry-run        # plan only, no LLM calls
     python -m scripts.daily_scan --no-llm         # rotate + price history, no narratives
+    python -m scripts.daily_scan --watchlist-only # just the Saved-tab companies
 """
 
 import argparse
@@ -54,6 +60,7 @@ load_dotenv(ENV_FILE)
 # Imports below depend on the .env being loaded (LLM keys, etc.).
 from app.core.prompt_manager import load_prompt  # noqa: E402
 from app.tools.daily_selector import (  # noqa: E402
+    current_cycle,
     cycle_start_date,
     entry_cycle,
     industry_of,
@@ -62,6 +69,7 @@ from app.tools.daily_selector import (  # noqa: E402
 )
 from app.tools.financials_tools import fetch_price_history  # noqa: E402
 from app.tools.json_io import atomic_write_json, latest_by_ticker, read_json_array  # noqa: E402
+from app.tools.watchlist import watchlist_rows  # noqa: E402
 from app.workflow import run_value_agent  # noqa: E402
 
 
@@ -140,6 +148,9 @@ def main():
     ap.add_argument("--no-llm", action="store_true",
                     help="Rotate batches + refresh price history but skip Exa/DeepSeek; "
                          "existing narratives are kept on the row.")
+    ap.add_argument("--watchlist-only", action="store_true",
+                    help="Process only data/watchlist.json tickers not yet analyzed in the "
+                         "current cycle. No industry pick, no daily-log entry.")
     args = ap.parse_args()
 
     today = date.today().isoformat()
@@ -156,6 +167,20 @@ def main():
     # safe: if we already picked industries today, never re-pick — only resume.
     todays_idx = next((i for i, e in enumerate(log) if e.get("date") == today), None)
     is_resume = todays_idx is not None
+
+    if args.watchlist_only:
+        cycle = entry_cycle(log[todays_idx]) if is_resume else current_cycle(log)
+        cycle_start = cycle_start_date(log, cycle) or today
+        wl_rows, unknown = watchlist_rows()
+        todo = [r for r in wl_rows if not is_done_in_cycle(latest.get(r["ticker"]), cycle_start)]
+        print(f"=== Watchlist scan {today} (cycle {cycle}) ===")
+        print(f"  watchlist: {len(wl_rows)} known, {len(unknown)} unknown {unknown or ''}")
+        print(f"  to analyze now: {len(todo)}  ({', '.join(r['ticker'] for r in todo) or 'nothing'})")
+        if args.dry_run or not todo:
+            print("(nothing to do)" if not todo else "(dry run — no LLM calls, no file writes)")
+            return
+        _run(todo, analyzed, latest, today, args, todays_entry=None, log=log, todays_idx=None)
+        return
 
     if not is_resume:
         cycle, industries, restarted = plan_todays_pick(rows, log, args.target)
@@ -185,10 +210,19 @@ def main():
     candidates = [r for r in rows if industry_of(r) in industries]
     todo = [r for r in candidates if not is_done_in_cycle(latest.get(r["ticker"]), cycle_start)]
 
+    # Saved-tab companies ride along with the batch (once per cycle each).
+    wl_rows, _unknown = watchlist_rows()
+    in_batch = {r["ticker"] for r in candidates}
+    wl_todo = [r for r in wl_rows
+               if r["ticker"] not in in_batch
+               and not is_done_in_cycle(latest.get(r["ticker"]), cycle_start)]
+    todo += wl_todo
+
     print(f"=== Daily scan {today} (cycle {cycle}) ===")
     print(f"  industries: {industries}{'  (resumed)' if is_resume and not args.dry_run else ''}")
     print(f"  tickers in scope: {len(candidates)}")
-    print(f"  already analyzed: {len(candidates) - len(todo)}")
+    print(f"  already analyzed: {len(candidates) - (len(todo) - len(wl_todo))}")
+    print(f"  watchlist extras: {len(wl_todo)}  ({', '.join(r['ticker'] for r in wl_todo) or '—'})")
     print(f"  to analyze now: {len(todo)}")
     print()
 
@@ -203,6 +237,14 @@ def main():
         print(f"{today}: all {len(candidates)} tickers already analyzed. Nothing to do.")
         return
 
+    assert todays_idx is not None
+    _run(todo, analyzed, latest, today, args, todays_entry=todays_entry, log=log, todays_idx=todays_idx)
+
+
+def _run(todo, analyzed, latest, today, args, *, todays_entry, log, todays_idx):
+    """Fetch + (optionally) narrate every row in `todo`, checkpointing
+    companies_analyzed.json per ticker. With `todays_entry`, the processed
+    tickers are recorded on that daily-log entry."""
     if args.no_llm:
         narrative_model = "none"
         print(f"  narrative: skipped (--no-llm) | workers: {args.workers}")
@@ -263,19 +305,18 @@ def main():
             tok_str = f", {usage.get('total_tokens')} tokens" if usage.get("total_tokens") else ""
             print(f"[{i}/{len(todo)}] {analyzed_row['ticker']} {analyzed_row.get('name')}{tok_str}{cost_str}")
 
-    # Re-assert for the type checker — todays_idx was set above by either
-    # the new-day or resume branch.
-    assert todays_idx is not None
-    existing_tickers: list = list(todays_entry.get("tickers") or [])
-    todays_entry["tickers"] = sorted({*existing_tickers, *(r["ticker"] for r in todo)})
-    todays_entry["count"] = len(todays_entry["tickers"])
-    log[todays_idx] = todays_entry
-    atomic_write_json(args.log, log)
+    if todays_entry is not None and todays_idx is not None:
+        existing_tickers: list = list(todays_entry.get("tickers") or [])
+        todays_entry["tickers"] = sorted({*existing_tickers, *(r["ticker"] for r in todo)})
+        todays_entry["count"] = len(todays_entry["tickers"])
+        log[todays_idx] = todays_entry
+        atomic_write_json(args.log, log)
 
     elapsed = time.time() - started
     print(f"\nDone. analyzed {len(todo)} tickers in {elapsed/60:.1f} min")
     print(f"  -> {args.output} (total rows on disk: {len(analyzed)})")
-    print(f"  -> {args.log}")
+    if todays_entry is not None:
+        print(f"  -> {args.log}")
     print(f"  tokens: {total_prompt_tokens:,} prompt + {total_completion_tokens:,} completion "
           f"= {total_prompt_tokens + total_completion_tokens:,} total")
     if cost_known:
