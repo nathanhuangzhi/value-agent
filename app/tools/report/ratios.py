@@ -305,8 +305,10 @@ def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_his
     # --- Point-in-time balance sheet items ---
     latest_bv = _latest_value(bs_quarterly, ["Common Stock Equity", "Stockholders Equity",
                                               "Total Equity Gross Minority Interest"])
-    latest_cash = _latest_value(bs_quarterly, ["Cash And Cash Equivalents",
-                                                "Cash Cash Equivalents And Short Term Investments"])
+    # Cash for EV = cash & equivalents + short-term investments (the
+    # combined item the adapter derives), falling back to cash alone.
+    latest_cash = _latest_value(bs_quarterly, ["Cash Cash Equivalents And Short Term Investments",
+                                                "Cash And Cash Equivalents"])
     latest_debt = _latest_value(bs_quarterly, ["Total Debt", "Long Term Debt"])
     latest_assets = _latest_value(bs_quarterly, ["Total Assets"])
     latest_shares = _latest_value(inc_quarterly, ["Diluted Average Shares",
@@ -316,7 +318,7 @@ def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_his
 
     dividend_rate = _ttm_dividend_per_share(cf_quarterly, latest_shares)
 
-    # Enterprise Value: mcap + debt − cash. Cash defaults to 0 when missing
+    # Enterprise Value: mcap + debt − (cash + ST investments). Cash defaults to 0 when missing
     # so we still get an EV for debt-only filers; debt is required because
     # without a debt number EV ≈ mcap (which we already have as a separate KPI).
     ev = (mcap + latest_debt - (latest_cash or 0)) if (mcap is not None and latest_debt is not None) else None
