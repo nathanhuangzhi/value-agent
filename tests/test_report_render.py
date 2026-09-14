@@ -17,7 +17,15 @@ from __future__ import annotations
 import pytest
 
 from app.tools.report import render_company_report
+from app.tools.report import render as render_mod
 from app.tools.report.render import _latest_source_date, _parse_source_date
+
+
+@pytest.fixture
+def llm_on(monkeypatch):
+    """Narrative-rendering tests exercise the SHOW_LLM_ANALYSIS=True path,
+    which is off by default (see render.SHOW_LLM_ANALYSIS)."""
+    monkeypatch.setattr(render_mod, "SHOW_LLM_ANALYSIS", True)
 
 
 def _minimal_row(ticker="QDEL", **overrides):
@@ -79,7 +87,7 @@ def test_includes_ticker_and_company_name():
     assert "INGN Company" not in html
 
 
-def test_includes_narrative_body():
+def test_includes_narrative_body(llm_on):
     html = render_company_report(_minimal_row())
     assert "Business &amp; market dynamics" in html or "Business & market dynamics" in html
     assert "Capital allocation" in html
@@ -129,7 +137,7 @@ def test_renders_with_no_price_history():
     assert "</html>" in html
 
 
-def test_renders_with_no_narrative():
+def test_renders_with_no_narrative(llm_on):
     row = _minimal_row(narrative="")
     html = render_company_report(row)
     assert "<body" in html
@@ -151,7 +159,7 @@ def test_renders_with_missing_market_cap():
 
 # ============ structural elements ============
 
-def test_includes_section_headers():
+def test_includes_section_headers(llm_on):
     html = render_company_report(_minimal_row())
     assert "INVESTMENT NARRATIVE" in html
     # Snapshot + Business Overview are inside the top-two-col band
@@ -218,7 +226,7 @@ def test_latest_source_date_returns_none_for_empty_or_undateable():
     assert _latest_source_date([{"url": "https://x.com/no-date"}]) is None
 
 
-def test_narrative_section_includes_latest_source_date_when_present():
+def test_narrative_section_includes_latest_source_date_when_present(llm_on):
     row = _minimal_row()
     row["narrative_sources"] = [
         {"title": "x", "url": "https://x.com/2026/05/12/article", "snippet": ""},
@@ -227,8 +235,20 @@ def test_narrative_section_includes_latest_source_date_when_present():
     assert "Most recent source: 2026-05-12" in html
 
 
-def test_narrative_section_omits_date_line_when_no_sources():
+def test_narrative_section_omits_date_line_when_no_sources(llm_on):
     row = _minimal_row()
     row["narrative_sources"] = []
     html = render_company_report(row)
     assert "Most recent source" not in html
+
+
+def test_narrative_hidden_by_default():
+    # SHOW_LLM_ANALYSIS is False → no narrative section, no source date,
+    # no narrative text; everything else still renders.
+    row = _minimal_row()
+    row["narrative_sources"] = [{"title": "x", "url": "https://x.com/2026/05/12/a", "snippet": ""}]
+    html = render_company_report(row)
+    assert "INVESTMENT NARRATIVE" not in html
+    assert "Most recent source" not in html
+    assert "Capital allocation" not in html
+    assert "SNAPSHOT" in html

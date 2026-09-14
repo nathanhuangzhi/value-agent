@@ -44,6 +44,13 @@ _SEC_DATA: dict | None = None
 _YF_DATA: dict | None = None
 
 
+
+# Show the DeepSeek-written "Investment Narrative" section on the report.
+# Off since 2026-09-13: the pipeline runs with the LLM stages disabled
+# (deploy/run_daily.sh LLM_DEFAULT), so narratives on disk are stale. The
+# mobile app has the same switch in mobile/src/config.ts.
+SHOW_LLM_ANALYSIS = False
+
 def _get_sec_data() -> dict:
     """Lazy-load companies_sec.json once per process."""
     global _SEC_DATA
@@ -160,11 +167,12 @@ def _assemble_report_body(row: dict, stmts: dict, validation: dict | None,
             "Historical Data (annual + quarterly)",
             f"<div class='scroll-wrap'>{combined_table}</div>",
         ))
-    latest_source_date = _latest_source_date(row.get("narrative_sources") or [])
-    parts.append(_section(
-        "Investment Narrative",
-        _render_narrative(row.get("narrative") or "", latest_source_date=latest_source_date),
-    ))
+    if SHOW_LLM_ANALYSIS:
+        latest_source_date = _latest_source_date(row.get("narrative_sources") or [])
+        parts.append(_section(
+            "Investment Narrative",
+            _render_narrative(row.get("narrative") or "", latest_source_date=latest_source_date),
+        ))
     if next_ticker and next_ticker.get("ticker") and next_ticker.get("href"):
         parts.append(_next_ticker_nav(next_ticker))
     parts.append(_band_footer())
