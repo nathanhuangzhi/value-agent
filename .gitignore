@@ -43,3 +43,8 @@ logs/
 
 # AI chat history (personal, lives on the pipeline box)
 data/ai_chats/
+
+# 6-K exhibit HTML cache (re-downloadable); the extracted JSON next to it is tracked
+data/sec_6k/*/
+!data/sec_6k/
+!data/sec_6k/*.json
