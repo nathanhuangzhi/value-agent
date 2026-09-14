@@ -503,11 +503,12 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
         { kind: 'raw', label: 'Total Liabilities',   source: 'balance', keys: ['Total Liabilities'], format: 'money' },
-        // Dynamic top-liability rows for this ticker (e.g. LT debt, payables)
+        // Dynamic top-3 liability rows, largest first (e.g. LT debt, payables,
+        // deferred revenue). Interest-bearing "Total Debt" still feeds the
+        // snapshot ratios but isn't listed here — it overlaps these rows.
         ...liabilityKeys.map<RawRow>((key) => ({
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
-        { kind: 'raw', label: 'Total Debt',          source: 'balance', keys: ['Total Debt', 'Long Term Debt'], format: 'money' },
         { kind: 'raw', label: 'Stockholders Equity', source: 'balance', keys: ['Common Stock Equity', 'Stockholders Equity'], format: 'money' },
       ],
     },

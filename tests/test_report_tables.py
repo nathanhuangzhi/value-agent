@@ -285,7 +285,7 @@ def test_render_combined_table_returns_html_with_metric_rows():
     assert "Revenue" in html
     assert "Gross Profit" in html
     assert "Net Income" in html
-    assert "Total Debt" in html
+    assert "Total Liabilities" in html
     assert "Operating CF" in html
     assert "Free CF" in html
 
