@@ -63,6 +63,9 @@ def main():
                     help="only 6-Ks filed on/after this date (default: 3 years back)")
     ap.add_argument("--max-per-ticker", type=int, default=60)
     ap.add_argument("--dry-run", action="store_true", help="list filings + estimate cost; no LLM calls")
+    ap.add_argument("--recheck-skipped", action="store_true",
+                    help="re-inspect filings previously marked 'not a results release' "
+                         "(after a detection-rule change)")
     args = ap.parse_args()
 
     universe = {r["ticker"]: r for r in read_jsonl(COMPANIES_JSONL) if r.get("ticker")}
@@ -82,7 +85,8 @@ def main():
         # A filing whose extraction failed (timeout, schema) is dropped from
         # the store so it's retried this run; skips and successes are final.
         failed = {f["accession"] for f in store["filings"]
-                  if (f.get("skipped") or "").startswith("extraction failed")}
+                  if (f.get("skipped") or "").startswith("extraction failed")
+                  or (args.recheck_skipped and f.get("skipped") == "not a results release")}
         if failed:
             store["filings"] = [f for f in store["filings"] if f["accession"] not in failed]
         seen = {f["accession"] for f in store["filings"]}

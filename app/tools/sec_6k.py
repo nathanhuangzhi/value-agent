@@ -45,8 +45,9 @@ _RESULTS_RE = re.compile(
     r"(interim|half[- ]year|six months) results)",
     re.I,
 )
-_STATEMENT_RE = re.compile(r"(balance sheets?|statements? of operations|income statements?|"
-                           r"statements? of comprehensive|cash flows?)", re.I)
+_STATEMENT_RE = re.compile(r"(balance sheets?|balance sheet data|statements? of operations|"
+                           r"income statements?|statements? of (comprehensive )?(income|loss)|"
+                           r"statements? of cash flows?|cash flows? statements?)", re.I)
 
 
 # ---------------------------------------------------------------------------
@@ -129,8 +130,11 @@ def html_to_text(doc: str, *, max_chars: int = 120_000) -> str:
 
 
 def looks_like_results_release(text: str) -> bool:
-    head = text[:4000]
-    return bool(_RESULTS_RE.search(head)) and bool(_STATEMENT_RE.search(text))
+    """A results press release: announces results up top AND carries at
+    least one financial statement. Headings are often split across table
+    rows ("…STATEMENTS\nOF OPERATIONS"), so match on whitespace-collapsed text."""
+    flat = re.sub(r"\s+", " ", text)
+    return bool(_RESULTS_RE.search(flat[:4000])) and bool(_STATEMENT_RE.search(flat))
 
 
 # ---------------------------------------------------------------------------

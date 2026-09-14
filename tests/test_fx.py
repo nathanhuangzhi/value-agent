@@ -108,3 +108,12 @@ def test_sixk_overlay_wins_over_yfinance_and_keeps_its_tag():
     assert sources["revenue"]["2026-03-31"] == "yfinance"
     # currency mismatch → overlay refused
     assert overlay_source_row({"financial_currency": "USD", "quarterly": {}}, six)["quarterly"] == {}
+
+
+def test_results_release_detection_tolerates_split_headings():
+    from app.tools.sec_6k import looks_like_results_release
+    doc = ("Weibo Announces Second Quarter 2026 Unaudited Financial Results\n"
+           "... prose ...\nUNAUDITED CONDENSED CONSOLIDATED STATEMENTS\nOF OPERATIONS\nRevenues | 1 | 2")
+    assert looks_like_results_release(doc)
+    assert not looks_like_results_release("Reconciliation between U.S. GAAP and IFRS\nbalance sheets")  # no results announcement
+    assert not looks_like_results_release("Weibo Announces Second Quarter Financial Results\nno tables here")
