@@ -66,7 +66,7 @@ type RawRow = {
    * precision ("-77K") while a large cap stays compact ("11M"). Mirrors the
    * digest's formatMoney so the same figure reads identically on both
    * screens (the whole point of this format — see the ACFN bug).
-   * shares: raw share count ÷ 1e6 → millions ("1,234").
+   * shares: raw share count with adaptive K/M/B units ("1.4M", "850K").
    * per_share: typical EPS/BVPS scale → "$1.23" or "$123". */
   format: 'money' | 'shares' | 'per_share';
   abs?: boolean;
@@ -285,7 +285,9 @@ function formatCell(value: number | null, row: RawRow): string {
     return Math.abs(v) < 10 ? v.toFixed(1) : Math.round(v).toLocaleString();
   }
   if (row.format === 'shares') {
-    return Math.round(v / 1e6).toLocaleString();
+    // Share counts get the same adaptive K/M/B units as money cells, so a
+    // 1.4M-share micro-cap reads "1.4M" rather than a bare "1".
+    return formatMoneyCell(v);
   }
   return formatMoneyCell(v);
 }
@@ -513,7 +515,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     {
       title: 'Per Share',
       rows: [
-        { kind: 'raw',   label: 'Diluted Shares (M)', source: 'income', keys: SHARES_KEYS, format: 'shares' },
+        { kind: 'raw',   label: 'Diluted Shares',     source: 'income', keys: SHARES_KEYS, format: 'shares' },
         { kind: 'raw',   label: 'Diluted EPS',        source: 'income', keys: ['Diluted EPS', 'Basic EPS'], format: 'per_share' },
         // Sales Per Share = Revenue / Diluted Shares (with quarterly-shares
         // fallback for tickers whose annual income statement omits shares).

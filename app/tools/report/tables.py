@@ -254,7 +254,18 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
 
     money_m = lambda v: _fmt(v / 1e6) if v is not None else "—"
     per_share = lambda v: _fmt(v, prefix="$") if v is not None else "—"
-    shares_m = lambda v: _fmt(v / 1e6) if v is not None else "—"
+    def shares_cnt(v):
+        # Adaptive units (K/M/B) so micro-cap share counts stay legible.
+        if v is None:
+            return "—"
+        a = abs(v)
+        if a >= 1e9:
+            return _fmt(v / 1e9, suffix="B")
+        if a >= 1e6:
+            return _fmt(v / 1e6, suffix="M")
+        if a >= 1e3:
+            return _fmt(v / 1e3, suffix="K")
+        return _fmt(v)
     pct_str = lambda v: _fmt(v * 100, suffix="%") if v is not None else "—"
     ratio_str = lambda v: _fmt(v, suffix="x") if v is not None else "—"
 
@@ -291,7 +302,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         ("Capex", "capex", money_m),
         ("Free CF", "fcf", money_m),
         ("group", "Per-Share Metrics"),
-        ("Diluted Shares (M)", "shares", shares_m),
+        ("Diluted Shares", "shares", shares_cnt),
         ("Diluted EPS", "eps", per_share),
         ("Sales Per Share", "sps", per_share),
         ("Book Value Per Share", "bvps", per_share),
