@@ -53,7 +53,7 @@ The discovery side is a four-stage funnel over the full universe that feeds `dai
 1. **Universe + overviews** — `build_company_db.py` → `data/companies.jsonl`, one row per NYSE/Nasdaq ticker. Schema: `{ticker, name, sector, industry, market_cap, exchange, country, business_overview, fetched_at, source, cik}`. Append-only; reruns skip existing rows.
 2. **Qualitative classification** — `classify_companies.py` calls DeepSeek (`classify.prompt.md`) to extract 10 structural attributes and assign a `primary_category` (Software / Consumer Goods / Other). JSON-mode + Pydantic-validated; failures logged separately → `data/companies_classified.json`.
 3. **Quantitative filter** — `filter_companies.py` joins classified + jsonl and applies `FilterCriteria` (market-cap band, country allowlist, industry-substring exclusions) → `data/companies_filtered.json`. **Level 1 built. Level 2 (next): ROE / debt / FCF thresholds** — needs financial fetches not yet on disk at filter time.
-4. **Daily rotating scan** — `daily_scan.py` picks the largest industry from `companies_filtered.json` not used on a prior day, pads to ≥ 20 tickers, then per ticker calls `fetch_price_history` (10y monthly closes) + `run_value_agent` (Exa + DeepSeek-V4-Pro narrative). Appends to `companies_analyzed.json`; logs the pick to `daily_industry_log.json`. Resume-safe; per-row atomic checkpoint.
+4. **Daily rotating scan** — `daily_scan.py` picks the largest industry from `companies_filtered.json` not used on a prior day **of the current cycle**, pads to ≥ 20 tickers, then per ticker calls `fetch_price_history` (10y monthly closes) + `run_value_agent` (Exa + DeepSeek-V4-Pro narrative). Appends to `companies_analyzed.json`; logs the pick (with a `cycle` number) to `daily_industry_log.json`. When every industry has been used, the next run opens cycle N+1 and replays the same order from the first batch, **overwriting** each ticker's row in place (fresh price history + narrative, `analyzed_date` = today, `narrative_rerun_at` set) so the archive keeps refreshing. Pure cycle logic: `app/tools/daily_selector.py`. Resume-safe; per-row atomic checkpoint.
 
 Note: the legacy Exa+Gemini "pick a ticker" discovery path (`run_discovery_workflow`, `search_for_tickers`) was removed in favor of this funnel. To recover it: `git show legacy-discovery-snapshot:<path>`.
 
@@ -146,7 +146,7 @@ Flow: `companies.jsonl` (universe) → `companies_classified.json` → `companie
 - Stage 4 quant: `price_history` (`{period, interval, data: [{date, close, volume}]}`)
 - Stage 4 narrative: `narrative` (Markdown), `narrative_model`, `narrative_provider`, `narrative_sources` (Exa audit trail)
 - Stage 4 usage: `usage` (`{prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd}`)
-- Optional / error: `narrative_rerun_at` (ISO, set by `rerun_narratives.py`), `analysis_error` (str if narrative failed else null)
+- Optional / error: `narrative_rerun_at` (ISO, set by `rerun_narratives.py` and by a cycle ≥ 2 refresh in `daily_scan.py`), `analysis_error` (str if narrative failed else null)
 
 `run_value_agent` returns a dict (not a string) — see its docstring. Cost estimates use the approximate per-million-token rates in `app.tools.llm_router._PRICING_USD_PER_M_TOKENS` — verify against DeepSeek's pricing page.
 

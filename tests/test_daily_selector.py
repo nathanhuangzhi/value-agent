@@ -64,3 +64,60 @@ def test_missing_industry_field_groups_as_none_label():
     grouped = group_by_industry(rows)
     assert "(none)" in grouped
     assert len(grouped["(none)"]) == 5
+
+
+# ---- cycles ---------------------------------------------------------------
+
+from app.tools.daily_selector import (  # noqa: E402
+    current_cycle,
+    cycle_start_date,
+    is_done_in_cycle,
+    plan_todays_pick,
+    used_industries,
+)
+
+_ROWS = (
+    [{"ticker": f"A{i}", "industry": "Medical Devices"} for i in range(25)]
+    + [{"ticker": f"B{i}", "industry": "Software"} for i in range(20)]
+)
+_CYCLE1_LOG = [
+    {"date": "2026-05-09", "industries": ["Medical Devices"], "tickers": []},
+    {"date": "2026-05-10", "industries": ["Software"], "tickers": []},
+]
+
+
+def test_legacy_entries_are_cycle_1():
+    assert current_cycle([]) == 1
+    assert current_cycle(_CYCLE1_LOG) == 1
+    assert used_industries(_CYCLE1_LOG, 1) == {"Medical Devices", "Software"}
+    assert used_industries(_CYCLE1_LOG, 2) == set()
+    assert cycle_start_date(_CYCLE1_LOG, 1) == "2026-05-09"
+    assert cycle_start_date(_CYCLE1_LOG, 2) is None
+
+
+def test_plan_continues_current_cycle_while_industries_remain():
+    cycle, industries, restarted = plan_todays_pick(_ROWS, _CYCLE1_LOG[:1], 20)
+    assert (cycle, industries, restarted) == (1, ["Software"], False)
+
+
+def test_plan_restarts_from_first_batch_when_exhausted():
+    cycle, industries, restarted = plan_todays_pick(_ROWS, _CYCLE1_LOG, 20)
+    assert (cycle, industries, restarted) == (2, ["Medical Devices"], True)
+    # the new cycle then proceeds in the same order
+    log2 = _CYCLE1_LOG + [{"date": "2026-09-14", "cycle": 2, "industries": ["Medical Devices"]}]
+    assert plan_todays_pick(_ROWS, log2, 20) == (2, ["Software"], False)
+    assert current_cycle(log2) == 2
+    assert cycle_start_date(log2, 2) == "2026-09-14"
+
+
+def test_plan_with_empty_rows_yields_no_industries():
+    assert plan_todays_pick([], _CYCLE1_LOG, 20) == (2, [], True)
+
+
+def test_is_done_in_cycle_compares_against_cycle_start():
+    assert not is_done_in_cycle(None, "2026-09-14")
+    assert not is_done_in_cycle({"analyzed_date": "2026-05-09"}, "2026-09-14")
+    assert is_done_in_cycle({"analyzed_date": "2026-09-14"}, "2026-09-14")
+    assert is_done_in_cycle({"analyzed_date": "2026-09-15"}, "2026-09-14")
+    # a brand-new cycle with no entries written yet: nothing is done
+    assert not is_done_in_cycle({"analyzed_date": "2026-09-14"}, None)

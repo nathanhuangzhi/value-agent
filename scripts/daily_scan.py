@@ -2,8 +2,15 @@
 Stage 4: daily company-by-company analysis.
 
 Picks the top-by-count remaining industry from data/companies_filtered.json
-(excluding industries used on any prior day). If that industry has fewer than
---target tickers, the next-largest industry is added, and so on.
+(excluding industries used on any prior day of the current cycle). If that
+industry has fewer than --target tickers, the next-largest industry is added,
+and so on.
+
+Cycles: once every industry has been used, the next run opens a new cycle
+(`cycle` field on the daily-log entry) and starts over from the first batch,
+re-running each ticker's price history + narrative so the archive is
+refreshed in the same deterministic order. Refreshed rows replace the old
+row in place (`analyzed_date` = today, `narrative_rerun_at` set).
 
 Each chosen ticker gets:
   - yfinance price history (10y monthly closes for the valuation chart)
@@ -27,7 +34,7 @@ Run:
 import argparse
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -43,17 +50,15 @@ load_dotenv(ENV_FILE)
 
 # Imports below depend on the .env being loaded (LLM keys, etc.).
 from app.core.prompt_manager import load_prompt  # noqa: E402
-from app.tools.daily_selector import pick_todays_industries  # noqa: E402
+from app.tools.daily_selector import (  # noqa: E402
+    cycle_start_date,
+    entry_cycle,
+    is_done_in_cycle,
+    plan_todays_pick,
+)
 from app.tools.financials_tools import fetch_price_history  # noqa: E402
-from app.tools.json_io import atomic_write_json, read_json_array  # noqa: E402
+from app.tools.json_io import atomic_write_json, latest_by_ticker, read_json_array  # noqa: E402
 from app.workflow import run_value_agent  # noqa: E402
-
-
-def _used_industries(log: list[dict]) -> set[str]:
-    used: set[str] = set()
-    for entry in log:
-        used.update(entry.get("industries", []))
-    return used
 
 
 def _build_analyzed_row(
@@ -122,7 +127,7 @@ def main():
     rows = read_json_array(args.filtered)
     log = read_json_array(args.log)
     analyzed = read_json_array(args.output)
-    seen_tickers = {r["ticker"] for r in analyzed if r.get("ticker")}
+    latest = latest_by_ticker(analyzed)
 
     # Find today's entry in the log (if any). This is what makes same-day reruns
     # safe: if we already picked industries today, never re-pick — only resume.
@@ -130,11 +135,15 @@ def main():
     is_resume = todays_idx is not None
 
     if not is_resume:
-        industries, _ = pick_todays_industries(rows, _used_industries(log), args.target)
+        cycle, industries, restarted = plan_todays_pick(rows, log, args.target)
         if not industries:
-            print("All industries in companies_filtered.json have been analyzed in prior runs. Nothing to do.")
+            print(f"{args.filtered} has no tickers. Nothing to do.")
             return
-        todays_entry = {"date": today, "industries": industries, "tickers": [], "count": 0}
+        if restarted:
+            print(f"Cycle {cycle - 1} complete — every industry in {args.filtered.name} has been "
+                  f"analyzed. Starting cycle {cycle} from the first batch (narratives refreshed).")
+        todays_entry = {"date": today, "cycle": cycle, "industries": industries,
+                        "tickers": [], "count": 0}
         if not args.dry_run:
             log.append(todays_entry)
             todays_idx = len(log) - 1
@@ -144,11 +153,16 @@ def main():
         assert todays_idx is not None
         todays_entry = log[todays_idx]
         industries = todays_entry["industries"]
+        cycle = entry_cycle(todays_entry)
 
+    # A ticker is "done" if its latest row was written in this cycle. On a
+    # dry run of a brand-new cycle nothing has been logged yet, so treat
+    # today as the cycle start.
+    cycle_start = cycle_start_date(log, cycle) or today
     candidates = [r for r in rows if r.get("industry") in industries]
-    todo = [r for r in candidates if r["ticker"] not in seen_tickers]
+    todo = [r for r in candidates if not is_done_in_cycle(latest.get(r["ticker"]), cycle_start)]
 
-    print(f"=== Daily scan {today} ===")
+    print(f"=== Daily scan {today} (cycle {cycle}) ===")
     print(f"  industries: {industries}{'  (resumed)' if is_resume and not args.dry_run else ''}")
     print(f"  tickers in scope: {len(candidates)}")
     print(f"  already analyzed: {len(candidates) - len(todo)}")
@@ -177,6 +191,10 @@ def main():
     total_cost = 0.0
     cost_known = False
 
+    # Refreshes (cycle >= 2) overwrite the ticker's existing row so the file
+    # doesn't grow by ~20 KB/ticker/cycle; first-time tickers append.
+    row_index = {r["ticker"]: i for i, r in enumerate(analyzed) if r.get("ticker")}
+
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         futures = {
             ex.submit(_process_ticker, row, today, narrative_model): row
@@ -192,7 +210,13 @@ def main():
                 print(f"[{i}/{len(todo)}] !! {row['ticker']}: {type(e).__name__}: {e}")
                 continue
 
-            analyzed.append(analyzed_row)
+            ticker = analyzed_row["ticker"]
+            if ticker in row_index:
+                analyzed_row["narrative_rerun_at"] = datetime.now(timezone.utc).isoformat()
+                analyzed[row_index[ticker]] = analyzed_row
+            else:
+                row_index[ticker] = len(analyzed)
+                analyzed.append(analyzed_row)
             atomic_write_json(args.output, analyzed)
 
             usage = analyzed_row.get("usage") or {}
