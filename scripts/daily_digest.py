@@ -134,10 +134,11 @@ def main():
                     help="build the digest HTML but don't send the email")
     ap.add_argument("--subject", help="override the auto-generated email subject")
     ap.add_argument("--publish-dir", type=Path,
-                    help="path to a separate git checkout that hosts the published "
-                         "site (e.g. /home/you/repos/value-agent-reports). When set, "
-                         "all per-ticker HTML + index.html are copied there, committed, "
-                         "and pushed. Skipped if not provided.")
+                    help="directory that hosts the published site. All per-ticker "
+                         "HTML + index.html + api/ are copied there. If it is a git "
+                         "checkout (e.g. a clone of value-agent-reports) the result is "
+                         "also committed + pushed; a plain directory (served locally by "
+                         "tailscale serve / nginx) is just copied into. Skipped if not provided.")
     ap.add_argument("--skip-email", action="store_true",
                     help="don't send the digest email (still builds it; useful with --publish-dir)")
     args = ap.parse_args()
@@ -334,19 +335,22 @@ def _send_digest(table_rows: list[dict], summary_md: str, log_date: str,
 
 def _publish(report_paths: list[Path], log_date: str, industry_label: str | None,
               publish_dir: Path):
-    """Copy per-ticker HTML + index.html to a separate git checkout, commit,
-    push. The publish_dir must be a pre-cloned working tree of the
-    reports-hosting repo (e.g. `git clone git@github.com:you/value-agent-reports`).
+    """Copy per-ticker HTML + index.html + api/ to `publish_dir`.
+
+    Two hosting modes, chosen by whether `publish_dir` is a git checkout:
+      - git checkout (e.g. a clone of value-agent-reports): copy, commit, push;
+        a static host (Vercel) deploys on push.
+      - plain directory (e.g. one served by `tailscale serve` / nginx on the
+        box running the pipeline): copy only — the files are live as soon as
+        they land on disk.
     """
     import shutil
 
     print("\n=== Stage: publish ===")
     if not publish_dir.exists():
         sys.exit(f"--publish-dir {publish_dir} does not exist. "
-                 f"Clone your reports repo there first.")
-    if not (publish_dir / ".git").exists():
-        sys.exit(f"{publish_dir} is not a git repo (no .git/). "
-                 f"Run `git clone <your-reports-repo-url> {publish_dir}` first.")
+                 f"Create it (or clone your reports repo there) first.")
+    is_git = (publish_dir / ".git").exists()
 
     src_dir = DATA_DIR / "reports"
     # Copy every per-ticker report on disk (not just today's) so the published
@@ -370,6 +374,10 @@ def _publish(report_paths: list[Path], log_date: str, industry_label: str | None
         shutil.copytree(api_src, api_dst)
         json_count = sum(1 for _ in api_dst.rglob("*.json"))
         print(f"  copied {json_count} JSON files → {api_dst}/")
+
+    if not is_git:
+        print(f"  {publish_dir} is a plain directory (no .git/) — files are live, no push needed")
+        return
 
     commit_msg = (
         f"Daily update {log_date}: {industry_label}" if industry_label

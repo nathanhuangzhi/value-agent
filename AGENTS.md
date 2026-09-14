@@ -22,7 +22,7 @@ When writing or editing the analysis prompt, or generating sample output, act as
 - **External APIs:** Exa (web search for market commentary), yfinance (bulk profiles + secondary financial-statement source), SEC EDGAR (ticker universe + 10-K/10-Q XBRL companyfacts — primary financial-statement source).
 - **Email delivery:** Gmail SMTP via App Password (`smtplib` from stdlib).
 - **Mobile:** React Native (Expo), in `mobile/`. Consumes the read-only `/api/...` routes. OTA JS updates via expo-updates.
-- **Hosting:** Per-ticker reports + industry index publish to a separate git repo (e.g. `value-agent-reports`) that a static host (Vercel, Cloudflare Pages) deploys on push.
+- **Hosting:** Per-ticker reports + industry index + `/api` JSON are published to a directory on the self-hosted box and served over Tailscale (see Daily automation). The legacy Vercel / `value-agent-reports` path is retired.
 
 ## Architecture
 
@@ -150,24 +150,24 @@ Flow: `companies.jsonl` (universe) → `companies_classified.json` → `companie
 
 `run_value_agent` returns a dict (not a string) — see its docstring. Cost estimates use the approximate per-million-token rates in `app.tools.llm_router._PRICING_USD_PER_M_TOKENS` — verify against DeepSeek's pricing page.
 
-## Daily automation (GitHub Actions)
+## Daily automation (self-hosted, debian-mac-air)
 
-The daily pipeline runs as a GitHub Actions workflow — `.github/workflows/daily.yml`,
-**not** a cron box. Actions checks out `main` fresh every run, so a push to `main`
-auto-deploys on the next run; there's nothing to pull or restart.
+The daily pipeline runs on a persistent Debian box via cron —
+`deploy/run_daily.sh` — **not** GitHub Actions any more. Full setup +
+what-lives-where table: `deploy/README.md`.
 
-- **Schedule:** `0 13 * * *` (13:00 UTC = 5am PST year-round). Manual run: Actions tab → "Daily pipeline" → "Run workflow" (optional `dry_run` builds everything but skips the email send + publish push).
-- **CI gate:** a *scheduled* run aborts unless the latest `ci.yml` run on `main` is green — avoids spending DeepSeek $ on a broken build. (Skipped on manual dispatch so you can force a run while iterating.)
-- **Steps:** classify → filter → daily_scan → `daily_digest --publish-dir` (SEC fetch + yfinance gap-fill + validate + reports + index + bake `/api` + email + publish), then commits the whitelisted state files back to this repo as `value-agent-bot` (rebase-on-push retry loop guards against racing a manual push).
-- **Secrets** (repo → Settings → Actions): `DEEPSEEK_API_KEY`, `EXA_API_KEY`, `GEMINI_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_RECIPIENT`, `REPORT_BASE_URL`, and `REPORTS_REPO_TOKEN` (a PAT with Contents:read+write on `value-agent-reports`, used to clone + push the archive).
-- **`companies_sec.json` is NOT committed** (it grew past GitHub's 100 MB/file limit), so `fetch_sec_annual` cold-fetches SEC XBRL fresh each run. The yfinance shards + validation/digest sidecars ARE committed back, so the next run starts warm (incremental yfinance sync); the shards are also mirrored to a rolling `yfinance-data` Release asset.
-- **Publish:** the run clones `value-agent-reports`, seeds `data/reports/` from it (so the published set doesn't shrink to just today's tickers), then `daily_digest --publish-dir` copies the HTML + `api/` tree and pushes (Vercel deploys).
+- **Schedule:** `0 5 * * *` in the box's local time (Pacific). Run by hand: `ssh nathan@debian-mac-air ~/value-agent/deploy/run_daily.sh` (`DRY_RUN=1` skips email + commit-back).
+- **Deploy:** `run_daily.sh` starts with `git pull --ff-only origin main`, so a push to `main` is live on the next run. Nothing to restart.
+- **Steps:** classify → filter → daily_scan → `daily_digest --publish-dir ~/public/value-agent` (SEC fetch + yfinance gap-fill + validate + reports + index + bake `/api` + publish + email), then commits the whitelisted state files back to this repo as `value-agent-bot` over an SSH deploy key (rebase-on-push retry loop).
+- **Hosting:** `~/public/value-agent/` is served by `deploy/serve_reports.sh` (`127.0.0.1:8091`) behind `tailscale serve` → `https://debian-mac-air.tail38ab8e.ts.net/reports/` (tailnet only — `REPORT_BASE_URL` and the mobile app's `EXPO_PUBLIC_API_URL` point here). No separate reports repo, no Vercel, no expiring PAT.
+- **`companies_sec.json` lives on the box** (still not committed — >100 MB), so `fetch_sec_annual` is incremental; only a fresh box needs a one-off warm-up.
+- **Failure alerting:** any failed stage emails the log tail (`scripts/notify_failure.py`) using the digest's Gmail creds; state is still committed back first so paid narratives aren't lost.
 - The pipeline is idempotent: `daily_scan` skips tickers already in `companies_analyzed.json`; `fetch_yfinance_statements` skips tickers already on disk; `build_index` + digest + `bake_api` are pure regenerations.
 
-> Note: a local crontab is no longer used. Because `companies_sec.json` is not in
-> git, a dev checkout has only a partial SEC cache — **never bake + publish `/api`
-> from a dev box** (it would regress tickers the local cache is missing). Let the
-> Actions run, which cold-fetches the full universe, do the publish.
+> `.github/workflows/daily.yml` is kept but **disabled** as a fallback (it
+> needs a valid `REPORTS_REPO_TOKEN` + the Vercel-hosted reports repo, which
+> are otherwise retired). A dev checkout still has only a partial SEC cache —
+> never bake + publish `/api` from a dev box.
 
 ## Environment
 
@@ -184,7 +184,7 @@ GMAIL_APP_PASSWORD=abcdabcdabcdabcd # 16-char App Password from myaccount.google
 EMAIL_RECIPIENT=other@example.com  # optional; defaults to GMAIL_USER
 
 # --- Required if you want clickable ticker links in the digest body ---
-REPORT_BASE_URL=https://value-agent-reports.vercel.app  # base URL of the published archive
+REPORT_BASE_URL=https://debian-mac-air.tail38ab8e.ts.net/reports  # base URL of the published archive
 
 # --- Optional ---
 GEMINI_API_KEY=...          # only if you re-enable the dormant Gemini path in llm_router._call_gemini
