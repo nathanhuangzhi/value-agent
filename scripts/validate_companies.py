@@ -17,7 +17,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
-from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_SEC, COMPANIES_VALIDATION
+from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_SEC, COMPANIES_VALIDATION, COMPANIES_YFINANCE_DIR
+from app.tools.report.sec_adapter import _ads_normalized, load_sharded_by_ticker
 from app.tools.validation import validate_ticker, worst_severity
 
 
@@ -45,8 +46,12 @@ def main():
     today = date.today()
     counts = {"ok": 0, "info": 0, "warn": 0, "error": 0}
     flagged_rows = []
+    # ADS filers: SEC shares/EPS are per ordinary share; bring them onto the
+    # ADS basis (what the price refers to) before the price×shares checks.
+    yf = load_sharded_by_ticker(COMPANIES_YFINANCE_DIR)
     for t in targets:
-        issues = validate_ticker(sec.get(t), analyzed.get(t), today=today)
+        sec_row = _ads_normalized(sec.get(t), yf.get(t)) if sec.get(t) else None
+        issues = validate_ticker(sec_row, analyzed.get(t), today=today)
         status = worst_severity(issues)
         counts[status] += 1
         row = {

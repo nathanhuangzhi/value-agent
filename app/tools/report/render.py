@@ -11,7 +11,7 @@ from markdown_it import MarkdownIt
 
 from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE_DIR
 from app.tools.report.charts import _chart_valuation_monthly
-from app.tools.fx import currency_meta, reporting_currency, to_usd_statements
+from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
 from app.tools.report.format import (
     AMBER,
     MUTED,
@@ -102,17 +102,18 @@ def _extract_blended_statements(row: dict) -> dict:
 
     sec_row = _get_sec_data().get(ticker)
     yf_row = _get_yfinance_data().get(ticker)
-    currency = reporting_currency(yf_row)
+    currency = reporting_currency(yf_row, sec_row)
+    by_source = source_currencies(yf_row, sec_row)
     if sec_row or yf_row:
         # Non-USD filers are converted to USD right here so every section
         # below (ratios, chart, table) sees one currency. See app/tools/fx.py.
         blended_annual = to_usd_statements(
-            sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row), currency)
+            sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row), by_source)
         inc_annual = blended_annual["income_statement"] or inc_annual
         bs_annual = blended_annual["balance_sheet"] or bs_annual
         cf_annual = blended_annual["cash_flow"] or cf_annual
         blended_q = to_usd_statements(
-            sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row), currency)
+            sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row), by_source)
         inc_quarterly = blended_q["income_statement"] or inc_quarterly
         bs_quarterly = blended_q["balance_sheet"] or bs_quarterly
         cf_quarterly = blended_q["cash_flow"] or cf_quarterly

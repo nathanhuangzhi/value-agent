@@ -118,13 +118,40 @@ def is_instant_any(record: dict) -> bool:
     return not record.get("start") and bool(record.get("end"))
 
 
+# Form families. Domestic filers: 10-K / 10-Q. Foreign private issuers
+# (Chinese ADRs etc.): 20-F / 40-F annual, and the occasional XBRL-tagged
+# 6-K for interim periods. `str.startswith` accepts the tuple directly.
+ANNUAL_FORMS = ("10-K", "20-F", "40-F")
+QUARTERLY_FORMS = ("10-Q", "10-K", "20-F", "40-F", "6-K")
+
+_NON_MONETARY_UNITS = {"shares", "pure"}
+
+
+def detect_reporting_currency(facts: dict) -> str:
+    """The currency the filer reports in — the monetary unit with the most
+    records across a few headline concepts. FPIs often tag a USD
+    convenience translation for the latest year only, so 'most records'
+    (not 'has USD') is the right test. Defaults to USD."""
+    usgaap = facts.get("us-gaap", {}) if facts else {}
+    counts: dict[str, int] = {}
+    for concept in ("Assets", "Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax",
+                    "NetIncomeLoss", "StockholdersEquity", "Liabilities"):
+        for unit, recs in (usgaap.get(concept, {}).get("units", {}) or {}).items():
+            if unit in _NON_MONETARY_UNITS or "/" in unit or len(unit) != 3:
+                continue
+            counts[unit] = counts.get(unit, 0) + len(recs)
+    if not counts:
+        return "USD"
+    return max(counts.items(), key=lambda kv: (kv[1], kv[0] == "USD"))[0]
+
+
 def extract_period_values(
     facts: dict,
     concepts: Sequence[str],
     *,
     unit: str = "USD",
     period_filter=is_annual_period,
-    form_prefix: str = "10-K",
+    form_prefix: str | tuple[str, ...] = ANNUAL_FORMS,
 ) -> dict[int, dict]:
     """Merge values across `concepts`, keyed by period-end year. Keeps the
     latest-filed record per year. Filters to records that match
@@ -163,7 +190,8 @@ def extract_period_values(
     return by_year
 
 
-def extract_quarterly_cash_flow(facts: dict, concepts: Sequence[str], *, unit: str = "USD") -> dict[str, dict]:
+def extract_quarterly_cash_flow(facts: dict, concepts: Sequence[str], *, unit: str = "USD",
+                                forms: tuple[str, ...] = QUARTERLY_FORMS) -> dict[str, dict]:
     """Cash-flow concepts (`NetCashProvidedByUsedInOperatingActivities`,
     `PaymentsToAcquirePropertyPlantAndEquipment`, etc.) are typically filed as
     year-to-date cumulative on 10-Qs: Q1=90 days, H1=180, 9M=270, annual=365.
@@ -190,7 +218,7 @@ def extract_quarterly_cash_flow(facts: dict, concepts: Sequence[str], *, unit: s
     for concept in concepts:
         for r in usgaap.get(concept, {}).get("units", {}).get(unit, []):
             form = r.get("form", "")
-            if not (form.startswith("10-Q") or form.startswith("10-K")):
+            if not form.startswith(forms):
                 continue
             span = _period_span_days(r)
             if span is None:
@@ -239,7 +267,8 @@ def extract_quarterly_cash_flow(facts: dict, concepts: Sequence[str], *, unit: s
     return out
 
 
-def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str = "USD") -> dict[str, dict]:
+def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str = "USD",
+                             forms: tuple[str, ...] = QUARTERLY_FORMS) -> dict[str, dict]:
     """Same as extract_period_values but for quarterly records. Keys by the
     quarter-end date (`YYYY-MM-DD` string) rather than year, since a fiscal
     year contains four quarters. Pulls from 10-Q and 10-K filings."""
@@ -250,7 +279,7 @@ def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str 
         records = usgaap.get(concept, {}).get("units", {}).get(unit, [])
         for r in records:
             form = r.get("form", "")
-            if not (form.startswith("10-Q") or form.startswith("10-K")):
+            if not form.startswith(forms):
                 continue
             if not is_quarterly_period(r):
                 continue
@@ -456,43 +485,43 @@ def rescale_shares_filed_in_thousands(period_data: dict) -> None:
             entry["val"] = shares * 1000
 
 
-def _extract_all_annual(facts: dict) -> dict:
+def _extract_all_annual(facts: dict, unit: str = "USD") -> dict:
     """Pull every metric for annual (FY) records from 10-K filings.
     Income statement, cash flow, EPS, shares = period records (~365 days).
     Balance sheet items = instant records (no start date)."""
     out: dict[str, dict] = {}
     for name, concepts in INCOME_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit="USD",
-                                          period_filter=is_annual_period, form_prefix="10-K")
+        out[name] = extract_period_values(facts, concepts, unit=unit,
+                                          period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
     for name, concepts in SHARES_METRICS.items():
         out[name] = extract_period_values(facts, concepts, unit="shares",
-                                          period_filter=is_annual_period, form_prefix="10-K")
+                                          period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
     for name, concepts in EPS_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit="USD/shares",
-                                          period_filter=is_annual_period, form_prefix="10-K")
+        out[name] = extract_period_values(facts, concepts, unit=f"{unit}/shares",
+                                          period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
     for name, concepts in CASH_FLOW_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit="USD",
-                                          period_filter=is_annual_period, form_prefix="10-K")
+        out[name] = extract_period_values(facts, concepts, unit=unit,
+                                          period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
     for name, concepts in BALANCE_SHEET_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit="USD",
-                                          period_filter=is_instant_at_fy_end, form_prefix="10-K")
+        out[name] = extract_period_values(facts, concepts, unit=unit,
+                                          period_filter=is_instant_at_fy_end, form_prefix=ANNUAL_FORMS)
     return out
 
 
-def _extract_all_quarterly(facts: dict) -> dict:
+def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
     """Pull every metric for quarterly records (10-Q + 10-K). Income concepts
     use 90-day periods; cash-flow concepts use YTD-differencing (issuers
     typically file CF cumulative — Q1=90d, H1=180d, 9M=270d, annual=365d).
     Balance sheet items use instants (point-in-time at quarter end)."""
     out: dict = {}
     for name, concepts in INCOME_METRICS.items():
-        out[name] = extract_quarterly_values(facts, concepts, unit="USD")
+        out[name] = extract_quarterly_values(facts, concepts, unit=unit)
     for name, concepts in CASH_FLOW_METRICS.items():
-        out[name] = extract_quarterly_cash_flow(facts, concepts, unit="USD")
+        out[name] = extract_quarterly_cash_flow(facts, concepts, unit=unit)
     for name, concepts in SHARES_METRICS.items():
         out[name] = extract_quarterly_values(facts, concepts, unit="shares")
     for name, concepts in EPS_METRICS.items():
-        out[name] = extract_quarterly_values(facts, concepts, unit="USD/shares")
+        out[name] = extract_quarterly_values(facts, concepts, unit=f"{unit}/shares")
 
     # Balance sheet items at quarter-end: instants from 10-Q / 10-K. Pulled
     # inline because the standard `extract_*` helpers require a start date.
@@ -501,9 +530,9 @@ def _extract_all_quarterly(facts: dict) -> dict:
         bs_data: dict[str, dict] = {}
         bs_sort_key: dict[str, tuple] = {}
         for concept in concepts:
-            for r in usgaap.get(concept, {}).get("units", {}).get("USD", []):
+            for r in usgaap.get(concept, {}).get("units", {}).get(unit, []):
                 form = r.get("form", "")
-                if not (form.startswith("10-Q") or form.startswith("10-K")):
+                if not form.startswith(QUARTERLY_FORMS):
                     continue
                 if not is_instant_any(r):
                     continue
@@ -540,8 +569,9 @@ def build_sec_row(ticker: str, cik: int, facts: dict) -> dict:
     from datetime import datetime, timezone
 
     raw_facts = facts.get("facts", {}) if facts else {}
-    annual = _extract_all_annual(raw_facts)
-    quarterly = _extract_all_quarterly(raw_facts)
+    currency = detect_reporting_currency(raw_facts)
+    annual = _extract_all_annual(raw_facts, unit=currency)
+    quarterly = _extract_all_quarterly(raw_facts, unit=currency)
 
     rescale_shares_filed_in_thousands(annual)
     rescale_shares_filed_in_thousands(quarterly)
@@ -555,6 +585,7 @@ def build_sec_row(ticker: str, cik: int, facts: dict) -> dict:
         "entity_name": facts.get("entityName"),
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "source": "SEC EDGAR XBRL companyfacts",
+        "currency": currency,          # reporting currency of every monetary value below
         "annual": annual,
         "quarterly": quarterly,
         "mna_flagged_years": flagged_years,

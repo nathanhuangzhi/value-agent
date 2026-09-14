@@ -340,12 +340,70 @@ def _normalize_annual_keys(d: dict) -> dict:
     return out
 
 
+# ---- ADS normalisation --------------------------------------------------
+# Foreign filers report per-share data on ORDINARY shares, but the ticker
+# trades as an ADS worth N ordinary shares (PDD 4, FUTU 8, …). yfinance's
+# per-share figures are already ADS-based, and so is the price, so SEC
+# share counts / EPS have to be brought onto the ADS basis before they can
+# be blended with yfinance or multiplied by the price.
+_SHARE_KEYS = ("diluted_shares",)
+_EPS_KEYS = ("diluted_eps",)
+
+
+def infer_ads_ratio(sec_row: dict | None, yfinance_row: dict | None) -> float | None:
+    """Ordinary shares per ADS, inferred from annual periods where both
+    sources report diluted shares: the median SEC/yfinance ratio, kept only
+    when it's a clear integer ≥ 2 and stable across periods. None → the
+    ticker is not an ADS (or can't be checked), leave the SEC data alone."""
+    sec_sh = _normalize_annual_keys((sec_row or {}).get("annual")).get("diluted_shares") or {}
+    yf_sh = _normalize_annual_keys((yfinance_row or {}).get("annual")).get("diluted_shares") or {}
+    ratios = []
+    for k in set(sec_sh) & set(yf_sh):
+        a = (sec_sh[k] or {}).get("val"); b = (yf_sh[k] or {}).get("val")
+        if a and b and a > 0 and b > 0:
+            ratios.append(a / b)
+    if not ratios:
+        return None
+    ratios.sort()
+    med = ratios[len(ratios) // 2]
+    rounded = round(med)
+    if rounded < 2 or abs(med - rounded) > 0.15:
+        return None
+    if any(abs(r - rounded) > 0.25 * rounded for r in ratios):
+        return None
+    return float(rounded)
+
+
+def _ads_normalized(sec_row: dict | None, yfinance_row: dict | None) -> dict:
+    """A copy of `sec_row` with shares ÷ ratio and EPS × ratio when an ADS
+    ratio is detected; the row itself otherwise. Tags the copy with
+    `ads_ratio` so callers can surface it."""
+    ratio = infer_ads_ratio(sec_row, yfinance_row)
+    if not ratio or not sec_row:
+        return sec_row or {}
+    import copy
+    out = copy.deepcopy(sec_row)
+    for scope in ("annual", "quarterly"):
+        block = out.get(scope) or {}
+        for key in _SHARE_KEYS:
+            for e in (block.get(key) or {}).values():
+                if isinstance(e, dict) and e.get("val") is not None:
+                    e["val"] = e["val"] / ratio
+        for key in _EPS_KEYS:
+            for e in (block.get(key) or {}).values():
+                if isinstance(e, dict) and e.get("val") is not None:
+                    e["val"] = e["val"] * ratio
+    out["ads_ratio"] = ratio
+    return out
+
+
 def sec_to_yfinance_annual(sec_row: dict, yfinance_row: dict | None = None) -> dict:
     """Take one row from companies_sec.json (and optionally one from
     a data/yfinance/<industry>.json shard) and return three period-lists shaped like
     yfinance's `financial_statements.{income_statement, balance_sheet,
     cash_flow}.annual`. Each period dict carries a parallel `sources` map
     indicating per-cell origin."""
+    sec_row = _ads_normalized(sec_row, yfinance_row)
     sec_annual = _normalize_annual_keys((sec_row or {}).get("annual"))
     yf_annual = _normalize_annual_keys((yfinance_row or {}).get("annual"))
     merged, sources = _merge_period_dicts(sec_annual, yf_annual)
@@ -374,6 +432,7 @@ def sec_to_yfinance_quarterly(sec_row: dict, *, last_n: int = 8,
     """Quarterly variant. Period keys are ISO date strings (already aligned
     between SEC and yfinance). Capped to the last `last_n` periods to keep
     the report's table width reasonable."""
+    sec_row = _ads_normalized(sec_row, yfinance_row)
     sec_q = (sec_row or {}).get("quarterly") or {}
     yf_q = (yfinance_row or {}).get("quarterly") or {}
     # Snap yfinance calendar dates onto nearby SEC fiscal dates first, so a

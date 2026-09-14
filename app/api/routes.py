@@ -22,7 +22,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from app.tools.daily_selector import display_industries
-from app.tools.fx import currency_meta, load_fx, reporting_currency, to_usd_statements
+from app.tools.fx import currency_meta, load_fx, reporting_currency, source_currencies, to_usd_statements
 from app.tools.json_io import read_jsonl
 from app.tools.paths import (
     COMPANIES_ANALYZED,
@@ -161,12 +161,12 @@ def _blended_quarterly(sec_row, yf_row):
     reporting currency to USD (app/tools/fx.py) so every downstream
     number — ratios, rows, the app's tables — is in one currency."""
     stmts = sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row)
-    return to_usd_statements(stmts, reporting_currency(yf_row), _load_fx())
+    return to_usd_statements(stmts, source_currencies(yf_row, sec_row), _load_fx())
 
 
 def _blended_annual(sec_row, yf_row):
     stmts = sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row)
-    return to_usd_statements(stmts, reporting_currency(yf_row), _load_fx())
+    return to_usd_statements(stmts, source_currencies(yf_row, sec_row), _load_fx())
 
 
 def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
@@ -441,7 +441,7 @@ def ticker_detail(symbol: str):
         "analyzed_date": row.get("analyzed_date") or "",
         # Non-USD filers: statements above are converted to USD at this rate;
         # None for USD reporters. per_usd None → no rate on file, values native.
-        "currency": currency_meta(reporting_currency(yf_row), _load_fx()),
+        "currency": currency_meta(reporting_currency(yf_row, sec_row), _load_fx()),
     }
 
 

@@ -8,15 +8,18 @@ Run:
 from __future__ import annotations
 
 from app.tools.fx import fetch_fx
-from app.tools.paths import COMPANIES_YFINANCE_DIR
+from app.tools.json_io import read_json_array
+from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE_DIR
 from app.tools.report.sec_adapter import load_sharded_by_ticker
 
 
 def main():
-    rows = load_sharded_by_ticker(COMPANIES_YFINANCE_DIR)
-    currencies = sorted({(r.get("financial_currency") or "USD").upper() for r in rows.values()} - {"USD"})
+    yf_rows = load_sharded_by_ticker(COMPANIES_YFINANCE_DIR)
+    seen = {(r.get("financial_currency") or "USD").upper() for r in yf_rows.values()}
+    seen |= {(r.get("currency") or "USD").upper() for r in read_json_array(COMPANIES_SEC)}
+    currencies = sorted(seen - {"USD"})
     print("=== FX rates ===")
-    print(f"  non-USD reporting currencies in yfinance shards: {currencies or 'none'}")
+    print(f"  non-USD reporting currencies (SEC ∪ yfinance): {currencies or 'none'}")
     if not currencies:
         return
     rates = fetch_fx(currencies)
