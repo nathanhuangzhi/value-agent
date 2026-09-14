@@ -194,7 +194,15 @@ _RESPONSIVE_STYLE = f"""@media (max-width:599px){{
   .kpi-cell{{width:50% !important;}}
   .img-flush{{margin:0 -14px !important;}}
 }}
-.scroll-wrap{{overflow-x:auto;-webkit-overflow-scrolling:touch;}}"""
+/* The historical table carries a min-width (>= 660px) so its columns stay
+   legible; it must scroll inside .scroll-wrap, not widen the page. A block
+   inside an auto-layout <td> normally pushes the cell out to its content's
+   min-content width — width:0 + min-width:100% zeroes that contribution
+   while still rendering the wrapper at the full cell width. overflow-x:hidden
+   on the document is the belt-and-braces: nothing can pan the whole page
+   sideways on a phone. */
+html,body{{overflow-x:hidden;}}
+.scroll-wrap{{width:0;min-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}}"""
 
 
 def _wrap_document(body: str, title: str) -> str:
