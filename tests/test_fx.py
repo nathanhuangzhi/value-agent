@@ -156,7 +156,8 @@ def test_sec_row_to_usd_uses_entry_tags():
 
 def test_derive_asset_lines_from_6k_balance_sheet():
     from app.tools.sec_6k import derive_asset_lines
-    bs = [{"label": "Cash and cash equivalents", "value": 29.0}, {"label": "Short term investments", "value": 3.6},
+    bs = [{"label": "Cash and cash equivalents", "value": 29.0}, {"label": "Restricted cash", "value": 0.6},
+          {"label": "Short term investments", "value": 3.6},
           {"label": "Accounts receivable, net", "value": 0.56}, {"label": "Other receivables and prepayments,net", "value": 3.1},
           {"label": "Inventories", "value": 4.33}, {"label": "Total current assets", "value": 43.8},
           {"label": "Property and equipment, net", "value": 16.4}, {"label": "Deposits for property and equipment", "value": 0.01},
@@ -168,6 +169,7 @@ def test_derive_asset_lines_from_6k_balance_sheet():
     out = derive_asset_lines(bs)
     assert round(out.pop("receivables"), 2) == round(0.56 + 3.1, 2)     # total receivables
     assert out.pop("cash") == 29.0 and out.pop("short_term_investments") == 3.6
+    assert out.pop("restricted_cash") == 0.6
     assert out == {"inventory": 4.33, "ppe_net": 16.4,
                    "intangibles": 9.9 + 0.32, "long_term_investments": 7.62 + 4.98, "goodwill": 0.65}
 
@@ -189,8 +191,14 @@ def test_cash_plus_short_term_investments_is_derived():
         "total_assets": {2025: {"val": 500.0, "ccy": "USD"}}}, "quarterly": {}}
     bs = sec_to_yfinance_annual(sec)["balance_sheet"][0]
     assert bs["items"]["Cash Cash Equivalents And Short Term Investments"] == 140.0
-    assert bs["sources"]["Cash Cash Equivalents And Short Term Investments"] == "derived"
-    # cash only → the total equals cash
+    assert bs["sources"]["Cash Cash Equivalents And Short Term Investments"] == "sec"
+    # components beat a pre-summed yfinance line; restricted cash is included
+    sec["annual"]["restricted_cash"] = {2025: {"val": 5.0, "ccy": "USD"}}
+    yf = {"financial_currency": "USD", "annual": {"cash_and_st_investments": {"2025": {"val": 999.0}}}, "quarterly": {}}
+    bs = sec_to_yfinance_annual(sec, yf)["balance_sheet"][0]
+    assert bs["items"]["Cash Cash Equivalents And Short Term Investments"] == 145.0
+    assert bs["sources"]["Cash Cash Equivalents And Short Term Investments"] == "sec"
+    # without an STI line the total is cash + restricted cash
     sec["annual"].pop("short_term_investments")
     bs = sec_to_yfinance_annual(sec)["balance_sheet"][0]
-    assert bs["items"]["Cash Cash Equivalents And Short Term Investments"] == 100.0
+    assert bs["items"]["Cash Cash Equivalents And Short Term Investments"] == 105.0

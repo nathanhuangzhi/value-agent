@@ -459,6 +459,8 @@ BALANCE_SHEET_METRICS: dict[str, list[str]] = {
         "OtherShortTermInvestments",
     ],
     "cash_and_st_investments": ["CashCashEquivalentsAndShortTermInvestments"],
+    "restricted_cash": ["RestrictedCashCurrent", "RestrictedCashAndCashEquivalents",
+                        "RestrictedCashAndCashEquivalentsAtCarryingValue", "RestrictedCash"],
     # Two debt buckets. Concepts here are *unambiguously* one or the other —
     # ambiguous totals like `LongTermDebt` or `ConvertibleDebt` (which can
     # include the current portion) are intentionally excluded to avoid

@@ -51,7 +51,8 @@ SEC_TO_YFINANCE_CASHFLOW = {
 SEC_TO_YFINANCE_BALANCE = {
     "cash": "Cash And Cash Equivalents",
     "short_term_investments": "Short Term Investments",
-    "cash_and_st_investments": "Cash Cash Equivalents And Short Term Investments",  # derived when not tagged
+    "restricted_cash": "Restricted Cash",
+    "cash_and_st_investments": "Cash Cash Equivalents And Short Term Investments",  # re-derived from components below
     "total_assets": "Total Assets",
     "stockholders_equity": "Common Stock Equity",
     "goodwill": "Goodwill",
@@ -254,15 +255,18 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
         if last_entry_with_end is None and isinstance(entry, dict) and entry.get("end"):
             last_entry_with_end = entry
 
-    if derived_total_debt and items.get("Cash Cash Equivalents And Short Term Investments") is None:
-        # Cash + short-term investments — the balance-sheet section's cash
-        # row. Cash alone when no ST-investment line is reported.
+    if derived_total_debt:
+        # The balance-sheet section's cash row = cash & equivalents + short-term
+        # investments + restricted cash, summed from the components whenever
+        # cash is reported (so it follows the components' source — 6-K / SEC
+        # beat yfinance's own pre-summed line, which only serves as fallback).
         cash = items.get("Cash And Cash Equivalents")
-        sti = items.get("Short Term Investments")
         if cash is not None:
-            items["Cash Cash Equivalents And Short Term Investments"] = cash + (sti or 0)
-            srcs = {sources.get("Cash And Cash Equivalents", "sec"), sources.get("Short Term Investments", "sec")}
-            sources["Cash Cash Equivalents And Short Term Investments"] = "yfinance" if "yfinance" in srcs else "derived"
+            parts = ["Cash And Cash Equivalents", "Short Term Investments", "Restricted Cash"]
+            items["Cash Cash Equivalents And Short Term Investments"] = sum(items.get(k) or 0 for k in parts)
+            srcs = {sources.get(k, "sec") for k in parts if items.get(k) is not None}
+            sources["Cash Cash Equivalents And Short Term Investments"] = (
+                "yfinance" if "yfinance" in srcs else "derived" if srcs - {"sec"} else "sec")
             if currencies.get("Cash And Cash Equivalents"):
                 currencies["Cash Cash Equivalents And Short Term Investments"] = currencies["Cash And Cash Equivalents"]
 

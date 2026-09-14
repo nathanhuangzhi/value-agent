@@ -292,7 +292,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         ("Other Opex / Revenue", "other_r", pct_str),
         ("group", "Balance Sheet ($M)"),
         ("Total Assets", "assets", money_m),
-        ("Cash & ST Investments", "cash", money_m),
+        ("Cash, STI & Restricted", "cash", money_m),
         *[(key, key, money_m) for key in top_asset_keys],
         ("Total Liabilities", "liabilities", money_m),
         *[(key, key, money_m) for key in top_liability_keys],   # largest first

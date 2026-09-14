@@ -50,6 +50,7 @@ _INCOME_LABELS: dict[str, list[str]] = {
 _BALANCE_LABELS: dict[str, list[str]] = {
     "cash": ["Cash And Cash Equivalents"],
     "short_term_investments": ["Other Short Term Investments"],
+    "restricted_cash": ["Restricted Cash"],
     "cash_and_st_investments": ["Cash Cash Equivalents And Short Term Investments"],
     "total_assets": ["Total Assets"],
     "stockholders_equity": ["Common Stock Equity", "Stockholders Equity",
