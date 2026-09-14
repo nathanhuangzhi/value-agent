@@ -36,11 +36,13 @@ from app.tools.paths import (
 )
 from app.tools.report.format import latest_by_ticker
 from app.tools.report.ratios import compute_snapshot_ratios
+from app.tools.sec_6k import SIXK_DIR, load_all_stores, sixk_as_source_row
 from app.tools.report.sec_adapter import (
     load_sec_by_ticker,
     load_sharded_by_ticker,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
+    overlay_source_row,
 )
 
 router = APIRouter(prefix="/api", tags=["mobile-api"])
@@ -57,6 +59,7 @@ class _DataPaths:
     daily_log: Path = DAILY_LOG
     digest: Path = COMPANIES_DIGEST
     fx: Path = FX_RATES                        # USD→reporting-currency rates
+    sixk: Path = SIXK_DIR                      # 6-K extractions (foreign filers)
     universe: Path = COMPANIES_JSONL          # Stage 1 NYSE+Nasdaq universe
 
 
@@ -150,6 +153,18 @@ def _load_yf() -> dict:
     return _mtime_load(_paths.yfinance, load_sharded_by_ticker, mtime_key=_dir_mtime)
 
 
+def _load_sixk() -> dict:
+    """ticker → 6-K store. mtime-cached on the directory."""
+    if not _paths.sixk.exists():
+        return {}
+    return _mtime_load(_paths.sixk, lambda p: load_all_stores(), mtime_key=_dir_mtime)
+
+
+def _gap_fill_row(ticker: str, yf_row: dict | None) -> dict | None:
+    """yfinance row with any 6-K extractions laid over it (SEC XBRL > 6-K > yfinance)."""
+    return overlay_source_row(yf_row, sixk_as_source_row(_load_sixk().get(ticker)))
+
+
 def _load_fx() -> dict:
     """USD→reporting-currency rates. mtime-cached."""
     return _mtime_load(_paths.fx, lambda p: load_fx())
@@ -176,7 +191,7 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
     P/B, P/S, P/FCF, P/OCF), profitability (margins, ROE, ROA, Debt/Asset),
     and Dividend Rate. Static P/E comes from the annual income baseline."""
     sec_row = sec_by_ticker.get(ticker)
-    yf_row = yf_by_ticker.get(ticker)
+    yf_row = _gap_fill_row(ticker, yf_by_ticker.get(ticker))
     if not (sec_row or yf_row):
         # No statement data — return the Stage-1 mcap and Nones for the rest.
         return {
@@ -407,7 +422,7 @@ def ticker_detail(symbol: str):
     yf_by_ticker = _load_yf()
     validation = _load_validation()
     sec_row = sec_by_ticker.get(ticker)
-    yf_row = yf_by_ticker.get(ticker)
+    yf_row = _gap_fill_row(ticker, yf_by_ticker.get(ticker))
 
     blended_annual = _blended_annual(sec_row, yf_row) if (sec_row or yf_row) else {
         "income_statement": [], "balance_sheet": [], "cash_flow": [],

@@ -172,7 +172,10 @@ def main():
 
     # ---- 2. Fetch SEC data (idempotent: skips already-cached tickers) ----
     if not args.skip_fetch:
-        _run_stage("fetch_sec_annual", ["-m", "scripts.fetch_sec_annual"])
+        # New tickers cold-fetch; cached ones refresh on a rolling weekly basis
+        # (the cache is persistent on the self-hosted box — without this it
+        # would never see a new 10-K / 10-Q).
+        _run_stage("fetch_sec_annual", ["-m", "scripts.fetch_sec_annual", "--max-age-days", "7"])
         # yfinance gap-fill is the secondary data source — the renderer reads
         # the data/yfinance/<industry>.json shards and blends them with SEC at
         # every cell, so a daily SEC-only fetch leaves the yfinance side stale for any new
@@ -180,14 +183,24 @@ def main():
         _run_stage("fetch_yfinance_statements", ["-m", "scripts.fetch_yfinance_statements"])
         # USD→reporting-currency rates for non-USD filers (used at blend time).
         _run_stage("fetch_fx_rates", ["-m", "scripts.fetch_fx_rates"])
+        # Foreign filers' quarterly results come as 6-K press releases; pick
+        # up any new one (DeepSeek Flash, ~$0.01 per new release, idempotent).
+        _run_stage("fetch_6k_statements", ["-m", "scripts.fetch_6k_statements"])
 
     # ---- 3. Validate ----
     if not args.skip_validate:
         _run_stage("validate_companies", ["-m", "scripts.validate_companies"])
 
     # ---- 4. Build per-ticker reports ----
-    print(f"\n=== Stage: build_reports ({len(tickers)} tickers) ===")
-    report_paths = _build_reports(tickers, strict=args.strict)
+    # Today's batch, plus every saved (watchlist) company so their pages
+    # reflect the day's fresh yfinance / FX / 6-K data even between cycles.
+    from app.tools.watchlist import load_watchlist
+    analyzed_set = set(load_latest_by_ticker(COMPANIES_ANALYZED))
+    watch_extra = [t for t in load_watchlist() if t in analyzed_set and t not in tickers]
+    report_tickers = tickers + watch_extra
+    print(f"\n=== Stage: build_reports ({len(tickers)} tickers"
+          f"{f' + {len(watch_extra)} watchlist' if watch_extra else ''}) ===")
+    report_paths = _build_reports(report_tickers, strict=args.strict)
     if not report_paths:
         sys.exit("No reports built — nothing to send.")
 

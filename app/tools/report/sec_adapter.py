@@ -173,7 +173,9 @@ def _merge_period_dicts(sec_section: dict, yf_section: dict) -> tuple[dict, dict
                 m_sources[pk] = "sec"
             else:
                 m_entries[pk] = yf_d[pk]
-                m_sources[pk] = "yfinance"
+                # The gap-fill side may carry its own tag (e.g. "6k" for a
+                # value overlaid from a 6-K release, see overlay_source_row).
+                m_sources[pk] = (yf_d[pk] or {}).get("source") or "yfinance"
         if m_entries:
             merged[metric] = m_entries
             sources[metric] = m_sources
@@ -337,6 +339,33 @@ def _normalize_annual_keys(d: dict) -> dict:
     out: dict = {}
     for metric, periods in (d or {}).items():
         out[metric] = {str(k): v for k, v in (periods or {}).items()}
+    return out
+
+
+# ---- Third source: 6-K releases -------------------------------------------
+
+def overlay_source_row(base_row: dict | None, overlay_row: dict | None) -> dict | None:
+    """Lay `overlay_row`'s entries (a yfinance-shaped source row, e.g. the
+    6-K view from app.tools.sec_6k) over `base_row` (the yfinance shard):
+    same metric + period → the overlay wins and its entry keeps its own
+    `source` tag. The result plays the gap-fill role in the SEC blend, so
+    the precedence is SEC XBRL > 6-K > yfinance. Currency stays whatever
+    the base declares (the overlay's `financial_currency` is checked to
+    match; a mismatch keeps the base untouched)."""
+    if not overlay_row:
+        return base_row
+    if not base_row:
+        return overlay_row
+    if (overlay_row.get("financial_currency") or "USD") != (base_row.get("financial_currency") or "USD"):
+        return base_row
+    import copy
+    out = copy.deepcopy(base_row)
+    for scope in ("annual", "quarterly"):
+        dst = out.setdefault(scope, {})
+        for metric, periods in (overlay_row.get(scope) or {}).items():
+            d = dst.setdefault(metric, {})
+            for pk, entry in (periods or {}).items():
+                d[pk] = entry
     return out
 
 

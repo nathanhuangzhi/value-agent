@@ -12,6 +12,7 @@ from markdown_it import MarkdownIt
 from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE_DIR
 from app.tools.report.charts import _chart_valuation_monthly
 from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
+from app.tools.sec_6k import load_all_stores, sixk_as_source_row
 from app.tools.report.format import (
     AMBER,
     MUTED,
@@ -38,6 +39,7 @@ from app.tools.report.sec_adapter import (
     load_sharded_by_ticker,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
+    overlay_source_row,
 )
 from app.tools.report.tables import _render_combined_data_table
 
@@ -86,6 +88,16 @@ def render_company_report(row: dict, validation: dict | None = None,
     return _wrap_document(body, title)
 
 
+_SIXK_DATA: dict | None = None
+
+
+def _get_sixk_data() -> dict:
+    global _SIXK_DATA
+    if _SIXK_DATA is None:
+        _SIXK_DATA = load_all_stores()
+    return _SIXK_DATA
+
+
 def _extract_blended_statements(row: dict) -> dict:
     """Return a `{inc_annual, bs_annual, cf_annual, inc_quarterly,
     bs_quarterly, cf_quarterly, price_history}` dict, blending SEC primary
@@ -101,7 +113,8 @@ def _extract_blended_statements(row: dict) -> dict:
     cf_quarterly = (fs.get("cash_flow") or {}).get("quarterly") or []
 
     sec_row = _get_sec_data().get(ticker)
-    yf_row = _get_yfinance_data().get(ticker)
+    yf_row = overlay_source_row(_get_yfinance_data().get(ticker),
+                                sixk_as_source_row(_get_sixk_data().get(ticker)))
     currency = reporting_currency(yf_row, sec_row)
     by_source = source_currencies(yf_row, sec_row)
     if sec_row or yf_row:

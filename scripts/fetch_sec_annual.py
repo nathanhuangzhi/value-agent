@@ -37,6 +37,10 @@ def main():
     ap.add_argument("--refresh", action="store_true",
                     help="Re-fetch tickers already in the cache (e.g. after adding "
                          "XBRL concepts to sec_xbrl_tools). Default: skip cached.")
+    ap.add_argument("--max-age-days", type=int, default=None,
+                    help="Also re-fetch cached tickers whose fetched_at is older than this "
+                         "many days (the daily run uses 7 → the whole pool is refreshed on a "
+                         "rolling weekly basis, ~1/7 of it per day).")
     args = ap.parse_args()
 
     # Pick target tickers from the analyzed roster; look up CIKs from
@@ -62,9 +66,17 @@ def main():
     print()
 
     results = dict(existing)
+    stale_before = None
+    if args.max_age_days is not None:
+        from datetime import datetime, timedelta, timezone
+        stale_before = (datetime.now(timezone.utc) - timedelta(days=args.max_age_days)).isoformat()
+    n_stale = 0
     for i, ticker in enumerate(todo, 1):
         if ticker in results and not args.ticker and not args.refresh:
-            continue
+            fetched_at = (results[ticker] or {}).get("fetched_at") or ""
+            if not (stale_before and fetched_at < stale_before):
+                continue
+            n_stale += 1
         u = universe.get(ticker)
         if not u or not u.get("cik"):
             print(f"  [{i}/{len(todo)}] {ticker}: no CIK; skip")
@@ -93,6 +105,8 @@ def main():
 
     atomic_write_json(args.output, list(results.values()))
     print()
+    if stale_before:
+        print(f"  refreshed {n_stale} cached ticker(s) older than {args.max_age_days} days")
     print(f"Wrote {len(results)} rows → {args.output}")
 
 

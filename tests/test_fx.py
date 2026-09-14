@@ -57,7 +57,7 @@ def test_per_source_conversion_scales_each_cell_by_its_own_currency():
     out = to_usd_periods(periods, {"sec": "CNY", "yfinance": "HKD", "derived": "CNY"}, fx)
     assert out[0]["items"] == {"Total Revenue": 100.0, "Net Income": 10.0, "Total Debt": 10.0}
     assert source_currencies({"financial_currency": "hkd"}, {"currency": "CNY"}) == \
-        {"sec": "CNY", "yfinance": "HKD", "derived": "CNY"}
+        {"sec": "CNY", "yfinance": "HKD", "6k": "HKD", "derived": "CNY"}
 
 
 def test_infer_ads_ratio_from_overlapping_share_counts():
@@ -75,3 +75,36 @@ def test_infer_ads_ratio_from_overlapping_share_counts():
     # a domestic filer (ratio ≈ 1) is left alone
     assert infer_ads_ratio(sec, {"annual": {"diluted_shares": {"2025": {"val": 5.9e9}}}}) is None
     assert infer_ads_ratio(sec, None) is None
+
+
+def test_sixk_overlay_wins_over_yfinance_and_keeps_its_tag():
+    from app.tools.report.sec_adapter import _merge_period_dicts, overlay_source_row
+    from app.tools.sec_6k import sixk_as_source_row
+    store = {"ticker": "PDD", "filings": [
+        {"filed": "2026-08-25", "extracted": {"period_type": "quarter", "period_end": "2026-06-30",
+                                               "currency": "CNY", "cash_flow_period_type": "quarter",
+                                               "standard": {"revenue": 112.0, "net_income": 27.0, "operating_cf": 25.0,
+                                                            "diluted_eps_per_ads": 18.45, "capex": None}}},
+        {"filed": "2026-03-26", "extracted": {"period_type": "full_year", "period_end": "2025-12-31",
+                                               "currency": "CNY", "standard": {"revenue": 431.0}}},   # not quarterly → ignored
+        {"filed": "2026-02-01", "skipped": "not a results release", "extracted": None},
+    ]}
+    six = sixk_as_source_row(store)
+    assert six["financial_currency"] == "CNY"
+    assert set(six["quarterly"]) == {"revenue", "net_income", "operating_cf", "diluted_eps"}
+    assert six["quarterly"]["revenue"]["2026-06-30"] == {"val": 112.0, "end": "2026-06-30", "source": "6k", "filed": "2026-08-25"}
+
+    yf = {"financial_currency": "CNY", "annual": {}, "quarterly": {
+        "revenue": {"2026-06-30": {"val": 111.0}, "2026-03-31": {"val": 95.0}}}}
+    merged_row = overlay_source_row(yf, six)
+    assert merged_row["quarterly"]["revenue"]["2026-06-30"]["val"] == 112.0      # 6-K wins
+    assert merged_row["quarterly"]["revenue"]["2026-03-31"]["val"] == 95.0       # yfinance kept
+    assert yf["quarterly"]["revenue"]["2026-06-30"]["val"] == 111.0              # input untouched
+
+    merged, sources = _merge_period_dicts({"revenue": {"2026-06-30": {"val": 113.0}}},
+                                          merged_row["quarterly"])
+    assert sources["revenue"]["2026-06-30"] == "sec"                              # SEC still first
+    assert sources["net_income"]["2026-06-30"] == "6k"
+    assert sources["revenue"]["2026-03-31"] == "yfinance"
+    # currency mismatch → overlay refused
+    assert overlay_source_row({"financial_currency": "USD", "quarterly": {}}, six)["quarterly"] == {}

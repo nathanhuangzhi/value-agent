@@ -69,7 +69,8 @@ def source_currencies(yf_row: dict | None, sec_row: dict | None) -> dict[str, st
     are computed from SEC values when SEC has them, so they follow SEC."""
     sec_ccy = ((sec_row or {}).get("currency") or "USD").upper()
     yf_ccy = ((yf_row or {}).get("financial_currency") or "USD").upper()
-    return {"sec": sec_ccy, "yfinance": yf_ccy, "derived": sec_ccy}
+    # 6-K overlays share the gap-fill row, whose currency they must match.
+    return {"sec": sec_ccy, "yfinance": yf_ccy, "6k": yf_ccy, "derived": sec_ccy}
 
 
 def currency_meta(currency: str, fx: dict | None = None) -> dict | None:
