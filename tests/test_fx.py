@@ -202,3 +202,15 @@ def test_cash_plus_short_term_investments_is_derived():
     sec["annual"].pop("short_term_investments")
     bs = sec_to_yfinance_annual(sec)["balance_sheet"][0]
     assert bs["items"]["Cash Cash Equivalents And Short Term Investments"] == 105.0
+
+
+def test_partial_sec_value_yields_to_fuller_gap_fill():
+    from app.tools.report.sec_adapter import _merge_period_dicts
+    sec = {"receivables": {"2025": {"val": 0.89, "concept": "AccountsReceivableNetCurrent", "partial": True},
+                           "2024": {"val": 0.80, "concept": "AccountsReceivableNetCurrent", "partial": True}},
+           "cash": {"2025": {"val": 29.0}}}
+    yf = {"receivables": {"2025": {"val": 4.52, "source": "6k"}}, "cash": {"2025": {"val": 28.0}}}
+    merged, sources = _merge_period_dicts(sec, yf)
+    assert merged["receivables"]["2025"]["val"] == 4.52 and sources["receivables"]["2025"] == "6k"
+    assert merged["receivables"]["2024"]["val"] == 0.80 and sources["receivables"]["2024"] == "sec"  # nothing fuller
+    assert merged["cash"]["2025"]["val"] == 29.0 and sources["cash"]["2025"] == "sec"           # not partial

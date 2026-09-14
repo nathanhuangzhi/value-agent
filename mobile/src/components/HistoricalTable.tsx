@@ -70,6 +70,8 @@ type RawRow = {
    * per_share: typical EPS/BVPS scale → "$1.23" or "$123". */
   format: 'money' | 'shares' | 'per_share';
   abs?: boolean;
+  /** Draw a rule above this row (e.g. to split liabilities from assets). */
+  dividerAbove?: boolean;
 };
 
 /**
@@ -503,7 +505,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
         ...assetKeys.map<RawRow>((key) => ({
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
-        { kind: 'raw', label: 'Total Liabilities',   source: 'balance', keys: ['Total Liabilities'], format: 'money' },
+        { kind: 'raw', label: 'Total Liabilities',   source: 'balance', keys: ['Total Liabilities'], format: 'money', dividerAbove: true },
         // Dynamic top-3 liability rows, largest first (e.g. LT debt, payables,
         // deferred revenue). Interest-bearing "Total Debt" still feeds the
         // snapshot ratios but isn't listed here — it overlaps these rows.
@@ -714,7 +716,11 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                 </Text>
               </View>
               {section.rows.map((row) => (
-                <View key={row.label} style={[styles.labelCell, { height: ROW_HEIGHT }]}>
+                <View
+                  key={row.label}
+                  style={[styles.labelCell, { height: ROW_HEIGHT },
+                    row.kind === 'raw' && row.dividerAbove ? { borderTopWidth: 1, borderTopColor: c.border } : null]}
+                >
                   <Text style={[styles.labelText, { color: c.textPrimary }]} numberOfLines={1}>
                     {row.label}
                   </Text>
@@ -771,7 +777,11 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                   ]}
                 />
                 {section.rows.map((row) => (
-                  <View key={row.label} style={[styles.valueRow, { height: ROW_HEIGHT }]}>
+                  <View
+                    key={row.label}
+                    style={[styles.valueRow, { height: ROW_HEIGHT },
+                      row.kind === 'raw' && row.dividerAbove ? { borderTopWidth: 1, borderTopColor: c.border } : null]}
+                  >
                     {columns.map((col, idx) => {
                       let text = '—';
                       let yoy: number | null = null;

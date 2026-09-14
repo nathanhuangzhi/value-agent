@@ -684,6 +684,15 @@ def build_sec_row(ticker: str, cik: int, facts: dict, *, fetched_at: str | None 
     raw_facts = facts.get("facts", {}) if facts else {}
     annual = _extract_all_annual(raw_facts)
     quarterly = _extract_all_quarterly(raw_facts)
+    # "Receivables" means total receivables. When the filer tagged only the
+    # narrow AccountsReceivableNetCurrent, mark the entry partial so the
+    # adapter lets a fuller gap-fill value (6-K total, yfinance
+    # 'Receivables') win for that period — see _merge_period_dicts.
+    for scope in (annual, quarterly):
+        for e in (scope.get("receivables") or {}).values():
+            if e.get("concept") == "AccountsReceivableNetCurrent":
+                e["partial"] = True
+
     # Row-level currency = the latest annual period's; per-entry `ccy` tags
     # carry the truth for filers that switched currencies mid-history.
     currency = "USD"

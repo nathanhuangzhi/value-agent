@@ -364,8 +364,10 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
             )
             continue
         label, key, fmt = row
+        # A heavier rule above Total Liabilities separates it from the asset lines.
+        top = f"border-top:2px solid {RULE};" if key == "liabilities" else ""
         cells = [
-            f"<td style='padding:6px 10px;font-size:13px;color:{TEXT};border-bottom:1px solid {RULE};'>{label}</td>"
+            f"<td style='padding:6px 10px;font-size:13px;color:{TEXT};border-bottom:1px solid {RULE};{top}'>{label}</td>"
         ]
         for i, c in enumerate(cols):
             bl = f"border-left:2px solid {RULE};" if i == divider_idx else ""
@@ -379,7 +381,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
                 any_yfinance_cell = True
             cells.append(
                 f"<td align='right' style='padding:6px 8px;font-size:13px;color:{TEXT};"
-                f"border-bottom:1px solid {RULE};font-family:Menlo,Consolas,monospace;{bl}{yoy}'>{value_str}{marker}</td>"
+                f"border-bottom:1px solid {RULE};font-family:Menlo,Consolas,monospace;{bl}{yoy}{top}'>{value_str}{marker}</td>"
             )
         body.append("<tr>" + "".join(cells) + "</tr>")
 

@@ -173,7 +173,10 @@ def _merge_period_dicts(sec_section: dict, yf_section: dict) -> tuple[dict, dict
         m_entries = {}
         m_sources = {}
         for pk in period_keys:
-            if pk in sec_d:
+            # SEC wins — unless its value is flagged `partial` (a narrower
+            # concept than the metric means, e.g. accounts receivable only)
+            # and the gap-fill side has a value for the same period.
+            if pk in sec_d and not ((sec_d[pk] or {}).get("partial") and pk in yf_d):
                 m_entries[pk] = sec_d[pk]
                 m_sources[pk] = "sec"
             else:
