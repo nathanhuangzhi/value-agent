@@ -6,6 +6,7 @@ import { useColorScheme } from 'react-native';
 import { useColors } from '@/theme/colors';
 import { useIsTabletLandscape } from '@/hooks/useDeviceClass';
 import { LastViewedProvider } from '@/hooks/useLastViewed';
+import { SavedProvider } from '@/hooks/useSaved';
 import { SplitLayout } from '@/components/SplitLayout';
 
 
@@ -13,8 +14,8 @@ import { SplitLayout } from '@/components/SplitLayout';
  * Layout switch:
  *   - iPad landscape (≥1024 pt wide): two-pane SplitLayout with a
  *     persistent sidebar + the current route's content in the right pane.
- *   - Everything else (iPhone, iPad portrait): the original Stack with
- *     drill-in navigation. Phone UX is unchanged.
+ *   - Everything else (iPhone, iPad portrait): a Stack whose root is the
+ *     bottom-tab group (Daily Digest / Saved); detail screens push over it.
  *
  * Re-evaluates on orientation change because `useWindowDimensions` (read
  * by useIsTabletLandscape) triggers a re-render when the device rotates.
@@ -27,6 +28,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <LastViewedProvider>
+      <SavedProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {isTabletLandscape ? (
         <SplitLayout />
@@ -39,7 +41,8 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: c.background },
           }}
         >
-          <Stack.Screen name="index" options={{ title: 'Valueland' }} />
+          {/* The tab group owns its own headers (see app/(tabs)/_layout.tsx). */}
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="digest"
             options={{ title: "Today's Digest", headerBackTitle: 'Back' }}
@@ -66,6 +69,7 @@ export default function RootLayout() {
           />
         </Stack>
       )}
+      </SavedProvider>
       </LastViewedProvider>
     </SafeAreaProvider>
   );

@@ -21,9 +21,11 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from app.tools.json_io import read_jsonl
 from app.tools.paths import (
     COMPANIES_ANALYZED,
     COMPANIES_DIGEST,
+    COMPANIES_JSONL,
     COMPANIES_SEC,
     COMPANIES_VALIDATION,
     COMPANIES_YFINANCE_DIR,
@@ -51,6 +53,7 @@ class _DataPaths:
     validation: Path = COMPANIES_VALIDATION
     daily_log: Path = DAILY_LOG
     digest: Path = COMPANIES_DIGEST
+    universe: Path = COMPANIES_JSONL          # Stage 1 NYSE+Nasdaq universe
 
 
 _paths = _DataPaths()
@@ -115,6 +118,12 @@ def _load_analyzed() -> dict:
     every /api request before the cache."""
     return _mtime_load(_paths.analyzed,
                        lambda p: latest_by_ticker(_read_json(p, [])))
+
+
+def _load_universe() -> dict:
+    """Map ticker → Stage 1 universe row (companies.jsonl). mtime-cached."""
+    return _mtime_load(_paths.universe,
+                       lambda p: {r["ticker"]: r for r in read_jsonl(p) if r.get("ticker")})
 
 
 def _load_validation() -> dict:
@@ -334,6 +343,40 @@ def industry_detail(slug: str):
         "tickers": tickers,
         "summary_md": summary_md,
         "summary_date": summary_date,
+    }
+
+
+_SEARCH_FIELDS = ("ticker", "name", "industry", "market_cap", "analyzed")
+
+
+@router.get("/search.json")
+def search_index():
+    """Every company the app can search + save: the full NYSE+Nasdaq universe
+    (companies.jsonl) plus anything analyzed, one compact row each, sorted
+    by ticker. Rows are positional arrays (see `fields`) to keep the file
+    small — ~7k companies. `analyzed` tells the app whether the ticker has
+    a detail page / industry row; KPIs for a saved analyzed company come
+    from its industry's `industries/<slug>.json`, not from here."""
+    analyzed = _load_analyzed()
+    universe = _load_universe()
+
+    rows = []
+    for t in sorted(set(universe) | set(analyzed)):
+        src = analyzed.get(t) or universe[t]
+        cap = src.get("market_cap")
+        rows.append([
+            t,
+            src.get("name") or t,
+            src.get("industry") or "Uncategorized",
+            int(cap) if isinstance(cap, (int, float)) else None,
+            t in analyzed,
+        ])
+    return {
+        "count": len(rows),
+        "analyzed_count": len(analyzed),
+        "fields": list(_SEARCH_FIELDS),
+        "rows": rows,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 

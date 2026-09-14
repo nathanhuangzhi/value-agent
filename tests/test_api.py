@@ -25,7 +25,19 @@ def fake_data(tmp_path, monkeypatch):
         validation=tmp_path / "companies_validation.json",
         daily_log=tmp_path / "daily_industry_log.json",
         digest=tmp_path / "companies_digest.json",
+        universe=tmp_path / "companies.jsonl",
     )
+    # Stage 1 universe: two analyzed tickers + one never analyzed (AAPL is
+    # analyzed but deliberately absent here — the search index must still
+    # include it).
+    paths.universe.write_text("\n".join(json.dumps(r) for r in [
+        {"ticker": "QDEL", "name": "QuidelOrtho Corp", "industry": "Medical Devices",
+         "market_cap": 736_600_000},
+        {"ticker": "INGN", "name": "Inogen Inc", "industry": "Medical Devices",
+         "market_cap": 250_000_000},
+        {"ticker": "NVDA", "name": "NVIDIA Corporation", "industry": "Semiconductors",
+         "market_cap": 5_140_000_000_000},
+    ]) + "\n")
     paths.analyzed.write_text(json.dumps([
         {
             "ticker": "QDEL", "name": "QuidelOrtho Corp",
@@ -357,3 +369,23 @@ def test_cors_header_present_for_get(client):
     resp = client.get("/api/industries.json", headers={"Origin": "https://example.com"})
     assert resp.status_code == 200
     assert resp.headers.get("access-control-allow-origin") == "*"
+
+
+# ---------- /api/search ----------
+
+def test_search_index_covers_universe_and_analyzed(client):
+    r = client.get("/api/search.json")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["fields"] == ["ticker", "name", "industry", "market_cap", "analyzed"]
+    rows = {row[0]: dict(zip(body["fields"], row)) for row in body["rows"]}
+    # union of universe + analyzed (AAPL is analyzed-only, NVDA universe-only), sorted
+    assert [row[0] for row in body["rows"]] == ["AAPL", "INGN", "NVDA", "QDEL"]
+    assert body["count"] == 4 and body["analyzed_count"] == 3
+    assert rows["NVDA"] == {"ticker": "NVDA", "name": "NVIDIA Corporation",
+                            "industry": "Semiconductors",
+                            "market_cap": 5_140_000_000_000, "analyzed": False}
+    assert rows["INGN"]["analyzed"] is True
+    assert rows["AAPL"] == {"ticker": "AAPL", "name": "Apple Inc",
+                            "industry": "Consumer Electronics",
+                            "market_cap": 3_500_000_000_000, "analyzed": True}

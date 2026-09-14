@@ -47,3 +47,10 @@ export function formatStockPrice(n: number | null | undefined): string {
   if (n >= 10) return `$${n.toFixed(1)}`;
   return `$${n.toFixed(2)}`;
 }
+
+/** Industry name → URL slug. Mirrors `_slug` in app/api/routes.py. */
+export function slugify(s: string | null | undefined): string {
+  if (!s) return 'uncategorized';
+  const out = s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return out || 'uncategorized';
+}

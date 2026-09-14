@@ -12,6 +12,7 @@ import type {
   IndustryListResponse,
   PriceHistoryResponse,
   RecentDigestsResponse,
+  SearchIndexResponse,
   TickerDetail,
 } from './types';
 
@@ -60,6 +61,9 @@ export const api = {
   priceHistory: (symbol: string) =>
     get<PriceHistoryResponse>(`/tickers/${encodeURIComponent(symbol.toUpperCase())}/price-history.json`),
   latestDigest: () => get<DigestResponse>('/digest/latest.json'),
+  // Whole NYSE+Nasdaq universe (~7k rows, ~500 KB) for the Saved tab's
+  // search bar. Fetched once per session and cached module-level.
+  searchIndex: () => get<SearchIndexResponse>('/search.json'),
   // The baked `recent.json` always contains `RECENT_DIGESTS_LIMIT` (20)
   // entries — the `limit` arg slices client-side so a future bake-size
   // change doesn't break call sites.

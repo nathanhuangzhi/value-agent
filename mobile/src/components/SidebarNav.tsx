@@ -134,6 +134,17 @@ export function SidebarNav() {
         </Pressable>
       ) : null}
 
+      <Pressable
+        onPress={() => router.push('/saved')}
+        style={({ pressed }) => [
+          styles.digestPill,
+          { backgroundColor: pressed ? c.border : c.background, borderColor: c.border },
+        ]}
+      >
+        <Text style={[styles.digestEyebrow, { color: c.brand }]}>SAVED</Text>
+        <Text style={[styles.digestSub, { color: c.textMuted }]}>Your watchlist · search any company</Text>
+      </Pressable>
+
       <Text style={[styles.sectionHeader, { color: c.textMuted }]}>INDUSTRIES</Text>
 
       <FlatList

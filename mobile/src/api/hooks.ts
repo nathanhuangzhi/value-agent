@@ -22,6 +22,7 @@ import type {
   IndustryListResponse,
   PriceHistoryResponse,
   RecentDigestsResponse,
+  SearchCompany,
   TickerDetail,
 } from './types';
 
@@ -104,7 +105,7 @@ function fetchPriceHistory(symbol: string): Promise<PriceHistoryResponse> {
   return p;
 }
 
-function fetchIndustry(slug: string): Promise<IndustryDetailResponse> {
+export function fetchIndustry(slug: string): Promise<IndustryDetailResponse> {
   // Industry slugs aren't uppercased the way tickers are — keep them
   // verbatim so the cache key matches the URL the user actually visits.
   const existing = industryInflight.get(slug);
@@ -277,6 +278,63 @@ export function useIndustries(): Async<IndustryListResponse> {
       .finally(() => {
         setLoading(false);
       });
+  }, []);
+
+  return { data, loading, error, refresh };
+}
+
+// ---------------------------------------------------------------------------
+// Search index — the whole universe, loaded once per session. Rows are
+// expanded from their positional form into objects on arrival so screens
+// never see the wire format.
+// ---------------------------------------------------------------------------
+let searchCache: SearchCompany[] | null = null;
+let searchInflight: Promise<SearchCompany[]> | null = null;
+
+function fetchSearchIndex(): Promise<SearchCompany[]> {
+  if (searchInflight) return searchInflight;
+  searchInflight = api
+    .searchIndex()
+    .then((d) => {
+      const rows = d.rows.map(([ticker, name, industry, market_cap, analyzed]) => ({
+        ticker, name, industry, market_cap, analyzed,
+      }));
+      searchCache = rows;
+      return rows;
+    })
+    .finally(() => {
+      searchInflight = null;
+    });
+  return searchInflight;
+}
+
+export function useSearchIndex(): Async<SearchCompany[]> {
+  const [data, setData] = useState<SearchCompany[] | null>(searchCache);
+  const [loading, setLoading] = useState<boolean>(!searchCache);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setError(null);
+    try {
+      searchCache = null;
+      setData(await fetchSearchIndex());
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (searchCache) {
+      setData(searchCache);
+      setLoading(false);
+      return;
+    }
+    fetchSearchIndex()
+      .then((rows) => setData(rows))
+      .catch((e) => setError(e instanceof ApiError ? e.message : String(e)))
+      .finally(() => setLoading(false));
   }, []);
 
   return { data, loading, error, refresh };

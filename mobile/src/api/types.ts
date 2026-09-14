@@ -167,3 +167,21 @@ export type RecentDigest = {
 export type RecentDigestsResponse = {
   digests: RecentDigest[];
 };
+
+/** One row of /api/search.json, expanded from its positional array form. */
+export type SearchCompany = {
+  ticker: string;
+  name: string;
+  industry: string;
+  market_cap: number | null;
+  /** true → has a detail page + an industry-page row; false → identity only */
+  analyzed: boolean;
+};
+
+export type SearchIndexResponse = {
+  count: number;
+  analyzed_count: number;
+  fields: string[];
+  rows: [string, string, string, number | null, boolean][];
+  updated_at: string;
+};

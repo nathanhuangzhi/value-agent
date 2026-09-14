@@ -45,11 +45,14 @@ export function TickerRow({
   highlighted = false,
   showChart = false,
   chartDelay = 0,
+  onLongPress,
 }: {
   row: TickerRowData;
   highlighted?: boolean;
   showChart?: boolean;
   chartDelay?: number;
+  /** Optional — the Saved tab uses a long-press to offer removal. */
+  onLongPress?: () => void;
 }) {
   const c = useColors();
   const router = useRouter();
@@ -70,6 +73,7 @@ export function TickerRow({
   return (
     <Pressable
       onPress={go}
+      onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.row,
         {

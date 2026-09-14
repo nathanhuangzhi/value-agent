@@ -22,6 +22,7 @@ import {
   Animated,
   InteractionManager,
   PanResponder,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -29,6 +30,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import {
@@ -51,14 +53,9 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ValuationGrid } from '@/components/ValuationGrid';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useLastViewed } from '@/hooks/useLastViewed';
+import { useSaved } from '@/hooks/useSaved';
 import { useColors, fontSize, spacing, radii } from '@/theme/colors';
-import { formatDate, formatMoney } from '@/utils/format';
-
-function slugify(s: string | null | undefined): string {
-  if (!s) return 'uncategorized';
-  const out = s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  return out || 'uncategorized';
-}
+import { formatDate, formatMoney, slugify } from '@/utils/format';
 
 function pickLatestSourceDate(sources: { published_date?: string | null }[] | undefined): string | null {
   if (!sources || sources.length === 0) return null;
@@ -192,6 +189,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
             </Text>
             <Text style={[styles.metaSmall, { color: c.textMuted }]}>Market Cap</Text>
           </View>
+          <SaveButton symbol={data.ticker} />
         </View>
 
         <Section title="Business Overview">
@@ -311,6 +309,26 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
         </View>
       )}
     </View>
+  );
+}
+
+/** Bookmark toggle in the page header — adds/removes this company from
+ * the Saved tab. Lives in the page (not the Stack header) so it also shows
+ * on iPad-landscape, which renders without a Stack header. */
+function SaveButton({ symbol }: { symbol: string }) {
+  const c = useColors();
+  const { isSaved, toggle } = useSaved();
+  const saved = isSaved(symbol);
+  return (
+    <Pressable
+      onPress={() => toggle(symbol)}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={saved ? 'Remove from Saved' : 'Save company'}
+      style={styles.saveBtn}
+    >
+      <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={24} color={saved ? c.brand : c.textMuted} />
+    </Pressable>
   );
 }
 
@@ -513,6 +531,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   headerRight: { alignItems: 'flex-end', marginLeft: spacing.md },
+  saveBtn: { marginLeft: spacing.md, paddingTop: 2 },
   companyName: { fontSize: fontSize.xl, fontWeight: '700', lineHeight: 28 },
   meta: { fontSize: fontSize.sm, marginTop: 4 },
   metaSmall: { fontSize: fontSize.xs, letterSpacing: 0.3 },

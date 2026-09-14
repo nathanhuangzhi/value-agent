@@ -13,6 +13,7 @@ Output layout (under `data/reports/api/` by default):
     api/tickers/<SYMBOL>/price-history.json               ← /api/tickers/<SYMBOL>/price-history.json
     api/digest/latest.json                                ← /api/digest/latest.json
     api/digests/recent.json                               ← /api/digests/recent.json
+    api/search.json                                       ← /api/search.json
 
 Vercel serves `data/reports/api/` at `https://<archive>/api/`. The mobile
 client points its `BASE_URL` at that archive root, then appends the same
@@ -37,6 +38,7 @@ from app.api.routes import (
     digests_recent,
     industry_detail,
     list_industries,
+    search_index,
     ticker_detail,
     ticker_price_history,
 )
@@ -52,13 +54,16 @@ logger = logging.getLogger(__name__)
 RECENT_DIGESTS_LIMIT = None
 
 
-def _write_json(path: Path, payload: dict) -> None:
+def _write_json(path: Path, payload: dict, *, compact: bool = False) -> None:
     """Write `payload` as pretty-printed JSON. Idempotent — re-running the
     bake doesn't touch a file whose contents haven't changed (mtime
     preserved). This matters for git noise on the value-agent-reports
     repo: a rerun on a quiet day produces zero diff."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    new_text = json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=False)
+    if compact:
+        new_text = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+    else:
+        new_text = json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=False)
     if path.exists() and path.read_text() == new_text:
         return
     path.write_text(new_text)
@@ -126,6 +131,12 @@ def bake(out_dir: Path) -> dict:
     recent = digests_recent(limit=RECENT_DIGESTS_LIMIT)
     _write_json(out_dir / "digests" / "recent.json", recent)
     counts["digests"] = len(recent.get("digests") or [])
+
+    # /api/search.json — the whole universe for the Saved tab's search bar.
+    # Compact (no indent): ~7k rows, and the app loads it in one go.
+    search = search_index()
+    _write_json(out_dir / "search.json", search, compact=True)
+    counts["search_companies"] = search["count"]
 
     return counts
 
