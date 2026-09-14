@@ -127,6 +127,36 @@ QUARTERLY_FORMS = ("10-Q", "10-K", "20-F", "40-F", "6-K")
 _NON_MONETARY_UNITS = {"shares", "pure"}
 
 
+def monetary_units(facts: dict, concepts) -> list[str]:
+    """Every currency unit any of `concepts` is reported in (e.g. ['CNY',
+    'USD'] for a filer that switched, or tags a USD convenience column)."""
+    usgaap = facts.get("us-gaap", {}) if facts else {}
+    units: set[str] = set()
+    for c in concepts:
+        for u in (usgaap.get(c, {}).get("units", {}) or {}):
+            if u not in _NON_MONETARY_UNITS and "/" not in u and len(u) == 3:
+                units.add(u)
+    return sorted(units) or ["USD"]
+
+
+def merge_units(per_unit: dict[str, dict]) -> dict:
+    """Merge `{unit: {period_key: entry}}` into one `{period_key: entry}`,
+    tagging each entry with `ccy`. When a period exists in several
+    currencies, the non-USD one wins: foreign filers tag a USD *convenience
+    translation* next to their native figures, and a filer that switched
+    currencies (JOYY: CNY → USD in 2021) has single-currency years on each
+    side of the switch, which this handles year by year."""
+    out: dict = {}
+    for unit in sorted(per_unit, key=lambda u: (u == "USD", u)):   # non-USD first
+        for pk, entry in (per_unit[unit] or {}).items():
+            if pk in out:
+                continue
+            e = dict(entry)
+            e["ccy"] = unit
+            out[pk] = e
+    return out
+
+
 def detect_reporting_currency(facts: dict) -> str:
     """The currency the filer reports in — the monetary unit with the most
     records across a few headline concepts. FPIs often tag a USD
@@ -486,72 +516,90 @@ def rescale_shares_filed_in_thousands(period_data: dict) -> None:
 
 
 def _extract_all_annual(facts: dict, unit: str = "USD") -> dict:
-    """Pull every metric for annual (FY) records from 10-K filings.
+    """Pull every metric for annual (FY) records from 10-K / 20-F / 40-F
+    filings. Monetary metrics are read in every currency the filer used and
+    merged year by year (see merge_units) — each entry carries `ccy`.
     Income statement, cash flow, EPS, shares = period records (~365 days).
     Balance sheet items = instant records (no start date)."""
     out: dict[str, dict] = {}
+
+    def monetary(concepts, period_filter):
+        return merge_units({
+            u: extract_period_values(facts, concepts, unit=u, period_filter=period_filter,
+                                     form_prefix=ANNUAL_FORMS)
+            for u in monetary_units(facts, concepts)
+        })
+
     for name, concepts in INCOME_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit=unit,
-                                          period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
+        out[name] = monetary(concepts, is_annual_period)
     for name, concepts in SHARES_METRICS.items():
         out[name] = extract_period_values(facts, concepts, unit="shares",
                                           period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
     for name, concepts in EPS_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit=f"{unit}/shares",
-                                          period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
+        out[name] = merge_units({
+            u: extract_period_values(facts, concepts, unit=f"{u}/shares",
+                                     period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
+            for u in monetary_units(facts, INCOME_METRICS["net_income"])
+        })
     for name, concepts in CASH_FLOW_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit=unit,
-                                          period_filter=is_annual_period, form_prefix=ANNUAL_FORMS)
+        out[name] = monetary(concepts, is_annual_period)
     for name, concepts in BALANCE_SHEET_METRICS.items():
-        out[name] = extract_period_values(facts, concepts, unit=unit,
-                                          period_filter=is_instant_at_fy_end, form_prefix=ANNUAL_FORMS)
+        out[name] = monetary(concepts, is_instant_at_fy_end)
     return out
 
 
 def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
-    """Pull every metric for quarterly records (10-Q + 10-K). Income concepts
-    use 90-day periods; cash-flow concepts use YTD-differencing (issuers
-    typically file CF cumulative — Q1=90d, H1=180d, 9M=270d, annual=365d).
-    Balance sheet items use instants (point-in-time at quarter end)."""
+    """Pull every metric for quarterly records (10-Q + 10-K, plus 20-F /
+    6-K for foreign filers), every currency merged per period with a `ccy`
+    tag. Income concepts use 90-day periods; cash-flow concepts use
+    YTD-differencing (issuers typically file CF cumulative — Q1=90d,
+    H1=180d, 9M=270d, annual=365d). Balance sheet items use instants
+    (point-in-time at quarter end)."""
     out: dict = {}
     for name, concepts in INCOME_METRICS.items():
-        out[name] = extract_quarterly_values(facts, concepts, unit=unit)
+        out[name] = merge_units({u: extract_quarterly_values(facts, concepts, unit=u)
+                                 for u in monetary_units(facts, concepts)})
     for name, concepts in CASH_FLOW_METRICS.items():
-        out[name] = extract_quarterly_cash_flow(facts, concepts, unit=unit)
+        out[name] = merge_units({u: extract_quarterly_cash_flow(facts, concepts, unit=u)
+                                 for u in monetary_units(facts, concepts)})
     for name, concepts in SHARES_METRICS.items():
         out[name] = extract_quarterly_values(facts, concepts, unit="shares")
     for name, concepts in EPS_METRICS.items():
-        out[name] = extract_quarterly_values(facts, concepts, unit=f"{unit}/shares")
+        out[name] = merge_units({u: extract_quarterly_values(facts, concepts, unit=f"{u}/shares")
+                                 for u in monetary_units(facts, INCOME_METRICS["net_income"])})
 
     # Balance sheet items at quarter-end: instants from 10-Q / 10-K. Pulled
     # inline because the standard `extract_*` helpers require a start date.
     usgaap = facts.get("us-gaap", {}) if facts else {}
     for name, concepts in BALANCE_SHEET_METRICS.items():
-        bs_data: dict[str, dict] = {}
-        bs_sort_key: dict[str, tuple] = {}
-        for concept in concepts:
-            for r in usgaap.get(concept, {}).get("units", {}).get(unit, []):
-                form = r.get("form", "")
-                if not form.startswith(QUARTERLY_FORMS):
-                    continue
-                if not is_instant_any(r):
-                    continue
-                end = r.get("end", "")
-                if not end:
-                    continue
-                sort_key = (r.get("filed", ""), float(r["val"]))
-                if end not in bs_sort_key or sort_key > bs_sort_key[end]:
-                    bs_sort_key[end] = sort_key
-                    bs_data[end] = {
-                        "val": float(r["val"]),
-                        "end": r.get("end"),
-                        "filed": r.get("filed"),
-                        "concept": concept,
-                        "fy": r.get("fy"),
-                        "fp": r.get("fp"),
-                        "form": r.get("form"),
-                    }
-        out[name] = bs_data
+        per_unit: dict[str, dict] = {}
+        for u in monetary_units(facts, concepts):
+            bs_data: dict[str, dict] = {}
+            bs_sort_key: dict[str, tuple] = {}
+            for concept in concepts:
+                for r in usgaap.get(concept, {}).get("units", {}).get(u, []):
+                    form = r.get("form", "")
+                    if not form.startswith(QUARTERLY_FORMS):
+                        continue
+                    if not is_instant_any(r):
+                        continue
+                    end = r.get("end", "")
+                    if not end:
+                        continue
+                    sort_key = (r.get("filed", ""), float(r["val"]))
+                    if end not in bs_sort_key or sort_key > bs_sort_key[end]:
+                        bs_sort_key[end] = sort_key
+                        bs_data[end] = {
+                            "val": float(r["val"]),
+                            "end": end,
+                            "filed": r.get("filed"),
+                            "concept": concept,
+                            "fy": r.get("fy"),
+                            "fp": r.get("fp"),
+                            "form": r.get("form"),
+                        }
+            per_unit[u] = bs_data
+        out[name] = merge_units(per_unit)
     return out
 
 
@@ -569,9 +617,16 @@ def build_sec_row(ticker: str, cik: int, facts: dict) -> dict:
     from datetime import datetime, timezone
 
     raw_facts = facts.get("facts", {}) if facts else {}
-    currency = detect_reporting_currency(raw_facts)
-    annual = _extract_all_annual(raw_facts, unit=currency)
-    quarterly = _extract_all_quarterly(raw_facts, unit=currency)
+    annual = _extract_all_annual(raw_facts)
+    quarterly = _extract_all_quarterly(raw_facts)
+    # Row-level currency = the latest annual period's; per-entry `ccy` tags
+    # carry the truth for filers that switched currencies mid-history.
+    currency = "USD"
+    for metric in ("total_assets", "revenue", "net_income"):
+        entries = annual.get(metric) or {}
+        if entries:
+            currency = entries[max(entries)].get("ccy") or "USD"
+            break
 
     rescale_shares_filed_in_thousands(annual)
     rescale_shares_filed_in_thousands(quarterly)

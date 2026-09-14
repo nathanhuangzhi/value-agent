@@ -103,17 +103,25 @@ def to_usd_periods(periods: list[dict], currency, fx: dict | None = None) -> lis
     Returns the input object itself when nothing needs converting."""
     fx = fx if fx is not None else load_fx()
     rates = _rates_for(currency, fx)
-    if not periods or not any(rates.values()):
+    has_cell_tags = any((p.get("currencies") or {}) for p in (periods or []))
+    if not periods or (not any(rates.values()) and not has_cell_tags):
         return periods
     default_src = "sec" if "sec" in rates else next(iter(rates))
     out = copy.deepcopy(periods)
     for p in out:
         items = p.get("items") or {}
         srcs = p.get("sources") or {}
+        ccys = p.get("currencies") or {}
         for k, v in items.items():
             if v is None or k in NON_MONETARY_ITEMS:
                 continue
-            rate = rates.get(srcs.get(k) or default_src)
+            if k in ccys:
+                # The cell says which currency it's in (SEC per-record tags —
+                # filers that switched currencies mid-history).
+                c = (ccys[k] or "USD").upper()
+                rate = None if c == "USD" else ((fx.get(c) or {}).get("per_usd") or None)
+            else:
+                rate = rates.get(srcs.get(k) or default_src)
             if rate:
                 items[k] = v / rate
     return out
@@ -122,7 +130,29 @@ def to_usd_periods(periods: list[dict], currency, fx: dict | None = None) -> lis
 def to_usd_statements(stmts: dict, currency, fx: dict | None = None) -> dict:
     """`to_usd_periods` over a `{income_statement, balance_sheet, cash_flow}` dict."""
     fx = fx if fx is not None else load_fx()
-    if not any(_rates_for(currency, fx).values()):
-        return stmts
     return {k: (to_usd_periods(v, currency, fx) if k in _STATEMENT_KEYS else v)
             for k, v in stmts.items()}
+
+
+def sec_row_to_usd(sec_row: dict, fx: dict | None = None) -> dict:
+    """A copy of a companies_sec.json row with every monetary entry converted
+    to USD using its `ccy` tag (entries without a tag use the row's
+    `currency`). Share counts are untouched. Used by validation, whose
+    rules compare statement values with USD market cap / prices."""
+    fx = fx if fx is not None else load_fx()
+    row_ccy = (sec_row.get("currency") or "USD").upper()
+    out = copy.deepcopy(sec_row)
+    for scope in ("annual", "quarterly"):
+        for metric, periods in (out.get(scope) or {}).items():
+            if metric in ("diluted_shares", "basic_shares"):
+                continue
+            for e in (periods or {}).values():
+                if not isinstance(e, dict) or e.get("val") is None:
+                    continue
+                c = (e.get("ccy") or row_ccy).upper()
+                rate = None if c == "USD" else ((fx.get(c) or {}).get("per_usd") or None)
+                if rate:
+                    e["val"] = e["val"] / rate
+                    e["ccy"] = "USD"
+    out["currency"] = "USD"
+    return out

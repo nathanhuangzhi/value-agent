@@ -19,6 +19,7 @@ from pathlib import Path
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
 from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_SEC, COMPANIES_VALIDATION, COMPANIES_YFINANCE_DIR
 from app.tools.report.sec_adapter import _ads_normalized, load_sharded_by_ticker
+from app.tools.fx import load_fx, sec_row_to_usd
 from app.tools.sec_6k import load_all_stores, sixk_as_source_row
 from app.tools.validation import validate_ticker, worst_severity
 
@@ -31,15 +32,13 @@ def _with_sixk(sec_row: dict | None, sixk_row: dict | None) -> dict | None:
     if not sec_row:
         return {"ticker": sixk_row["ticker"], "currency": sixk_row["financial_currency"],
                 "annual": {}, "quarterly": sixk_row["quarterly"]}
-    if (sec_row.get("currency") or "USD") != sixk_row["financial_currency"]:
-        return sec_row
     import copy
     out = copy.deepcopy(sec_row)
     q = out.setdefault("quarterly", {})
     for metric, periods in sixk_row["quarterly"].items():
         d = q.setdefault(metric, {})
         for pk, entry in periods.items():
-            d.setdefault(pk, entry)
+            d.setdefault(pk, dict(entry, ccy=sixk_row["financial_currency"]))
     return out
 
 
@@ -71,11 +70,14 @@ def main():
     # ADS basis (what the price refers to) before the price×shares checks.
     yf = load_sharded_by_ticker(COMPANIES_YFINANCE_DIR)
     sixk = load_all_stores()
+    fx_rates = load_fx()
     for t in targets:
         sec_row = _ads_normalized(sec.get(t), yf.get(t)) if sec.get(t) else None
         # Foreign filers have no quarterly XBRL; their 6-K extractions ARE the
         # SEC quarterly record, so fold them in before the quarterly rules run.
         sec_row = _with_sixk(sec_row, sixk_as_source_row(sixk.get(t)))
+        # Rules compare against USD market cap / prices — put every entry in USD.
+        sec_row = sec_row_to_usd(sec_row, fx_rates) if sec_row else None
         issues = validate_ticker(sec_row, analyzed.get(t), today=today)
         status = worst_severity(issues)
         counts[status] += 1

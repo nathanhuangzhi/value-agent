@@ -230,12 +230,15 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
     (None, None) if no items were populated."""
     items: dict = {}
     sources: dict = {}
+    currencies: dict = {}      # per-cell currency when the entry says (SEC `ccy` tags)
     last_entry_with_end: dict | None = None
     for sec_key, yf_label in mapping.items():
         entry = merged.get(sec_key, {}).get(period_key)
         if entry is not None:
             items[yf_label] = entry["val"]
             sources[yf_label] = source_map.get(sec_key, {}).get(period_key, "sec")
+            if entry.get("ccy"):
+                currencies[yf_label] = entry["ccy"]
             if entry.get("end"):
                 last_entry_with_end = entry
 
@@ -280,7 +283,17 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
 
     if not items:
         return None, None
-    return {"period": period_key, "items": items, "sources": sources}, last_entry_with_end
+    # Derived cells (Total Debt, Gross Profit, FCF) inherit their inputs'
+    # currency; with SEC tags all inputs of one period share it.
+    if currencies:
+        ccy = next(iter(currencies.values()))
+        for k in items:
+            if sources.get(k) in ("sec", "derived"):
+                currencies.setdefault(k, ccy)
+    out = {"period": period_key, "items": items, "sources": sources}
+    if currencies:
+        out["currencies"] = currencies
+    return out, last_entry_with_end
 
 
 def _to_period_list(merged: dict, source_map: dict, mapping: dict,

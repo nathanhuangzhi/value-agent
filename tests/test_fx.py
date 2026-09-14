@@ -117,3 +117,38 @@ def test_results_release_detection_tolerates_split_headings():
     assert looks_like_results_release(doc)
     assert not looks_like_results_release("Reconciliation between U.S. GAAP and IFRS\nbalance sheets")  # no results announcement
     assert not looks_like_results_release("Weibo Announces Second Quarter Financial Results\nno tables here")
+
+
+def test_merge_units_prefers_native_over_usd_convenience_year_by_year():
+    from app.tools.sec_xbrl_tools import merge_units
+    per_unit = {
+        "CNY": {2019: {"val": 700.0}, 2020: {"val": 770.0}},                      # native until 2020
+        "USD": {2020: {"val": 110.0}, 2021: {"val": 120.0}, 2022: {"val": 130.0}},  # convenience 2020, native after
+    }
+    m = merge_units(per_unit)
+    assert {y: (e["val"], e["ccy"]) for y, e in m.items()} == {
+        2019: (700.0, "CNY"), 2020: (770.0, "CNY"), 2021: (120.0, "USD"), 2022: (130.0, "USD")}
+
+
+def test_per_cell_currency_tags_drive_conversion():
+    fx = {"CNY": {"per_usd": 7.0}}
+    periods = [{"period": "FY2020", "items": {"Total Revenue": 770.0, "Net Income": 70.0},
+                "sources": {"Total Revenue": "sec", "Net Income": "sec"},
+                "currencies": {"Total Revenue": "CNY", "Net Income": "CNY"}},
+               {"period": "FY2021", "items": {"Total Revenue": 120.0},
+                "sources": {"Total Revenue": "sec"}, "currencies": {"Total Revenue": "USD"}}]
+    # row-level currency says CNY, but the FY2021 cell is tagged USD → left alone
+    out = to_usd_periods(periods, {"sec": "CNY", "yfinance": "CNY", "derived": "CNY"}, fx)
+    assert out[0]["items"] == {"Total Revenue": 110.0, "Net Income": 10.0}
+    assert out[1]["items"] == {"Total Revenue": 120.0}
+
+
+def test_sec_row_to_usd_uses_entry_tags():
+    from app.tools.fx import sec_row_to_usd
+    row = {"currency": "CNY", "annual": {
+        "revenue": {2020: {"val": 700.0, "ccy": "CNY"}, 2021: {"val": 120.0, "ccy": "USD"}},
+        "diluted_shares": {2021: {"val": 5.0}}}, "quarterly": {}}
+    out = sec_row_to_usd(row, {"CNY": {"per_usd": 7.0}})
+    assert out["annual"]["revenue"][2020]["val"] == 100.0 and out["annual"]["revenue"][2021]["val"] == 120.0
+    assert out["annual"]["diluted_shares"][2021]["val"] == 5.0
+    assert row["annual"]["revenue"][2020]["val"] == 700.0
