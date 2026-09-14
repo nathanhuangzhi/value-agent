@@ -97,6 +97,8 @@ echo "================= $(date -Is) daily pipeline start ($(hostname)) =========
 STAGE="git pull"
 git pull -q --ff-only origin main
 echo "code at $(git log --oneline -1)"
+# The AI chat service runs from this checkout — bounce it so today's code is live.
+"$REPO_DIR/deploy/serve_ai.sh" restart || true
 
 LLM="${LLM:-$LLM_DEFAULT}"
 echo "LLM stages: $LLM"

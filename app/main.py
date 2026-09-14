@@ -18,6 +18,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ai.routes import router as ai_router
 from app.api.routes import router as api_router
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(ai_router)
 
 
 @app.get("/")

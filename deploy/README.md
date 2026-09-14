@@ -10,7 +10,8 @@ of GitHub Actions. What lives where:
 | SEC cache | `~/value-agent/data/companies_sec.json` — persistent, incremental (no cold fetch) |
 | State files | `~/value-agent/data/*.json` — committed + pushed back to GitHub after each run via a write deploy key (`~/.ssh/id_ed25519_valueagent`) |
 | Published site | `~/public/value-agent/` — HTML + `api/`, served by `serve_reports.sh` on `127.0.0.1:8091`, fronted by `tailscale serve` at `https://debian-mac-air.tail38ab8e.ts.net/reports/` (tailnet only) |
-| Logs | `~/value-agent/logs/daily-YYYY-MM-DD.log` (30-day retention) |
+| AI chat service | `deploy/serve_ai.sh` — uvicorn `app.main:app` on `127.0.0.1:8000`, fronted by `tailscale serve` at `https://debian-mac-air.tail38ab8e.ts.net/ai/` (tailnet only). Conversations in `~/value-agent/data/ai_chats/` (gitignored). Restarted by `run_daily.sh` after each pull. |
+| Logs | `~/value-agent/logs/daily-YYYY-MM-DD.log` (30-day retention); `logs/ai.log` |
 | Failure alerts | `scripts/notify_failure.py` mails the log tail via the same Gmail creds as the digest |
 
 ## Setup (done once)
@@ -28,10 +29,12 @@ git remote set-url origin git@github.com-valueagent:nathanhuangzhi/value-agent.g
 
 # hosting (tailscale operator, no sudo)
 tailscale serve --bg --set-path /reports http://127.0.0.1:8091
+tailscale serve --bg --set-path /ai http://127.0.0.1:8000/ai
 
 # cron (local time on the box, PDT/PST)
 crontab -e
 #   @reboot   /home/nathan/value-agent/deploy/serve_reports.sh
+#   @reboot   /home/nathan/value-agent/deploy/serve_ai.sh start
 #   0 5 * * * /home/nathan/value-agent/deploy/run_daily.sh
 ```
 
