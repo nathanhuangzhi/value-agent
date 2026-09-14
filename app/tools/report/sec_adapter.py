@@ -55,7 +55,7 @@ SEC_TO_YFINANCE_BALANCE = {
     "goodwill": "Goodwill",
     "ppe_net": "Net PPE",
     "inventory": "Inventory",
-    "receivables": "Accounts Receivable",
+    "receivables": "Receivables",          # total receivables (trade + other + related-party)
     "intangibles": "Other Intangible Assets",        # incl. land-use rights for Chinese filers (6-K)
     "long_term_investments": "Long Term Investments",  # incl. equity-method investees
     # Liability side. The two debt buckets are also summed into the derived

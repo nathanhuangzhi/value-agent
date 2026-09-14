@@ -115,7 +115,7 @@ _ANNUAL_LINES = [
     ("cash_flow", "Free Cash Flow", "Free cash flow"),
     ("balance_sheet", "Cash And Cash Equivalents", "Cash"),
     ("balance_sheet", "Total Assets", "Total assets"),
-    ("balance_sheet", "Accounts Receivable", "Receivables"),
+    ("balance_sheet", "Receivables", "Receivables (total)"),
     ("balance_sheet", "Inventory", "Inventory"),
     ("balance_sheet", "Net PPE", "PP&E (net)"),
     ("balance_sheet", "Goodwill", "Goodwill"),

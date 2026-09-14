@@ -55,7 +55,7 @@ _BALANCE_LABELS: dict[str, list[str]] = {
     "goodwill": ["Goodwill"],
     "ppe_net": ["Net PPE"],
     "inventory": ["Inventory"],
-    "receivables": ["Accounts Receivable", "Receivables"],
+    "receivables": ["Receivables", "Accounts Receivable"],   # total receivables (incl. other/related-party) first
     "intangibles": ["Other Intangible Assets"],
     "long_term_investments": ["Long Term Equity Investment", "Investments And Advances",
                               "Long Term Investments", "Investmentin Financial Assets"],

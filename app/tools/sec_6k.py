@@ -321,7 +321,10 @@ def derive_asset_lines(balance_sheet: list[dict]) -> dict[str, float]:
             break
         if v is None or lab.startswith("total"):
             continue
-        if "accounts receivable" in lab and "other" not in lab:
+        if not noncurrent and ("receivable" in lab or "amounts due from" in lab) and "allowance" not in lab:
+            # Total receivables: trade + other receivables/prepayments + amounts
+            # due from related parties + loan receivables (matches yfinance's
+            # "Receivables" and SEC's ReceivablesNetCurrent).
             out["receivables"] = out.get("receivables", 0) + v
         elif lab.startswith("inventor"):
             out["inventory"] = out.get("inventory", 0) + v

@@ -511,7 +511,7 @@ BALANCE_SHEET_METRICS: dict[str, list[str]] = {
     "goodwill": ["Goodwill"],
     "ppe_net": ["PropertyPlantAndEquipmentNet"],
     "inventory": ["InventoryNet"],
-    "receivables": ["AccountsReceivableNetCurrent", "ReceivablesNetCurrent"],
+    "receivables": ["ReceivablesNetCurrent", "AccountsReceivableNetCurrent"],   # total receivables first
     "intangibles": [
         "IntangibleAssetsNetExcludingGoodwill",
         "FiniteLivedIntangibleAssetsNet",

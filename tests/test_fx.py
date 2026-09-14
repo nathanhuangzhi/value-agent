@@ -166,14 +166,15 @@ def test_derive_asset_lines_from_6k_balance_sheet():
           {"label": "TOTAL ASSETS", "value": 85.86}, {"label": "Short term loans", "value": 10.97},
           {"label": "Investment payable", "value": 1.0}]  # liabilities section: ignored
     out = derive_asset_lines(bs)
-    assert out == {"receivables": 0.56, "inventory": 4.33, "ppe_net": 16.4,
+    assert round(out.pop("receivables"), 2) == round(0.56 + 3.1, 2)     # total receivables
+    assert out == {"inventory": 4.33, "ppe_net": 16.4,
                    "intangibles": 9.9 + 0.32, "long_term_investments": 7.62 + 4.98, "goodwill": 0.65}
 
 
 def test_top_asset_keys_returns_every_class_largest_first():
     from app.tools.report.ratios import _top_asset_keys
     q = [{"period": "2026-06-30", "items": {"Net PPE": 16.4, "Other Intangible Assets": 10.2, "Long Term Investments": 12.6,
-                                            "Inventory": 4.33, "Accounts Receivable": 0.56, "Goodwill": 0.65}}]
+                                            "Inventory": 4.33, "Receivables": 6.0, "Goodwill": 0.65}}]
     assert _top_asset_keys([], q) == ["Net PPE", "Long Term Investments", "Other Intangible Assets",
-                                      "Inventory", "Goodwill", "Accounts Receivable"]
+                                      "Receivables", "Inventory", "Goodwill"]
     assert _top_asset_keys([], q, top_n=2) == ["Net PPE", "Long Term Investments"]
