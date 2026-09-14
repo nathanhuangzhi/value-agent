@@ -498,7 +498,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
       title: `Balance Sheet (${currencyLabel})`,
       rows: [
         { kind: 'raw', label: 'Total Assets',        source: 'balance', keys: ['Total Assets'], format: 'money' },
-        { kind: 'raw', label: 'Cash & Equivalents',  source: 'balance', keys: ['Cash And Cash Equivalents', 'Cash Cash Equivalents And Short Term Investments'], format: 'money' },
+        { kind: 'raw', label: 'Cash & ST Investments', source: 'balance', keys: ['Cash Cash Equivalents And Short Term Investments', 'Cash And Cash Equivalents'], format: 'money' },
         // Dynamic asset-class rows for this ticker, largest first
         ...assetKeys.map<RawRow>((key) => ({
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',

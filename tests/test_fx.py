@@ -167,6 +167,7 @@ def test_derive_asset_lines_from_6k_balance_sheet():
           {"label": "Investment payable", "value": 1.0}]  # liabilities section: ignored
     out = derive_asset_lines(bs)
     assert round(out.pop("receivables"), 2) == round(0.56 + 3.1, 2)     # total receivables
+    assert out.pop("cash") == 29.0 and out.pop("short_term_investments") == 3.6
     assert out == {"inventory": 4.33, "ppe_net": 16.4,
                    "intangibles": 9.9 + 0.32, "long_term_investments": 7.62 + 4.98, "goodwill": 0.65}
 
@@ -178,3 +179,18 @@ def test_top_asset_keys_returns_every_class_largest_first():
     assert _top_asset_keys([], q) == ["Net PPE", "Long Term Investments", "Other Intangible Assets",
                                       "Receivables", "Inventory", "Goodwill"]
     assert _top_asset_keys([], q, top_n=2) == ["Net PPE", "Long Term Investments"]
+
+
+def test_cash_plus_short_term_investments_is_derived():
+    from app.tools.report.sec_adapter import sec_to_yfinance_annual
+    sec = {"currency": "USD", "annual": {
+        "cash": {2025: {"val": 100.0, "ccy": "USD"}},
+        "short_term_investments": {2025: {"val": 40.0, "ccy": "USD"}},
+        "total_assets": {2025: {"val": 500.0, "ccy": "USD"}}}, "quarterly": {}}
+    bs = sec_to_yfinance_annual(sec)["balance_sheet"][0]
+    assert bs["items"]["Cash Cash Equivalents And Short Term Investments"] == 140.0
+    assert bs["sources"]["Cash Cash Equivalents And Short Term Investments"] == "derived"
+    # cash only → the total equals cash
+    sec["annual"].pop("short_term_investments")
+    bs = sec_to_yfinance_annual(sec)["balance_sheet"][0]
+    assert bs["items"]["Cash Cash Equivalents And Short Term Investments"] == 100.0

@@ -96,7 +96,7 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
         fcf, fcf_src = _pick_first_with_source(cf_items, cf_src, ["Free Cash Flow"])
         capex_raw, capex_src = _pick_first_with_source(cf_items, cf_src, ["Capital Expenditure"])
         capex = abs(capex_raw) if capex_raw is not None else None
-        cash, cash_src = _pick_first_with_source(bs_items, bs_src, ["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments"])
+        cash, cash_src = _pick_first_with_source(bs_items, bs_src, ["Cash Cash Equivalents And Short Term Investments", "Cash And Cash Equivalents"])
         debt, debt_src = _pick_first_with_source(bs_items, bs_src, ["Total Debt", "Long Term Debt"])
         assets, assets_src = _pick_first_with_source(bs_items, bs_src, ["Total Assets"])
         liabilities, liabilities_src = _pick_first_with_source(bs_items, bs_src, ["Total Liabilities"])
@@ -292,7 +292,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         ("Other Opex / Revenue", "other_r", pct_str),
         ("group", "Balance Sheet ($M)"),
         ("Total Assets", "assets", money_m),
-        ("Cash & Equivalents", "cash", money_m),
+        ("Cash & ST Investments", "cash", money_m),
         *[(key, key, money_m) for key in top_asset_keys],
         ("Total Liabilities", "liabilities", money_m),
         *[(key, key, money_m) for key in top_liability_keys],   # largest first

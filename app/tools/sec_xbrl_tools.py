@@ -449,6 +449,16 @@ BALANCE_SHEET_METRICS: dict[str, list[str]] = {
         "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
         "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsIncludingDisposalGroupAndDiscontinuedOperations",
     ],
+    # Short-term investments, and the filer's own cash+ST-investments total
+    # when tagged; the adapter derives cash + ST investments otherwise.
+    "short_term_investments": [
+        "ShortTermInvestments",
+        "MarketableSecuritiesCurrent",
+        "AvailableForSaleSecuritiesDebtSecuritiesCurrent",
+        "HeldToMaturitySecuritiesCurrent",
+        "OtherShortTermInvestments",
+    ],
+    "cash_and_st_investments": ["CashCashEquivalentsAndShortTermInvestments"],
     # Two debt buckets. Concepts here are *unambiguously* one or the other —
     # ambiguous totals like `LongTermDebt` or `ConvertibleDebt` (which can
     # include the current portion) are intentionally excluded to avoid

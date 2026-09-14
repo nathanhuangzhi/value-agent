@@ -50,6 +50,8 @@ SEC_TO_YFINANCE_CASHFLOW = {
 
 SEC_TO_YFINANCE_BALANCE = {
     "cash": "Cash And Cash Equivalents",
+    "short_term_investments": "Short Term Investments",
+    "cash_and_st_investments": "Cash Cash Equivalents And Short Term Investments",  # derived when not tagged
     "total_assets": "Total Assets",
     "stockholders_equity": "Common Stock Equity",
     "goodwill": "Goodwill",
@@ -251,6 +253,18 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
             sources["Total Debt"] = src or "sec"
         if last_entry_with_end is None and isinstance(entry, dict) and entry.get("end"):
             last_entry_with_end = entry
+
+    if derived_total_debt and items.get("Cash Cash Equivalents And Short Term Investments") is None:
+        # Cash + short-term investments — the balance-sheet section's cash
+        # row. Cash alone when no ST-investment line is reported.
+        cash = items.get("Cash And Cash Equivalents")
+        sti = items.get("Short Term Investments")
+        if cash is not None:
+            items["Cash Cash Equivalents And Short Term Investments"] = cash + (sti or 0)
+            srcs = {sources.get("Cash And Cash Equivalents", "sec"), sources.get("Short Term Investments", "sec")}
+            sources["Cash Cash Equivalents And Short Term Investments"] = "yfinance" if "yfinance" in srcs else "derived"
+            if currencies.get("Cash And Cash Equivalents"):
+                currencies["Cash Cash Equivalents And Short Term Investments"] = currencies["Cash And Cash Equivalents"]
 
     if derived_zero_revenue and items.get("Total Revenue") is None:
         oi = items.get("Operating Income")

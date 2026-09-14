@@ -171,6 +171,7 @@ class Standard(BaseModel):
     deferred_revenue: float | None = None
     operating_cf: float | None = None
     capex: float | None = None
+    short_term_investments: float | None = None
     receivables: float | None = None
     inventory: float | None = None
     ppe_net: float | None = None
@@ -291,6 +292,7 @@ _STD_TO_METRIC = {
     "stockholders_equity": "stockholders_equity", "short_term_debt": "short_term_debt",
     "long_term_debt": "long_term_debt", "accounts_payable": "accounts_payable",
     "deferred_revenue": "deferred_revenue", "operating_cf": "operating_cf", "capex": "capex",
+    "short_term_investments": "short_term_investments",
     "receivables": "receivables", "inventory": "inventory", "ppe_net": "ppe_net",
     "goodwill": "goodwill", "intangibles": "intangibles",
     "long_term_investments": "long_term_investments",
@@ -321,7 +323,11 @@ def derive_asset_lines(balance_sheet: list[dict]) -> dict[str, float]:
             break
         if v is None or lab.startswith("total"):
             continue
-        if not noncurrent and ("receivable" in lab or "amounts due from" in lab) and "allowance" not in lab:
+        if not noncurrent and "cash and cash equivalents" in lab and "restricted" not in lab:
+            out["cash"] = out.get("cash", 0) + v
+        elif not noncurrent and "short" in lab and "invest" in lab:
+            out["short_term_investments"] = out.get("short_term_investments", 0) + v
+        elif not noncurrent and ("receivable" in lab or "amounts due from" in lab) and "allowance" not in lab:
             # Total receivables: trade + other receivables/prepayments + amounts
             # due from related parties + loan receivables (matches yfinance's
             # "Receivables" and SEC's ReceivablesNetCurrent).
