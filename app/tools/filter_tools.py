@@ -74,6 +74,11 @@ def passes(merged: dict, criteria: FilterCriteria) -> tuple[bool, str | None]:
         return False, f"country {country!r} not in {criteria.countries}"
 
     industry = (merged.get("industry") or "").lower()
+    # Every NYSE/Nasdaq operating company carries a yfinance industry. The
+    # ~600 blank rows in the universe are ETFs / ETNs, SPAC shells, warrants
+    # (…W), rights (…R), units, preferreds and notes — nothing to analyze.
+    if not industry:
+        return False, "no industry (ETF / SPAC / warrant / preferred — not an operating company)"
     for excl in criteria.exclude_industries:
         if excl.lower() in industry:
             return False, f"industry {industry!r} matches excluded {excl!r}"

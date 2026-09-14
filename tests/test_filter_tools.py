@@ -116,3 +116,12 @@ def test_merge_row_combines_classification_and_universe_fields():
     assert merged["name"] == "Acme"
     assert merged["classification"] == {"sector": "Tech"}
     assert merged["classification_meta"] == {"primary_category": "Software"}
+
+
+def test_rejects_rows_without_industry():
+    # SPAC rights / warrants / ETFs have no yfinance industry — never candidates.
+    for row in ({"market_cap": 50_000_000, "country": "United States", "industry": None},
+                {"market_cap": 50_000_000, "country": "United States", "industry": ""},
+                {"market_cap": 50_000_000, "country": "United States"}):
+        ok, reason = passes(row, FilterCriteria())
+        assert not ok and "no industry" in reason
