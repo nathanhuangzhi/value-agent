@@ -16,9 +16,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 
-import { useLatestDigest } from '@/api/hooks';
+import { useBatch } from '@/api/hooks';
 import { SHOW_LLM_ANALYSIS } from '@/config';
 import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
@@ -31,16 +31,20 @@ export default function DigestScreen() {
   const c = useColors();
   const navigation = useNavigation();
   const device = useDeviceClass();
-  const digest = useLatestDigest();
+  // `/digest` is the latest batch; `/digest?date=YYYY-MM-DD` any past one
+  // (a multi-industry padding day is one batch, so a past-batch card
+  // opens all of its tickers — not just its first industry).
+  const { date } = useLocalSearchParams<{ date?: string }>();
+  const digest = useBatch(date || undefined);
   const { lastCompany } = useLastViewed();
 
   useEffect(() => {
     // Skip on iPad-landscape: the screen renders inside SplitLayout's
     // Slot (no Stack header to write into).
     if (digest.data && device !== 'tablet-landscape') {
-      navigation.setOptions({ title: "Today's Digest" });
+      navigation.setOptions({ title: date ? `Batch ${date}` : "Today's Digest" });
     }
-  }, [digest.data, navigation, device]);
+  }, [digest.data, navigation, device, date]);
 
   if (digest.error && !digest.data) {
     return (

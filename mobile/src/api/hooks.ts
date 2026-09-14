@@ -209,6 +209,11 @@ export function useLatestDigest(): Async<DigestResponse> {
   return useAsync(() => api.latestDigest(), []);
 }
 
+/** A specific batch by date, or the latest when `date` is undefined. */
+export function useBatch(date: string | undefined): Async<DigestResponse> {
+  return useAsync(() => (date ? api.batch(date) : api.latestDigest()), [date]);
+}
+
 export function useRecentDigests(limit: number = 10): Async<RecentDigestsResponse> {
   return useAsync(() => api.recentDigests(limit), [limit]);
 }

@@ -45,8 +45,8 @@ export function DigestBanner({ digest }: { digest: RecentDigest }) {
     setLastBatch(digest.date);
     if (digest.is_latest) {
       router.push('/digest');
-    } else if (digest.slug) {
-      router.push(`/industry/${digest.slug}`);
+    } else {
+      router.push({ pathname: '/digest', params: { date: digest.date } });
     }
   };
 
@@ -88,7 +88,7 @@ export function DigestBanner({ digest }: { digest: RecentDigest }) {
         </Text>
       ) : null}
       <Text style={[styles.cta, { color: c.brand }]}>
-        {digest.is_latest ? 'Tap for full summary →' : 'View tickers →'}
+        {digest.is_latest ? 'Tap for full summary →' : `View all ${digest.ticker_count} tickers →`}
       </Text>
     </Pressable>
   );

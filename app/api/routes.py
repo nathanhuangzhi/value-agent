@@ -517,10 +517,14 @@ def digest_latest():
     if not entries:
         raise HTTPException(404, detail="No daily-scan log entries and no persisted digest")
     entry = sorted(entries, key=lambda e: e.get("date", ""))[-1]
-    log_date = entry.get("date") or ""
-    industries = entry.get("industries") or []
-    ticker_symbols = entry.get("tickers") or []
+    return _batch_payload(entry)
 
+
+def _batch_payload(entry: dict) -> dict:
+    """One daily-scan batch in the digest shape: every ticker in the log
+    entry as an industry-page row, plus the summary persisted on the
+    entry (if the LLM ran that day)."""
+    ticker_symbols = entry.get("tickers") or []
     analyzed = _load_analyzed()
     validation = _load_validation()
     sec_by_ticker = _load_sec()
@@ -535,10 +539,22 @@ def digest_latest():
         tickers.append(_ticker_summary(row, validation.get(t), ratios))
 
     return {
-        "date": log_date,
-        "industries": industries,
+        "date": entry.get("date") or "",
+        "industries": entry.get("industries") or [],
         "ticker_count": len(tickers),
-        "summary_md": "",
+        "summary_md": entry.get("summary_md") or "",
         "tickers": tickers,
-        "generated_at": None,
+        "generated_at": entry.get("summary_generated_at"),
     }
+
+
+@router.get("/batches/{log_date}.json")
+def batch_detail(log_date: str):
+    """All tickers of one daily-scan batch (any date in the log). A
+    multi-industry padding day is one batch — this is what a past-batch
+    card on the home screen opens, not just its first industry."""
+    entries = _read_json(_paths.daily_log, [])
+    entry = next((e for e in entries if e.get("date") == log_date), None)
+    if not entry:
+        raise HTTPException(404, detail=f"No daily-scan batch on {log_date!r}")
+    return _batch_payload(entry)

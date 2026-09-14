@@ -389,3 +389,21 @@ def test_search_index_covers_universe_and_analyzed(client):
     assert rows["AAPL"] == {"ticker": "AAPL", "name": "Apple Inc",
                             "industry": "Consumer Electronics",
                             "market_cap": 3_500_000_000_000, "analyzed": True}
+
+
+# ---------- /api/batches ----------
+
+def test_batch_detail_returns_every_ticker_in_the_log_entry(client):
+    r = client.get("/api/batches/2026-05-09.json")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["date"] == "2026-05-09"
+    assert body["industries"] == ["Medical Devices"]
+    assert [t["ticker"] for t in body["tickers"]] == ["QDEL", "INGN"]
+    assert body["ticker_count"] == 2
+    # same row shape as an industry page
+    assert set(body["tickers"][0]) >= {"ticker", "name", "market_cap", "ttm_pe", "pb", "status"}
+
+
+def test_batch_detail_404_for_unknown_date(client):
+    assert client.get("/api/batches/2020-01-01.json").status_code == 404

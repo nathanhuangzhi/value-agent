@@ -13,6 +13,7 @@ Output layout (under `data/reports/api/` by default):
     api/tickers/<SYMBOL>/price-history.json               ← /api/tickers/<SYMBOL>/price-history.json
     api/digest/latest.json                                ← /api/digest/latest.json
     api/digests/recent.json                               ← /api/digests/recent.json
+    api/batches/<YYYY-MM-DD>.json                         ← /api/batches/<date>.json
     api/search.json                                       ← /api/search.json
 
 Vercel serves `data/reports/api/` at `https://<archive>/api/`. The mobile
@@ -37,6 +38,7 @@ from app.api.routes import (
     digest_latest,
     digests_recent,
     industry_detail,
+    batch_detail,
     list_industries,
     search_index,
     ticker_detail,
@@ -131,6 +133,16 @@ def bake(out_dir: Path) -> dict:
     recent = digests_recent(limit=RECENT_DIGESTS_LIMIT)
     _write_json(out_dir / "digests" / "recent.json", recent)
     counts["digests"] = len(recent.get("digests") or [])
+
+    # /api/batches/<date>.json — one per daily-scan entry, so a past batch
+    # card opens the whole batch (all its industries), not just the first.
+    counts["batches"] = 0
+    for d in recent.get("digests") or []:
+        try:
+            _write_json(out_dir / "batches" / f"{d['date']}.json", batch_detail(d["date"]))
+            counts["batches"] += 1
+        except HTTPException as e:
+            logger.warning("batch_detail(%r) → %s; skipping", d.get("date"), e.detail)
 
     # /api/search.json — the whole universe for the Saved tab's search bar.
     # Compact (no indent): ~7k rows, and the app loads it in one go.

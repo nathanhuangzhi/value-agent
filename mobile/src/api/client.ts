@@ -61,6 +61,8 @@ export const api = {
   priceHistory: (symbol: string) =>
     get<PriceHistoryResponse>(`/tickers/${encodeURIComponent(symbol.toUpperCase())}/price-history.json`),
   latestDigest: () => get<DigestResponse>('/digest/latest.json'),
+  // Any past daily-scan batch by date — same shape as the latest digest.
+  batch: (date: string) => get<DigestResponse>(`/batches/${encodeURIComponent(date)}.json`),
   // Whole NYSE+Nasdaq universe (~7k rows, ~500 KB) for the Saved tab's
   // search bar. Fetched once per session and cached module-level.
   searchIndex: () => get<SearchIndexResponse>('/search.json'),
