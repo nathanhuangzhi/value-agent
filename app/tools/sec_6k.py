@@ -171,6 +171,12 @@ class Standard(BaseModel):
     deferred_revenue: float | None = None
     operating_cf: float | None = None
     capex: float | None = None
+    receivables: float | None = None
+    inventory: float | None = None
+    ppe_net: float | None = None
+    goodwill: float | None = None
+    intangibles: float | None = None
+    long_term_investments: float | None = None
 
 
 class Extraction(BaseModel):
@@ -285,7 +291,49 @@ _STD_TO_METRIC = {
     "stockholders_equity": "stockholders_equity", "short_term_debt": "short_term_debt",
     "long_term_debt": "long_term_debt", "accounts_payable": "accounts_payable",
     "deferred_revenue": "deferred_revenue", "operating_cf": "operating_cf", "capex": "capex",
+    "receivables": "receivables", "inventory": "inventory", "ppe_net": "ppe_net",
+    "goodwill": "goodwill", "intangibles": "intangibles",
+    "long_term_investments": "long_term_investments",
 }
+
+
+def _norm(label: str) -> str:
+    return re.sub(r"[^a-z ]+", " ", (label or "").lower())
+
+
+def derive_asset_lines(balance_sheet: list[dict]) -> dict[str, float]:
+    """Asset-class totals from a release's balance-sheet line items, by label
+    (the extraction prompt didn't map these originally, and companies use
+    their own wording). Non-current lines are those after 'total current
+    assets'; the walk stops at the liabilities section. Intangibles fold in
+    Chinese filers' land-use rights; long-term investments fold in
+    equity-method investees and other non-current investments (never
+    short-term investments)."""
+    out: dict[str, float] = {}
+    noncurrent = False
+    for r in balance_sheet or []:
+        v = r.get("value")
+        lab = _norm(r.get("label"))
+        if "total current assets" in lab:
+            noncurrent = True
+            continue
+        if "total assets" in lab or "liabilit" in lab or ("equity" in lab and "invest" not in lab):
+            break
+        if v is None or lab.startswith("total"):
+            continue
+        if "accounts receivable" in lab and "other" not in lab:
+            out["receivables"] = out.get("receivables", 0) + v
+        elif lab.startswith("inventor"):
+            out["inventory"] = out.get("inventory", 0) + v
+        elif "goodwill" in lab:
+            out["goodwill"] = out.get("goodwill", 0) + v
+        elif noncurrent and ("intangible" in lab or "land use right" in lab):
+            out["intangibles"] = out.get("intangibles", 0) + v
+        elif "property" in lab and "equipment" in lab and "deposit" not in lab:
+            out["ppe_net"] = out.get("ppe_net", 0) + v
+        elif noncurrent and "invest" in lab and "short" not in lab:
+            out["long_term_investments"] = out.get("long_term_investments", 0) + v
+    return out
 
 
 def sixk_as_source_row(store: dict | None) -> dict | None:
@@ -302,7 +350,11 @@ def sixk_as_source_row(store: dict | None) -> dict | None:
         if ex.get("period_type") != "quarter" or not ex.get("period_end"):
             continue
         currency = currency or ex.get("currency")
-        std = ex.get("standard") or {}
+        std = dict(ex.get("standard") or {})
+        # Asset classes: prefer what the model mapped; fill from line items.
+        for k, v in derive_asset_lines((ex.get("statements") or {}).get("balance_sheet")).items():
+            if std.get(k) is None:
+                std[k] = v
         cf_ok = ex.get("cash_flow_period_type") == "quarter"
         for std_key, metric in _STD_TO_METRIC.items():
             v = std.get(std_key)

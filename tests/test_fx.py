@@ -152,3 +152,28 @@ def test_sec_row_to_usd_uses_entry_tags():
     assert out["annual"]["revenue"][2020]["val"] == 100.0 and out["annual"]["revenue"][2021]["val"] == 120.0
     assert out["annual"]["diluted_shares"][2021]["val"] == 5.0
     assert row["annual"]["revenue"][2020]["val"] == 700.0
+
+
+def test_derive_asset_lines_from_6k_balance_sheet():
+    from app.tools.sec_6k import derive_asset_lines
+    bs = [{"label": "Cash and cash equivalents", "value": 29.0}, {"label": "Short term investments", "value": 3.6},
+          {"label": "Accounts receivable, net", "value": 0.56}, {"label": "Other receivables and prepayments,net", "value": 3.1},
+          {"label": "Inventories", "value": 4.33}, {"label": "Total current assets", "value": 43.8},
+          {"label": "Property and equipment, net", "value": 16.4}, {"label": "Deposits for property and equipment", "value": 0.01},
+          {"label": "Land use rights, net", "value": 9.9}, {"label": "Intangible assets, net", "value": 0.32},
+          {"label": "Investment in equity method investees", "value": 7.62}, {"label": "Other investments", "value": 4.98},
+          {"label": "Goodwill", "value": 0.65}, {"label": "Total non-current assets", "value": 42.06},
+          {"label": "TOTAL ASSETS", "value": 85.86}, {"label": "Short term loans", "value": 10.97},
+          {"label": "Investment payable", "value": 1.0}]  # liabilities section: ignored
+    out = derive_asset_lines(bs)
+    assert out == {"receivables": 0.56, "inventory": 4.33, "ppe_net": 16.4,
+                   "intangibles": 9.9 + 0.32, "long_term_investments": 7.62 + 4.98, "goodwill": 0.65}
+
+
+def test_top_asset_keys_returns_every_class_largest_first():
+    from app.tools.report.ratios import _top_asset_keys
+    q = [{"period": "2026-06-30", "items": {"Net PPE": 16.4, "Other Intangible Assets": 10.2, "Long Term Investments": 12.6,
+                                            "Inventory": 4.33, "Accounts Receivable": 0.56, "Goodwill": 0.65}}]
+    assert _top_asset_keys([], q) == ["Net PPE", "Long Term Investments", "Other Intangible Assets",
+                                      "Inventory", "Goodwill", "Accounts Receivable"]
+    assert _top_asset_keys([], q, top_n=2) == ["Net PPE", "Long Term Investments"]

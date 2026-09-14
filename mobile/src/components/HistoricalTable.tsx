@@ -163,7 +163,7 @@ const ASSET_KEY_CATEGORY: Record<string, string> = {
   'Other Assets': 'other_assets',
 };
 
-function topAssetKeys(annualBS: Period[], quarterlyBS: Period[], topN: number = 2): string[] {
+function topAssetKeys(annualBS: Period[], quarterlyBS: Period[], topN?: number): string[] {
   // Quarterly preferred over annual since it's more recent. Within each,
   // newest first.
   const newestQ = [...quarterlyBS].sort((a, b) => b.period.localeCompare(a.period));
@@ -190,7 +190,7 @@ function topAssetKeys(annualBS: Period[], quarterlyBS: Period[], topN: number = 
     seenCategories.add(category);
   }
   scored.sort((a, b) => b.value - a.value);
-  return scored.slice(0, topN).map((x) => x.key);
+  return (topN ? scored.slice(0, topN) : scored).map((x) => x.key);
 }
 
 // ====== Top-liability detection (port of ratios._top_liability_keys) ======
@@ -373,7 +373,8 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     [statements.income_statement],
   );
 
-  // Top 2 non-cash asset categories (e.g., ['Goodwill', 'Net PPE']),
+  // Every non-cash asset class present (receivables, inventory, PPE,
+  // goodwill, intangibles, long-term investments…), largest first,
   // determined once per ticker from the most recent balance sheet.
   const assetKeys = useMemo(
     () => topAssetKeys(statements.balance_sheet, quarterly.balance_sheet),
@@ -498,7 +499,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
       rows: [
         { kind: 'raw', label: 'Total Assets',        source: 'balance', keys: ['Total Assets'], format: 'money' },
         { kind: 'raw', label: 'Cash & Equivalents',  source: 'balance', keys: ['Cash And Cash Equivalents', 'Cash Cash Equivalents And Short Term Investments'], format: 'money' },
-        // Dynamic top-asset rows for this specific ticker (e.g. Goodwill, PPE)
+        // Dynamic asset-class rows for this ticker, largest first
         ...assetKeys.map<RawRow>((key) => ({
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),

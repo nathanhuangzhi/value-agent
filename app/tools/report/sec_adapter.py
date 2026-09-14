@@ -56,6 +56,8 @@ SEC_TO_YFINANCE_BALANCE = {
     "ppe_net": "Net PPE",
     "inventory": "Inventory",
     "receivables": "Accounts Receivable",
+    "intangibles": "Other Intangible Assets",        # incl. land-use rights for Chinese filers (6-K)
+    "long_term_investments": "Long Term Investments",  # incl. equity-method investees
     # Liability side. The two debt buckets are also summed into the derived
     # "Total Debt" (see _resolve_total_debt); exposing them individually lets
     # the balance-sheet section rank the largest liabilities.

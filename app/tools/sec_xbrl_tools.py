@@ -471,6 +471,18 @@ BALANCE_SHEET_METRICS: dict[str, list[str]] = {
     "ppe_net": ["PropertyPlantAndEquipmentNet"],
     "inventory": ["InventoryNet"],
     "receivables": ["AccountsReceivableNetCurrent", "ReceivablesNetCurrent"],
+    "intangibles": [
+        "IntangibleAssetsNetExcludingGoodwill",
+        "FiniteLivedIntangibleAssetsNet",
+        "IntangibleAssetsNetIncludingGoodwill",
+    ],
+    "long_term_investments": [
+        "LongTermInvestments",
+        "EquityMethodInvestments",
+        "MarketableSecuritiesNoncurrent",
+        "AvailableForSaleSecuritiesDebtSecuritiesNoncurrent",
+        "OtherLongTermInvestments",
+    ],
 }
 
 

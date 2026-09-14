@@ -89,8 +89,10 @@ _ASSET_KEY_CATEGORY = {
 }
 
 
-def _top_asset_keys(bs_annual, bs_quarterly, top_n=2):
-    """Find the top-N largest non-cash asset line items by value from the most
+def _top_asset_keys(bs_annual, bs_quarterly, top_n=None):
+    """Find the largest non-cash asset line items by value (all of them when
+    `top_n` is None — the balance-sheet section lists every asset class
+    present, largest first) from the most
     recently reported balance sheet (quarterly preferred over annual). Returns
     a list of yfinance line-item names sorted by value descending.
 
@@ -120,7 +122,7 @@ def _top_asset_keys(bs_annual, bs_quarterly, top_n=2):
         scored.append((key, v))
         seen_categories.add(category)
     scored.sort(key=lambda x: x[1], reverse=True)
-    return [k for k, _ in scored[:top_n]]
+    return [k for k, _ in (scored[:top_n] if top_n else scored)]
 
 
 # Liability line items the balance-sheet section may surface, largest

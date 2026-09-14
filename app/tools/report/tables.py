@@ -211,7 +211,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
     missing periods on the left render as empty unlabeled cells. The
     valuation chart upstream still sees the full history — this fixed
     width is a table-presentation concern only."""
-    top_asset_keys = _top_asset_keys(bs_annual, bs_quarterly, top_n=2)
+    top_asset_keys = _top_asset_keys(bs_annual, bs_quarterly)          # every asset class, largest first
     top_liability_keys = _top_liability_keys(bs_annual, bs_quarterly, top_n=3)
     extra_keys = top_asset_keys + top_liability_keys
     annual_cols = _collect_table_columns(
