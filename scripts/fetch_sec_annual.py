@@ -24,7 +24,7 @@ from pathlib import Path
 
 from app.tools.json_io import atomic_write_json, read_jsonl
 from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_JSONL, COMPANIES_SEC
-from app.tools.sec_xbrl_tools import build_sec_row, fetch_companyfacts
+from app.tools.sec_xbrl_tools import build_sec_row, fetch_companyfacts, load_raw_companyfacts
 
 CHECKPOINT_EVERY = 20  # rows between full-file rewrites
 
@@ -37,6 +37,10 @@ def main():
     ap.add_argument("--refresh", action="store_true",
                     help="Re-fetch tickers already in the cache (e.g. after adding "
                          "XBRL concepts to sec_xbrl_tools). Default: skip cached.")
+    ap.add_argument("--reparse", action="store_true",
+                    help="Rebuild every row from the raw companyfacts cache (data/sec_raw/) "
+                         "without touching the network — after adding concepts or fixing the "
+                         "extractor. Tickers with no raw file are downloaded.")
     ap.add_argument("--max-age-days", type=int, default=None,
                     help="Also re-fetch cached tickers whose fetched_at is older than this "
                          "many days (the daily run uses 7 → the whole pool is refreshed on a "
@@ -70,27 +74,37 @@ def main():
     if args.max_age_days is not None:
         from datetime import datetime, timedelta, timezone
         stale_before = (datetime.now(timezone.utc) - timedelta(days=args.max_age_days)).isoformat()
-    n_stale = 0
+    n_stale = n_reparsed = 0
     for i, ticker in enumerate(todo, 1):
-        if ticker in results and not args.ticker and not args.refresh:
-            fetched_at = (results[ticker] or {}).get("fetched_at") or ""
-            if not (stale_before and fetched_at < stale_before):
-                continue
-            n_stale += 1
         u = universe.get(ticker)
         if not u or not u.get("cik"):
             print(f"  [{i}/{len(todo)}] {ticker}: no CIK; skip")
             continue
+        use_raw = not args.refresh          # raw cache is the default source when present
+        if ticker in results and not args.ticker and not args.refresh:
+            fetched_at = (results[ticker] or {}).get("fetched_at") or ""
+            stale = bool(stale_before and fetched_at < stale_before)
+            if not stale and not args.reparse:
+                continue
+            if stale:
+                n_stale += 1
+                use_raw = False         # stale → re-download (refreshes the raw file too)
+        cached = load_raw_companyfacts(u["cik"]) if use_raw else None
+        raw_fetched_at = None
+        if cached is not None:
+            facts, raw_fetched_at = cached
+            n_reparsed += 1
+        else:
+            try:
+                facts = fetch_companyfacts(u["cik"])
+            except Exception as e:
+                print(f"  [{i}/{len(todo)}] {ticker}: error {type(e).__name__}: {e}")
+                continue
+            if facts is None:
+                print(f"  [{i}/{len(todo)}] {ticker} (CIK {u['cik']}): 404 — no XBRL data")
+                continue
         try:
-            facts = fetch_companyfacts(u["cik"])
-        except Exception as e:
-            print(f"  [{i}/{len(todo)}] {ticker}: error {type(e).__name__}: {e}")
-            continue
-        if facts is None:
-            print(f"  [{i}/{len(todo)}] {ticker} (CIK {u['cik']}): 404 — no XBRL data")
-            continue
-        try:
-            row = build_sec_row(ticker, u["cik"], facts)
+            row = build_sec_row(ticker, u["cik"], facts, fetched_at=raw_fetched_at)
         except Exception as e:
             print(f"  [{i}/{len(todo)}] {ticker}: extract error {type(e).__name__}: {e}")
             continue
@@ -107,6 +121,8 @@ def main():
     print()
     if stale_before:
         print(f"  refreshed {n_stale} cached ticker(s) older than {args.max_age_days} days")
+    if n_reparsed:
+        print(f"  re-parsed {n_reparsed} ticker(s) from the raw cache (no download)")
     print(f"Wrote {len(results)} rows → {args.output}")
 
 

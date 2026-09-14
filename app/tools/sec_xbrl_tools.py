@@ -26,11 +26,14 @@ free XBRL API (`data.sec.gov/api/xbrl/companyfacts/...`). Handles:
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Sequence
 from datetime import date
 
 import requests
+
+from app.tools.paths import DATA_DIR
 
 _BASE_URL = "https://data.sec.gov/api/xbrl/companyfacts"
 _USER_AGENT = "Value Agent Research nathanhz2013@gmail.com"
@@ -40,10 +43,45 @@ _MIN_INTERVAL_S = 0.12  # ~8 req/sec, well within SEC's 10 req/sec limit
 _last_request_time = 0.0
 
 
-def fetch_companyfacts(cik: int | str) -> dict | None:
+# ---- Raw companyfacts cache -------------------------------------------------
+# The extracted rows in companies_sec.json are a *view*; the raw companyfacts
+# JSON is kept on the box (gzip, ~1-15 MB each) so adding a concept or fixing
+# the extractor is a local re-parse (`fetch_sec_annual --reparse`), not a
+# 1,200-company re-download from SEC.
+SEC_RAW_DIR = DATA_DIR / "sec_raw"
+
+
+def raw_path(cik: int | str) -> Path:
+    return SEC_RAW_DIR / f"CIK{str(int(cik)).zfill(10)}.json.gz"
+
+
+def save_raw_companyfacts(cik: int | str, facts: dict) -> None:
+    import gzip
+    from datetime import datetime, timezone
+    SEC_RAW_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {"fetched_at": datetime.now(timezone.utc).isoformat(), "facts": facts}
+    tmp = raw_path(cik).with_suffix(".tmp")
+    with gzip.open(tmp, "wt", encoding="utf-8") as f:
+        json.dump(payload, f, separators=(",", ":"))
+    tmp.replace(raw_path(cik))
+
+
+def load_raw_companyfacts(cik: int | str) -> tuple[dict, str] | None:
+    """(facts, fetched_at) from the raw cache, or None if not cached."""
+    import gzip
+    p = raw_path(cik)
+    if not p.exists():
+        return None
+    with gzip.open(p, "rt", encoding="utf-8") as f:
+        payload = json.load(f)
+    return payload["facts"], payload.get("fetched_at") or ""
+
+
+def fetch_companyfacts(cik: int | str, *, save_raw: bool = True) -> dict | None:
     """Fetch the full SEC EDGAR companyfacts JSON for a CIK. Returns None
     if the company has no XBRL data on file (404), and raises for other
-    HTTP/network errors. Politely rate-limits to ~8 req/sec."""
+    HTTP/network errors. Politely rate-limits to ~8 req/sec. Saves the raw
+    response to SEC_RAW_DIR unless `save_raw=False`."""
     global _last_request_time
     now = time.monotonic()
     delay = _MIN_INTERVAL_S - (now - _last_request_time)
@@ -57,7 +95,10 @@ def fetch_companyfacts(cik: int | str) -> dict | None:
     if resp.status_code == 404:
         return None
     resp.raise_for_status()
-    return resp.json()
+    facts = resp.json()
+    if save_raw:
+        save_raw_companyfacts(cik, facts)
+    return facts
 
 
 def _fiscal_year_from_end(end_str: str) -> int | None:
@@ -615,7 +656,7 @@ def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
     return out
 
 
-def build_sec_row(ticker: str, cik: int, facts: dict) -> dict:
+def build_sec_row(ticker: str, cik: int, facts: dict, *, fetched_at: str | None = None) -> dict:
     """Compose one row of `companies_sec.json` for a given ticker.
 
     Args:
@@ -650,7 +691,7 @@ def build_sec_row(ticker: str, cik: int, facts: dict) -> dict:
         "ticker": ticker,
         "cik": int(cik),
         "entity_name": facts.get("entityName"),
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": fetched_at or datetime.now(timezone.utc).isoformat(),
         "source": "SEC EDGAR XBRL companyfacts",
         "currency": currency,          # reporting currency of every monetary value below
         "annual": annual,

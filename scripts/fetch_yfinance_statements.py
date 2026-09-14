@@ -30,7 +30,7 @@ from pathlib import Path
 from app.tools.json_io import atomic_write_json
 from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_YFINANCE_DIR
 from app.tools.report.sec_adapter import load_sharded_by_ticker
-from app.tools.yfinance_statements import fetch_yfinance_statements
+from app.tools.yfinance_statements import fetch_yfinance_statements, reparse_yfinance_raw
 
 CHECKPOINT_EVERY = 20  # rows between shard rewrites
 
@@ -42,10 +42,15 @@ def _slug(s: str) -> str:
     return s or "uncategorized"
 
 
-def _fetch_one(ticker: str, known_currency: str | None = None) -> tuple[str, dict | None, str | None]:
+def _fetch_one(ticker: str, known_currency: str | None = None,
+               reparse: bool = False) -> tuple[str, dict | None, str | None]:
     """Wrapper that catches exceptions per-ticker so one bad fetch doesn't
     kill the run. Returns (ticker, row_or_None, error_str_or_None)."""
     try:
+        if reparse:
+            row = reparse_yfinance_raw(ticker)
+            if row is not None:
+                return ticker, row, None
         return ticker, fetch_yfinance_statements(ticker, known_currency=known_currency), None
     except Exception as e:
         return ticker, None, f"{type(e).__name__}: {e}"
@@ -67,6 +72,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--ticker", help="One ticker to fetch (else: all in companies_analyzed.json).")
     ap.add_argument("--limit", type=int, help="Process only the first N tickers.")
+    ap.add_argument("--reparse", action="store_true",
+                    help="Rebuild rows from the raw cache (data/yfinance_raw/) without hitting "
+                         "Yahoo — after a label-mapping change. Tickers with no raw file are fetched.")
     ap.add_argument("--workers", type=int, default=2,
                     help="Concurrent yfinance workers (default 2). Match build_company_db.")
     ap.add_argument("--output-dir", type=Path, default=COMPANIES_YFINANCE_DIR,
@@ -97,7 +105,7 @@ def main():
     completed = 0
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         futures = {
-            ex.submit(_fetch_one, t, (results.get(t) or {}).get("financial_currency")): t
+            ex.submit(_fetch_one, t, (results.get(t) or {}).get("financial_currency"), args.reparse): t
             for t in targets
         }
         for fut in as_completed(futures):

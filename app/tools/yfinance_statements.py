@@ -19,11 +19,16 @@ mapping accepts both via an ordered fallback list per metric.
 """
 from __future__ import annotations
 
+import json
 import math
 from datetime import datetime, timezone
 
+from pathlib import Path
+
 import pandas as pd
 import yfinance as yf
+
+from app.tools.paths import DATA_DIR
 
 # ----- yfinance row label → SEC metric key. First non-NaN label wins. -----
 
@@ -129,6 +134,89 @@ def _extract(df: pd.DataFrame, labels_by_metric: dict[str, list[str]],
     return out
 
 
+# ---- Raw statement cache ----------------------------------------------------
+# The six statement frames yfinance returns are kept per ticker (JSON, tens
+# of KB) so re-mapping after a label change is `--reparse`, not a re-download.
+YF_RAW_DIR = DATA_DIR / "yfinance_raw"
+_FRAME_KEYS = ("annual_income", "annual_balance", "annual_cashflow",
+               "quarterly_income", "quarterly_balance", "quarterly_cashflow")
+
+
+def _frame_to_raw(df: pd.DataFrame | None) -> dict:
+    """{row_label: {iso_date: value}} with NaNs dropped."""
+    if df is None or df.empty:
+        return {}
+    out: dict = {}
+    for col in df.columns:
+        end = (col if isinstance(col, pd.Timestamp) else pd.Timestamp(col)).date().isoformat()
+        for label in df.index:
+            v = df.loc[label, col]
+            if v is None or _isnan(v):
+                continue
+            out.setdefault(str(label), {})[end] = float(v)
+    return out
+
+
+def _raw_to_frame(raw: dict) -> pd.DataFrame:
+    if not raw:
+        return pd.DataFrame()
+    df = pd.DataFrame(raw).T                      # rows = labels, cols = dates
+    df.columns = [pd.Timestamp(c) for c in df.columns]
+    return df
+
+
+def yf_raw_path(ticker: str) -> Path:
+    return YF_RAW_DIR / f"{ticker.upper()}.json"
+
+
+def save_yf_raw(ticker: str, frames: dict, currency: str | None) -> None:
+    YF_RAW_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {"ticker": ticker.upper(),
+               "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "financial_currency": currency,
+               "frames": {k: _frame_to_raw(frames.get(k)) for k in _FRAME_KEYS}}
+    tmp = yf_raw_path(ticker).with_suffix(".tmp")
+    tmp.write_text(json.dumps(payload, separators=(",", ":")))
+    tmp.replace(yf_raw_path(ticker))
+
+
+def load_yf_raw(ticker: str) -> dict | None:
+    p = yf_raw_path(ticker)
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+def build_yfinance_row(ticker: str, frames: dict, currency: str | None,
+                       fetched_at: str | None = None) -> dict:
+    """Map the six statement frames onto the pipeline's metric keys."""
+    annual: dict[str, dict] = {}
+    fy = lambda ts: str(_fiscal_year_from_end(ts))
+    annual.update(_extract(frames.get("annual_income"), _INCOME_LABELS, period_key=fy))
+    annual.update(_extract(frames.get("annual_balance"), _BALANCE_LABELS, period_key=fy))
+    annual.update(_extract(frames.get("annual_cashflow"), _CASHFLOW_LABELS, period_key=fy))
+    quarterly: dict[str, dict] = {}
+    qk = lambda ts: ts.date().isoformat()
+    quarterly.update(_extract(frames.get("quarterly_income"), _INCOME_LABELS, period_key=qk))
+    quarterly.update(_extract(frames.get("quarterly_balance"), _BALANCE_LABELS, period_key=qk))
+    quarterly.update(_extract(frames.get("quarterly_cashflow"), _CASHFLOW_LABELS, period_key=qk))
+    return {
+        "ticker": ticker,
+        "fetched_at": fetched_at or datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source": "yfinance",
+        "financial_currency": (currency or "USD").upper(),
+        "annual": annual,
+        "quarterly": quarterly,
+    }
+
+
+def reparse_yfinance_raw(ticker: str) -> dict | None:
+    """Rebuild a row from the raw cache without touching the network."""
+    raw = load_yf_raw(ticker)
+    if not raw:
+        return None
+    frames = {k: _raw_to_frame(v) for k, v in (raw.get("frames") or {}).items()}
+    return build_yfinance_row(ticker, frames, raw.get("financial_currency"), raw.get("fetched_at"))
+
+
 def fetch_yfinance_statements(ticker: str, *, known_currency: str | None = None) -> dict | None:
     """Pull annual + quarterly income/balance/cashflow for one ticker.
     Returns a row shaped like one entry of companies_sec.json (same
@@ -147,36 +235,13 @@ def fetch_yfinance_statements(ticker: str, *, known_currency: str | None = None)
                 currency = (t.info or {}).get("financialCurrency") or None
             except Exception:
                 currency = None
-        annual_inc = t.income_stmt
-        annual_bs = t.balance_sheet
-        annual_cf = t.cashflow
-        q_inc = t.quarterly_income_stmt
-        q_bs = t.quarterly_balance_sheet
-        q_cf = t.quarterly_cashflow
+        frames = {
+            "annual_income": t.income_stmt, "annual_balance": t.balance_sheet,
+            "annual_cashflow": t.cashflow, "quarterly_income": t.quarterly_income_stmt,
+            "quarterly_balance": t.quarterly_balance_sheet, "quarterly_cashflow": t.quarterly_cashflow,
+        }
     except Exception:
         return None
 
-    annual: dict[str, dict] = {}
-    annual.update(_extract(annual_inc, _INCOME_LABELS,
-                            period_key=lambda ts: str(_fiscal_year_from_end(ts))))
-    annual.update(_extract(annual_bs, _BALANCE_LABELS,
-                            period_key=lambda ts: str(_fiscal_year_from_end(ts))))
-    annual.update(_extract(annual_cf, _CASHFLOW_LABELS,
-                            period_key=lambda ts: str(_fiscal_year_from_end(ts))))
-
-    quarterly: dict[str, dict] = {}
-    quarterly.update(_extract(q_inc, _INCOME_LABELS,
-                               period_key=lambda ts: ts.date().isoformat()))
-    quarterly.update(_extract(q_bs, _BALANCE_LABELS,
-                               period_key=lambda ts: ts.date().isoformat()))
-    quarterly.update(_extract(q_cf, _CASHFLOW_LABELS,
-                               period_key=lambda ts: ts.date().isoformat()))
-
-    return {
-        "ticker": ticker,
-        "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "source": "yfinance",
-        "financial_currency": (currency or "USD").upper(),
-        "annual": annual,
-        "quarterly": quarterly,
-    }
+    save_yf_raw(ticker, frames, currency)
+    return build_yfinance_row(ticker, frames, currency)
