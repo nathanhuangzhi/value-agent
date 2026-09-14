@@ -18,8 +18,15 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from dotenv import load_dotenv
+
 from app.ai.routes import router as ai_router
 from app.api.routes import router as api_router
+from app.tools.paths import ENV_FILE
+
+# The AI chat routes call DeepSeek, whose key lives in .env (the scripts
+# each load it themselves; the server process must too).
+load_dotenv(ENV_FILE)
 
 logger = logging.getLogger(__name__)
 

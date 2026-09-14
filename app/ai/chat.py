@@ -65,14 +65,14 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
     if attached:
         yield {"type": "companies", "tickers": list(attached)}
 
-    messages = _build_messages(conv, user_text, attached)
-    client = build_deepseek_client(read_timeout_s=180, max_retries=1)
     companies_used = list(attached)
     total_prompt = 0
     total_completion = 0
     answer_parts: list[str] = []
 
     try:
+        messages = _build_messages(conv, user_text, attached)
+        client = build_deepseek_client(read_timeout_s=180, max_retries=1)
         for _round in range(_MAX_TOOL_ROUNDS + 1):
             stream = client.chat.completions.create(
                 model=model,
