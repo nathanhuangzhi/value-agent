@@ -38,7 +38,7 @@ import {
   usePriceHistory,
 } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
-import { SHOW_LLM_ANALYSIS } from '@/config';
+import { SHOW_LLM_ANALYSIS, TICKER_SWIPE_NAV } from '@/config';
 import {
   HISTORICAL_TABLE_HEADER_HEIGHT,
   HistoricalTable,
@@ -476,7 +476,7 @@ export default function TickerScreen() {
   return (
     <View
       style={{ flex: 1, backgroundColor: c.background }}
-      {...panResponder.panHandlers}
+      {...(TICKER_SWIPE_NAV ? panResponder.panHandlers : {})}
     >
       <Animated.View
         style={{
