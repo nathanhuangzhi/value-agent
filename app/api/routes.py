@@ -21,6 +21,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from app.tools.daily_selector import display_industries
 from app.tools.json_io import read_jsonl
 from app.tools.paths import (
     COMPANIES_ANALYZED,
@@ -472,7 +473,7 @@ def digests_recent(limit: int = 10):
     out = []
     for i, entry in enumerate(sorted_entries):
         log_date = entry.get("date") or ""
-        industries = entry.get("industries") or []
+        industries = display_industries(entry.get("industries") or [])
         ticker_symbols = entry.get("tickers") or []
 
         live_count = sum(1 for t in ticker_symbols if t in analyzed)
@@ -504,7 +505,7 @@ def digest_latest():
     if persisted:
         return {
             "date": persisted.get("date") or "",
-            "industries": persisted.get("industries") or [],
+            "industries": display_industries(persisted.get("industries") or []),
             "ticker_count": persisted.get("ticker_count") or len(persisted.get("tickers") or []),
             "summary_md": persisted.get("summary_md") or "",
             "tickers": persisted.get("tickers") or [],
@@ -540,7 +541,7 @@ def _batch_payload(entry: dict) -> dict:
 
     return {
         "date": entry.get("date") or "",
-        "industries": entry.get("industries") or [],
+        "industries": display_industries(entry.get("industries") or []),
         "ticker_count": len(tickers),
         "summary_md": entry.get("summary_md") or "",
         "tickers": tickers,

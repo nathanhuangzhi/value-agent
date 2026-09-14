@@ -56,6 +56,7 @@ from app.core.prompt_manager import load_prompt  # noqa: E402
 from app.tools.daily_selector import (  # noqa: E402
     cycle_start_date,
     entry_cycle,
+    industry_of,
     is_done_in_cycle,
     plan_todays_pick,
 )
@@ -181,7 +182,7 @@ def main():
     # dry run of a brand-new cycle nothing has been logged yet, so treat
     # today as the cycle start.
     cycle_start = cycle_start_date(log, cycle) or today
-    candidates = [r for r in rows if r.get("industry") in industries]
+    candidates = [r for r in rows if industry_of(r) in industries]
     todo = [r for r in candidates if not is_done_in_cycle(latest.get(r["ticker"]), cycle_start)]
 
     print(f"=== Daily scan {today} (cycle {cycle}) ===")
@@ -194,7 +195,7 @@ def main():
     if args.dry_run:
         for r in todo:
             cap = r.get("market_cap") or 0
-            print(f"  {r['ticker']:6s}  ${cap/1e6:>8,.0f}M  {r.get('industry'):35s}  {r.get('name')}")
+            print(f"  {r['ticker']:6s}  ${cap/1e6:>8,.0f}M  {industry_of(r):35s}  {r.get('name')}")
         print("\n(dry run — no LLM calls, no file writes)")
         return
 

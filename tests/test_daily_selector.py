@@ -59,11 +59,12 @@ def test_deterministic_tiebreak_by_industry_name():
     assert industries[0] == "A"
 
 
-def test_missing_industry_field_groups_as_none_label():
+def test_missing_industry_field_groups_under_placeholder():
+    from app.tools.daily_selector import PLACEHOLDER_INDUSTRY
     rows = [{"industry": None}] * 3 + [{"foo": "bar"}] * 2
     grouped = group_by_industry(rows)
-    assert "(none)" in grouped
-    assert len(grouped["(none)"]) == 5
+    assert PLACEHOLDER_INDUSTRY in grouped and "(none)" not in grouped
+    assert len(grouped[PLACEHOLDER_INDUSTRY]) == 5
 
 
 # ---- cycles ---------------------------------------------------------------
@@ -121,3 +122,16 @@ def test_is_done_in_cycle_compares_against_cycle_start():
     assert is_done_in_cycle({"analyzed_date": "2026-09-15"}, "2026-09-14")
     # a brand-new cycle with no entries written yet: nothing is done
     assert not is_done_in_cycle({"analyzed_date": "2026-09-14"}, None)
+
+
+def test_rows_without_industry_group_under_placeholder_and_are_hidden_from_display():
+    from app.tools.daily_selector import PLACEHOLDER_INDUSTRY, display_industries, group_by_industry, industry_of
+    rows = [{"ticker": "X", "industry": None}, {"ticker": "Y", "industry": ""}, {"ticker": "Z", "industry": "Uranium"}]
+    grouped = group_by_industry(rows)
+    assert set(grouped) == {PLACEHOLDER_INDUSTRY, "Uranium"}
+    assert industry_of(rows[0]) == PLACEHOLDER_INDUSTRY
+    # candidate filter in daily_scan must match the same label the selector picked
+    picked, _ = pick_todays_industries(rows, set(), 3)
+    assert [r["ticker"] for r in rows if industry_of(r) in picked] == ["X", "Y", "Z"]
+    # display drops the placeholder (and the legacy "(none)") but nothing else
+    assert display_industries(["Uranium", "(none)", PLACEHOLDER_INDUSTRY, "Lodging"]) == ["Uranium", "Lodging"]

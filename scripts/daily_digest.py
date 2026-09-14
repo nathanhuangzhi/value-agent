@@ -37,6 +37,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from app.api.routes import _snapshot_ratios_for, _ticker_summary, _load_sec, _load_yf
+from app.tools.daily_selector import display_industries
 from app.tools.email_tools import build_summary_digest_html, send_digest_email
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
 from app.tools.llm_router import run_prompt
@@ -163,7 +164,7 @@ def main():
             )
         tickers = entry.get("tickers") or []
         log_date = entry.get("date") or date.today().isoformat()
-        industry_label = ", ".join(entry.get("industries") or [])
+        industry_label = ", ".join(display_industries(entry.get("industries") or []))
         print(f"Daily-scan {log_date} — {industry_label} — {len(tickers)} tickers")
 
     if not tickers:

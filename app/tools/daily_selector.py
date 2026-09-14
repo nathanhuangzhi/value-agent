@@ -9,12 +9,28 @@ the next-largest industry is added, and so on, until the cumulative count is
 from collections import defaultdict
 from collections.abc import Iterable
 
+# Rows with no industry field are grouped under this label — the same one
+# the API / index / report use, so they land on a real industry page.
+# (Before this, the selector used "(none)", which daily_scan's candidate
+# filter never matched, so those tickers were picked but never analyzed.)
+PLACEHOLDER_INDUSTRY = "Uncategorized"
+_PLACEHOLDERS = {PLACEHOLDER_INDUSTRY, "(none)"}
+
+
+def industry_of(row: dict) -> str:
+    return row.get("industry") or PLACEHOLDER_INDUSTRY
+
+
+def display_industries(names: Iterable[str]) -> list[str]:
+    """A batch's industries for display (batch names, email subject): the
+    placeholder bucket is dropped — its tickers still belong to the batch."""
+    return [n for n in names if n not in _PLACEHOLDERS]
+
 
 def group_by_industry(rows: list[dict]) -> dict[str, list[dict]]:
     grouped: dict[str, list[dict]] = defaultdict(list)
     for r in rows:
-        ind = r.get("industry") or "(none)"
-        grouped[ind].append(r)
+        grouped[industry_of(r)].append(r)
     return dict(grouped)
 
 
