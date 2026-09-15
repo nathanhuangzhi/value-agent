@@ -512,7 +512,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
         ...liabilityKeys.map<RawRow>((key) => ({
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
-        { kind: 'raw', label: 'Stockholders Equity', source: 'balance', keys: ['Common Stock Equity', 'Stockholders Equity'], format: 'money' },
+        { kind: 'raw', label: 'Stockholders Equity', source: 'balance', keys: ['Common Stock Equity', 'Stockholders Equity'], format: 'money', dividerAbove: true },
       ],
     },
     {

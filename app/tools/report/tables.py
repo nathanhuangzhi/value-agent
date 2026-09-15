@@ -141,7 +141,7 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
             "sps": _div(rev, shares_for_mcap),
             "bvps": _div(bv, shares_for_mcap),
             "ocf": ocf, "fcf": fcf, "capex": capex,
-            "cash": cash, "debt": debt, "assets": assets, "liabilities": liabilities,
+            "cash": cash, "debt": debt, "assets": assets, "liabilities": liabilities, "equity": bv,
             "gm": _div(gp, rev), "om": _div(op, rev), "nm": _div(ni, rev),
             "rd_r": _div(rd, rev), "sm_r": _div(sm, rev), "ga_r": _div(ga, rev), "sga_r": _div(sga, rev),
             "other_r": _div(other, rev),
@@ -158,6 +158,7 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
                 "ocf": ocf_src, "fcf": fcf_src, "capex": capex_src,
                 "cash": cash_src, "debt": debt_src, "assets": assets_src,
                 "liabilities": liabilities_src,
+                "equity": (bs_src or {}).get("Common Stock Equity") or (bs_src or {}).get("Stockholders Equity"),
             },
         }
         for key in (extra_bs_keys or []):
@@ -177,7 +178,7 @@ def _empty_col(extra_keys):
     empty dash for each cell."""
     metric_keys = (
         "rev", "gp", "op", "ni", "eps", "shares", "sps", "bvps",
-        "ocf", "fcf", "capex", "cash", "debt", "assets", "liabilities",
+        "ocf", "fcf", "capex", "cash", "debt", "assets", "liabilities", "equity",
         "gm", "om", "nm",
         "rd_r", "sm_r", "ga_r", "sga_r", "other_r",
         "static_pe", "static_ps", "pb",
@@ -296,6 +297,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         *[(key, key, money_m) for key in top_asset_keys],
         ("Total Liabilities", "liabilities", money_m),
         *[(key, key, money_m) for key in top_liability_keys],   # largest first
+        ("Stockholders Equity", "equity", money_m),
         ("group", "Cash Flow ($M)"),
         ("Operating CF", "ocf", money_m),
         ("Capex", "capex", money_m),
@@ -364,8 +366,8 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
             )
             continue
         label, key, fmt = row
-        # A heavier rule above Total Liabilities separates it from the asset lines.
-        top = f"border-top:2px solid {RULE};" if key == "liabilities" else ""
+        # Heavier rules split the balance sheet into assets / liabilities / equity.
+        top = f"border-top:2px solid {RULE};" if key in ("liabilities", "equity") else ""
         cells = [
             f"<td style='padding:6px 10px;font-size:13px;color:{TEXT};border-bottom:1px solid {RULE};{top}'>{label}</td>"
         ]
