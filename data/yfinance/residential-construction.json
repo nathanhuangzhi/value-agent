@@ -1,8 +1,9 @@
 [
   {
     "ticker": "BZH",
-    "fetched_at": "2026-09-14T12:03:20+00:00",
+    "fetched_at": "2026-09-15T12:03:42+00:00",
     "source": "yfinance",
+    "financial_currency": "USD",
     "annual": {
       "revenue": {
         "2025": {
@@ -279,6 +280,59 @@
           "source": "yfinance"
         }
       },
+      "short_term_investments": {},
+      "restricted_cash": {
+        "2025": {
+          "val": 3866000.0,
+          "end": "2025-09-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 38703000.0,
+          "end": "2024-09-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 40699000.0,
+          "end": "2023-09-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 37234000.0,
+          "end": "2022-09-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        }
+      },
+      "cash_and_st_investments": {
+        "2025": {
+          "val": 214705000.0,
+          "end": "2025-09-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 203907000.0,
+          "end": "2024-09-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 345590000.0,
+          "end": "2023-09-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 214594000.0,
+          "end": "2022-09-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        }
+      },
       "total_assets": {
         "2025": {
           "val": 2609708000.0,
@@ -413,25 +467,40 @@
         "2025": {
           "val": 78145000.0,
           "end": "2025-09-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2024": {
           "val": 65423000.0,
           "end": "2024-09-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2023": {
           "val": 45598000.0,
           "end": "2023-09-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2022": {
-          "val": 35890000.0,
+          "val": 45496000.0,
           "end": "2022-09-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
+          "source": "yfinance"
+        }
+      },
+      "intangibles": {},
+      "long_term_investments": {
+        "2022": {
+          "val": 964000.0,
+          "end": "2022-09-30",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2021": {
+          "val": 4464000.0,
+          "end": "2021-09-30",
+          "concept": "Investments And Advances",
           "source": "yfinance"
         }
       },
@@ -994,6 +1063,71 @@
           "source": "yfinance"
         }
       },
+      "short_term_investments": {},
+      "restricted_cash": {
+        "2026-06-30": {
+          "val": 3418000.0,
+          "end": "2026-06-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 3961000.0,
+          "end": "2026-03-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3592000.0,
+          "end": "2025-12-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 3866000.0,
+          "end": "2025-09-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 7490000.0,
+          "end": "2025-06-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        }
+      },
+      "cash_and_st_investments": {
+        "2026-06-30": {
+          "val": 124641000.0,
+          "end": "2026-06-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 116440000.0,
+          "end": "2026-03-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 120757000.0,
+          "end": "2025-12-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 214705000.0,
+          "end": "2025-09-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 82932000.0,
+          "end": "2025-06-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        }
+      },
       "total_assets": {
         "2026-06-30": {
           "val": 2904750000.0,
@@ -1156,36 +1290,38 @@
       },
       "receivables": {
         "2026-06-30": {
-          "val": 96621000.0,
+          "val": 98930000.0,
           "end": "2026-06-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2026-03-31": {
-          "val": 85481000.0,
+          "val": 87211000.0,
           "end": "2026-03-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-12-31": {
           "val": 92759000.0,
           "end": "2025-12-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-09-30": {
           "val": 78145000.0,
           "end": "2025-09-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-06-30": {
-          "val": 76124000.0,
+          "val": 77656000.0,
           "end": "2025-06-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         }
       },
+      "intangibles": {},
+      "long_term_investments": {},
       "long_term_debt": {
         "2026-06-30": {
           "val": 1409132000.0,
@@ -1479,8 +1615,9 @@
   },
   {
     "ticker": "HOV",
-    "fetched_at": "2026-09-14T12:07:14+00:00",
+    "fetched_at": "2026-09-15T12:08:08+00:00",
     "source": "yfinance",
+    "financial_currency": "USD",
     "annual": {
       "revenue": {
         "2025": {
@@ -1744,6 +1881,59 @@
           "source": "yfinance"
         }
       },
+      "short_term_investments": {},
+      "restricted_cash": {
+        "2025": {
+          "val": 12608000.0,
+          "end": "2025-10-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 7875000.0,
+          "end": "2024-10-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 8431000.0,
+          "end": "2023-10-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 13382000.0,
+          "end": "2022-10-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        }
+      },
+      "cash_and_st_investments": {
+        "2025": {
+          "val": 272772000.0,
+          "end": "2025-10-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 209976000.0,
+          "end": "2024-10-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 434119000.0,
+          "end": "2023-10-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 326198000.0,
+          "end": "2022-10-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        }
+      },
       "total_assets": {
         "2025": {
           "val": 2633913000.0,
@@ -1853,25 +2043,52 @@
         "2025": {
           "val": 26454000.0,
           "end": "2025-10-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2024": {
           "val": 29400000.0,
           "end": "2024-10-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2023": {
           "val": 27982000.0,
           "end": "2023-10-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2022": {
           "val": 37837000.0,
           "end": "2022-10-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
+          "source": "yfinance"
+        }
+      },
+      "intangibles": {},
+      "long_term_investments": {
+        "2025": {
+          "val": 163469000.0,
+          "end": "2025-10-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 142910000.0,
+          "end": "2024-10-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 97886000.0,
+          "end": "2023-10-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 74940000.0,
+          "end": "2022-10-31",
+          "concept": "Investments And Advances",
           "source": "yfinance"
         }
       },
@@ -2416,6 +2633,71 @@
           "source": "yfinance"
         }
       },
+      "short_term_investments": {},
+      "restricted_cash": {
+        "2026-07-31": {
+          "val": 9208000.0,
+          "end": "2026-07-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2026-04-30": {
+          "val": 9935000.0,
+          "end": "2026-04-30",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2026-01-31": {
+          "val": 9661000.0,
+          "end": "2026-01-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2025-10-31": {
+          "val": 12608000.0,
+          "end": "2025-10-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        },
+        "2025-07-31": {
+          "val": 12155000.0,
+          "end": "2025-07-31",
+          "concept": "Restricted Cash",
+          "source": "yfinance"
+        }
+      },
+      "cash_and_st_investments": {
+        "2026-07-31": {
+          "val": 249090000.0,
+          "end": "2026-07-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2026-04-30": {
+          "val": 310925000.0,
+          "end": "2026-04-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2026-01-31": {
+          "val": 339910000.0,
+          "end": "2026-01-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-10-31": {
+          "val": 272772000.0,
+          "end": "2025-10-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-07-31": {
+          "val": 146592000.0,
+          "end": "2025-07-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        }
+      },
       "total_assets": {
         "2026-07-31": {
           "val": 2861058000.0,
@@ -2568,31 +2850,64 @@
         "2026-07-31": {
           "val": 49603000.0,
           "end": "2026-07-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2026-04-30": {
           "val": 47368000.0,
           "end": "2026-04-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2026-01-31": {
           "val": 40192000.0,
           "end": "2026-01-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-10-31": {
           "val": 26454000.0,
           "end": "2025-10-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-07-31": {
           "val": 29233000.0,
           "end": "2025-07-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
+          "source": "yfinance"
+        }
+      },
+      "intangibles": {},
+      "long_term_investments": {
+        "2026-07-31": {
+          "val": 155086000.0,
+          "end": "2026-07-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2026-04-30": {
+          "val": 148480000.0,
+          "end": "2026-04-30",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2026-01-31": {
+          "val": 146631000.0,
+          "end": "2026-01-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2025-10-31": {
+          "val": 163469000.0,
+          "end": "2025-10-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2025-07-31": {
+          "val": 218356000.0,
+          "end": "2025-07-31",
+          "concept": "Investments And Advances",
           "source": "yfinance"
         }
       },
@@ -2858,8 +3173,9 @@
   },
   {
     "ticker": "LEGH",
-    "fetched_at": "2026-09-14T12:08:30+00:00",
+    "fetched_at": "2026-09-15T12:09:35+00:00",
     "source": "yfinance",
+    "financial_currency": "USD",
     "annual": {
       "revenue": {
         "2025": {
@@ -3148,6 +3464,53 @@
           "source": "yfinance"
         }
       },
+      "short_term_investments": {
+        "2023": {
+          "val": 0.0,
+          "end": "2023-12-31",
+          "concept": "Other Short Term Investments",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 8412000.0,
+          "end": "2022-12-31",
+          "concept": "Other Short Term Investments",
+          "source": "yfinance"
+        },
+        "2021": {
+          "val": 0.0,
+          "end": "2021-12-31",
+          "concept": "Other Short Term Investments",
+          "source": "yfinance"
+        }
+      },
+      "restricted_cash": {},
+      "cash_and_st_investments": {
+        "2025": {
+          "val": 8478000.0,
+          "end": "2025-12-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 1149000.0,
+          "end": "2024-12-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 748000.0,
+          "end": "2023-12-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 11230000.0,
+          "end": "2022-12-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        }
+      },
       "total_assets": {
         "2025": {
           "val": 580337000.0,
@@ -3268,27 +3631,49 @@
       },
       "receivables": {
         "2025": {
-          "val": 5467000.0,
+          "val": 111727000.0,
           "end": "2025-12-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2024": {
-          "val": 3985000.0,
+          "val": 81115000.0,
           "end": "2024-12-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2023": {
-          "val": 4656000.0,
+          "val": 69045000.0,
           "end": "2023-12-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2022": {
-          "val": 4873000.0,
+          "val": 59712000.0,
           "end": "2022-12-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
+          "source": "yfinance"
+        }
+      },
+      "intangibles": {
+        "2025": {
+          "val": 5198000.0,
+          "end": "2025-12-31",
+          "concept": "Other Intangible Assets",
+          "source": "yfinance"
+        }
+      },
+      "long_term_investments": {
+        "2025": {
+          "val": 560000.0,
+          "end": "2025-12-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 0.0,
+          "end": "2024-12-31",
+          "concept": "Investments And Advances",
           "source": "yfinance"
         }
       },
@@ -3901,6 +4286,40 @@
           "source": "yfinance"
         }
       },
+      "short_term_investments": {},
+      "restricted_cash": {},
+      "cash_and_st_investments": {
+        "2026-06-30": {
+          "val": 28965000.0,
+          "end": "2026-06-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 14111000.0,
+          "end": "2026-03-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 8478000.0,
+          "end": "2025-12-31",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 13551000.0,
+          "end": "2025-09-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 2631000.0,
+          "end": "2025-06-30",
+          "concept": "Cash Cash Equivalents And Short Term Investments",
+          "source": "yfinance"
+        }
+      },
       "total_assets": {
         "2026-06-30": {
           "val": 615656000.0,
@@ -4057,33 +4476,79 @@
       },
       "receivables": {
         "2026-06-30": {
-          "val": 7022000.0,
+          "val": 107188000.0,
           "end": "2026-06-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2026-03-31": {
-          "val": 5061000.0,
+          "val": 108373000.0,
           "end": "2026-03-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-12-31": {
-          "val": 5467000.0,
+          "val": 111727000.0,
           "end": "2025-12-31",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-09-30": {
-          "val": 4646000.0,
+          "val": 115467000.0,
           "end": "2025-09-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
           "source": "yfinance"
         },
         "2025-06-30": {
-          "val": 4197000.0,
+          "val": 77276000.0,
           "end": "2025-06-30",
-          "concept": "Accounts Receivable",
+          "concept": "Receivables",
+          "source": "yfinance"
+        }
+      },
+      "intangibles": {
+        "2026-06-30": {
+          "val": 4713000.0,
+          "end": "2026-06-30",
+          "concept": "Other Intangible Assets",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 4956000.0,
+          "end": "2026-03-31",
+          "concept": "Other Intangible Assets",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 5198000.0,
+          "end": "2025-12-31",
+          "concept": "Other Intangible Assets",
+          "source": "yfinance"
+        }
+      },
+      "long_term_investments": {
+        "2026-06-30": {
+          "val": 0.0,
+          "end": "2026-06-30",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 560000.0,
+          "end": "2026-03-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 560000.0,
+          "end": "2025-12-31",
+          "concept": "Investments And Advances",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 0.0,
+          "end": "2024-12-31",
+          "concept": "Investments And Advances",
           "source": "yfinance"
         }
       },
@@ -4399,8 +4864,9 @@
   },
   {
     "ticker": "UHG",
-    "fetched_at": "2026-09-14T12:14:46+00:00",
+    "fetched_at": "2026-09-15T12:16:47+00:00",
     "source": "yfinance",
+    "financial_currency": "USD",
     "annual": {
       "revenue": {},
       "cost_of_revenue": {},
@@ -4414,12 +4880,17 @@
       "selling_marketing_expense": {},
       "general_admin_expense": {},
       "cash": {},
+      "short_term_investments": {},
+      "restricted_cash": {},
+      "cash_and_st_investments": {},
       "total_assets": {},
       "stockholders_equity": {},
       "goodwill": {},
       "ppe_net": {},
       "inventory": {},
       "receivables": {},
+      "intangibles": {},
+      "long_term_investments": {},
       "long_term_debt": {},
       "short_term_debt": {},
       "debt_total_legacy": {},
@@ -4444,12 +4915,17 @@
       "selling_marketing_expense": {},
       "general_admin_expense": {},
       "cash": {},
+      "short_term_investments": {},
+      "restricted_cash": {},
+      "cash_and_st_investments": {},
       "total_assets": {},
       "stockholders_equity": {},
       "goodwill": {},
       "ppe_net": {},
       "inventory": {},
       "receivables": {},
+      "intangibles": {},
+      "long_term_investments": {},
       "long_term_debt": {},
       "short_term_debt": {},
       "debt_total_legacy": {},
