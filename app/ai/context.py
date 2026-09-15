@@ -8,7 +8,7 @@ Two ways a company's data reaches the model:
 
 `company_block` is deliberately compact (~2-4k tokens): key statement lines
 as year/quarter tables, snapshot ratios, the classification, recent prices,
-and the dated analyst memo. The raw API payload is ~10x larger.
+and recent prices — no analyst memo. The raw API payload is ~10x larger.
 """
 from __future__ import annotations
 
@@ -285,10 +285,9 @@ def company_block(ticker: str, *, max_chars: int = 14000) -> str:
     if issues:
         parts.append("**Data-quality flags:** " + "; ".join(i.get("detail", "") for i in issues[:4]))
 
-    memo = (d.get("narrative") or {}).get("text") or ""
-    if memo.strip():
-        when = (d.get("narrative") or {}).get("rerun_at") or d.get("analyzed_date") or "?"
-        parts.append(f"**Analyst memo (dated {str(when)[:10]}; background, may be stale):**\n{memo.strip()}")
+    # The pipeline's own LLM-written memo is deliberately NOT attached: the
+    # chat reasons from filings and numbers, not an earlier model's stance
+    # (AGENTS.md's persona covers the pipeline's reports, not this assistant).
 
     text = "\n\n".join(parts)
     return text if len(text) <= max_chars else text[:max_chars] + "\n…(truncated)"
@@ -305,7 +304,7 @@ TOOLS = [
             "name": "lookup_company",
             "description": "Fetch the app's collected data for one company by ticker: "
                            "financial statements (10y annual, 8 quarters), valuation snapshot, "
-                           "business-model classification, prices, and the dated analyst memo. "
+                           "business-model classification and prices. "
                            "Only works for the ~1,250 analyzed companies; otherwise returns an error "
                            "and you should say the company has not been analyzed yet.",
             "parameters": {
@@ -582,7 +581,7 @@ def run_tool(name: str, args: dict) -> str:
         try:
             return company_block(t)
         except HTTPException:
-            return (f"ERROR: {t} has not been analyzed by the pipeline — no statements or memo "
+            return (f"ERROR: {t} has not been analyzed by the pipeline — no statements "
                     f"on file. Use search_companies to confirm the ticker, and tell the user "
                     f"the data is not available.")
     if name == "search_companies":

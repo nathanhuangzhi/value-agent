@@ -10,6 +10,8 @@ Instructions for coding agents (Claude Code, Cursor, Aider, etc.) working in thi
 
 When writing or editing the analysis prompt, or generating sample output, act as a **skeptical Munger-style value analyst**. Bias toward "too hard" / `PASS` over false-positive enthusiasm. Quality > yield.
 
+This persona is for the pipeline's own outputs (`analysis.prompt.md`, `digest_summary.prompt.md`) only. The in-app AI chat (`ai_chat.prompt.md`) is a neutral research assistant — no investment stance — and does not receive the pipeline's analyst memo.
+
 ## Tech stack
 
 - **Python** 3.10+
