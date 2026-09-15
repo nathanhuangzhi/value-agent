@@ -11,14 +11,18 @@
  * the server (it also shows up in the AI tab's drawer) and remembered
  * per device so the thread resumes next time the page opens. Model
  * defaults to Pro here — company deep-dives deserve the better model.
+ * The clock button opens past conversations (this ticker's first, then
+ * everything else) to load one into the box, or start a fresh thread.
  */
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { aiApi, streamMessage, type ChatMessage, type ModelKey } from '@/api/ai';
+import { aiApi, streamMessage, type ChatMessage, type ConversationSummary, type ModelKey } from '@/api/ai';
+import { formatDate } from '@/utils/format';
 import { Markdown } from '@/components/Markdown';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
@@ -38,6 +42,47 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const [streaming, setStreaming] = useState<Streaming | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<(() => void) | null>(null);
+  const insets = useSafeAreaInsets();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<ConversationSummary[] | null>(null);
+
+  const openHistory = () => {
+    setHistoryOpen(true);
+    setHistory(null);
+    aiApi.listConversations()
+      .then((list) => {
+        const tag = `#${ticker}`.toLowerCase();
+        const mine = list.filter((cv) => cv.title.toLowerCase().includes(tag));
+        const rest = list.filter((cv) => !cv.title.toLowerCase().includes(tag));
+        setHistory([...mine, ...rest]);
+      })
+      .catch((e) => { setError(String((e as Error).message ?? e)); setHistoryOpen(false); });
+  };
+
+  const loadConversation = async (id: string) => {
+    setHistoryOpen(false);
+    abortRef.current?.();
+    setStreaming(null);
+    try {
+      const conv = await aiApi.getConversation(id);
+      setConvId(conv.id);
+      setMessages(conv.messages);
+      AsyncStorage.setItem(CONV_KEY(ticker), conv.id).catch(() => {});
+      AsyncStorage.setItem(LAST_CONV_KEY, conv.id).catch(() => {});
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  };
+
+  const newThread = () => {
+    setHistoryOpen(false);
+    abortRef.current?.();
+    setStreaming(null);
+    setConvId(null);
+    setMessages([]);
+    setInput(prefix);
+    AsyncStorage.removeItem(CONV_KEY(ticker)).catch(() => {});
+  };
 
   // Resume this ticker's thread, if one exists on this device.
   useEffect(() => {
@@ -105,6 +150,9 @@ export function TickerChat({ ticker }: { ticker: string }) {
     <View style={[styles.wrap, { borderTopColor: c.border }]}>
       <View style={styles.head}>
         <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>ASK AI ABOUT {ticker}</Text>
+        <Pressable onPress={openHistory} hitSlop={10} style={styles.iconBtn} accessibilityLabel="Past conversations">
+          <Ionicons name="time-outline" size={20} color={c.textMuted} />
+        </Pressable>
         <View style={[styles.segment, { borderColor: c.border, backgroundColor: c.surface }]}>
           {(['flash', 'pro'] as ModelKey[]).map((m) => (
             <Pressable key={m} onPress={() => setModel(m)} style={[styles.segmentBtn, model === m && { backgroundColor: c.brand }]}>
@@ -180,13 +228,51 @@ export function TickerChat({ ticker }: { ticker: string }) {
           <Text style={[styles.openText, { color: c.brand }]}>Continue in the AI tab →</Text>
         </Pressable>
       ) : null}
+
+      <Modal visible={historyOpen} animationType="slide" transparent onRequestClose={() => setHistoryOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setHistoryOpen(false)} />
+        <View style={[styles.sheet, { backgroundColor: c.background, paddingBottom: insets.bottom + spacing.md }]}>
+          <View style={styles.sheetHead}>
+            <Text style={[styles.sheetTitle, { color: c.textPrimary }]}>Conversations</Text>
+            <Pressable onPress={newThread} hitSlop={8} style={[styles.newBtn, { borderColor: c.brand }]}>
+              <Ionicons name="add" size={16} color={c.brand} />
+              <Text style={[styles.newText, { color: c.brand }]}>New thread</Text>
+            </Pressable>
+          </View>
+          {history === null ? (
+            <ActivityIndicator color={c.brand} style={{ paddingVertical: spacing.xl }} />
+          ) : (
+            <FlatList
+              data={history}
+              keyExtractor={(cv) => cv.id}
+              style={{ maxHeight: 420 }}
+              ListEmptyComponent={<Text style={[styles.hint, { color: c.textMuted, padding: spacing.lg }]}>No conversations yet.</Text>}
+              renderItem={({ item }) => {
+                const mine = item.title.toLowerCase().includes(`#${ticker}`.toLowerCase());
+                const active = item.id === convId;
+                return (
+                  <Pressable
+                    onPress={() => loadConversation(item.id)}
+                    style={({ pressed }) => [styles.convRow, { borderBottomColor: c.border, backgroundColor: pressed ? c.surface : active ? c.statusOkBg : 'transparent', borderLeftColor: active ? c.brand : 'transparent' }]}
+                  >
+                    <Text style={[styles.convTitle, { color: mine ? c.textPrimary : c.textMuted }]} numberOfLines={2}>{item.title}</Text>
+                    <Text style={[styles.convMeta, { color: c.textMuted }]}>
+                      {formatDate(item.updated_at)} · {item.message_count} msgs · {item.model?.includes('pro') ? 'Pro' : 'Flash'}{mine ? ` · #${ticker}` : ''}
+                    </Text>
+                  </Pressable>
+                );
+              }}
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, marginTop: spacing.md },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  head: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   eyebrow: { fontSize: fontSize.xs, fontWeight: '700', letterSpacing: 1.5, borderBottomWidth: 2, paddingBottom: 4 },
   segment: { flexDirection: 'row', borderWidth: StyleSheet.hairlineWidth, borderRadius: radii.pill, padding: 2 },
   segmentBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill },
@@ -206,4 +292,14 @@ const styles = StyleSheet.create({
   sendBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   openLink: { alignSelf: 'flex-end', paddingVertical: spacing.sm },
   openText: { fontSize: fontSize.xs, fontWeight: '600', letterSpacing: 0.5 },
+  iconBtn: { marginLeft: 'auto', marginRight: spacing.sm, padding: 2 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
+  sheet: { borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg, paddingTop: spacing.md },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  sheetTitle: { fontSize: fontSize.lg, fontWeight: '700' },
+  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  newText: { fontSize: fontSize.xs, fontWeight: '700' },
+  convRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderLeftWidth: 3 },
+  convTitle: { fontSize: fontSize.md, fontWeight: '600' },
+  convMeta: { fontSize: fontSize.xs, marginTop: 2 },
 });
