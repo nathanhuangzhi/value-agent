@@ -214,3 +214,22 @@ def test_partial_sec_value_yields_to_fuller_gap_fill():
     assert merged["receivables"]["2025"]["val"] == 4.52 and sources["receivables"]["2025"] == "6k"
     assert merged["receivables"]["2024"]["val"] == 0.80 and sources["receivables"]["2024"] == "sec"  # nothing fuller
     assert merged["cash"]["2025"]["val"] == 29.0 and sources["cash"]["2025"] == "sec"           # not partial
+
+
+def test_concept_priority_beats_larger_value_within_one_filing():
+    from app.tools.sec_xbrl_tools import extract_period_values, is_instant_at_fy_end
+    rec = lambda v: {"val": v, "end": "2025-12-31", "filed": "2026-04-16", "form": "20-F", "fp": "FY", "fy": 2025}
+    facts = {"us-gaap": {
+        "CashAndCashEquivalentsAtCarryingValue": {"units": {"CNY": [rec(22.99)]}},
+        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents": {"units": {"CNY": [rec(24.12)]}},
+    }}
+    out = extract_period_values(facts, ["CashAndCashEquivalentsAtCarryingValue", "Cash",
+                                        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
+                                unit="CNY", period_filter=is_instant_at_fy_end, form_prefix=("20-F",))
+    assert out[2025]["val"] == 22.99 and out[2025]["concept"] == "CashAndCashEquivalentsAtCarryingValue"
+    # a later filing still wins over concept order (restatement)
+    facts["us-gaap"]["CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"]["units"]["CNY"][0]["filed"] = "2026-06-01"
+    out = extract_period_values(facts, ["CashAndCashEquivalentsAtCarryingValue",
+                                        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
+                                unit="CNY", period_filter=is_instant_at_fy_end, form_prefix=("20-F",))
+    assert out[2025]["val"] == 24.12

@@ -232,7 +232,7 @@ def extract_period_values(
     usgaap = facts.get("us-gaap", {}) if facts else {}
     by_year: dict[int, dict] = {}
     by_year_sort_key: dict[int, tuple] = {}
-    for concept in concepts:
+    for rank, concept in enumerate(concepts):
         records = usgaap.get(concept, {}).get("units", {}).get(unit, [])
         for r in records:
             form = r.get("form", "")
@@ -246,7 +246,11 @@ def extract_period_values(
             year = _fiscal_year_from_end(end)
             if year is None:
                 continue
-            sort_key = (r.get("filed", ""), float(r["val"]))  # latest filed, then larger val
+            # Latest filing wins (restatements); within one filing the concept
+            # listed first wins (the list is a priority order — a fallback
+            # concept must never beat the primary just because it's larger,
+            # e.g. cash incl. restricted cash vs. cash). Value is the last resort.
+            sort_key = (r.get("filed", ""), -rank, float(r["val"]))
             if year not in by_year_sort_key or sort_key > by_year_sort_key[year]:
                 by_year_sort_key[year] = sort_key
                 by_year[year] = {
@@ -346,7 +350,7 @@ def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str 
     usgaap = facts.get("us-gaap", {}) if facts else {}
     by_period: dict[str, dict] = {}
     by_period_sort_key: dict[str, tuple] = {}
-    for concept in concepts:
+    for rank, concept in enumerate(concepts):
         records = usgaap.get(concept, {}).get("units", {}).get(unit, [])
         for r in records:
             form = r.get("form", "")
@@ -357,7 +361,7 @@ def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str 
             end = r.get("end", "")
             if not end:
                 continue
-            sort_key = (r.get("filed", ""), float(r["val"]))
+            sort_key = (r.get("filed", ""), -rank, float(r["val"]))   # see extract_period_values
             if end not in by_period_sort_key or sort_key > by_period_sort_key[end]:
                 by_period_sort_key[end] = sort_key
                 by_period[end] = {
@@ -459,8 +463,11 @@ BALANCE_SHEET_METRICS: dict[str, list[str]] = {
         "OtherShortTermInvestments",
     ],
     "cash_and_st_investments": ["CashCashEquivalentsAndShortTermInvestments"],
-    "restricted_cash": ["RestrictedCashCurrent", "RestrictedCashAndCashEquivalents",
-                        "RestrictedCashAndCashEquivalentsAtCarryingValue", "RestrictedCash"],
+    # Balance-sheet carrying values only. `RestrictedCashAndCashEquivalents`
+    # (no "AtCarryingValue") is deliberately absent: filers such as VIPS use it
+    # for the "restricted net assets" disclosure (21.7B vs 1.1B on the sheet).
+    "restricted_cash": ["RestrictedCashAndCashEquivalentsAtCarryingValue", "RestrictedCashCurrent",
+                        "RestrictedCashCurrentAndNoncurrent", "RestrictedCash"],
     # Two debt buckets. Concepts here are *unambiguously* one or the other —
     # ambiguous totals like `LongTermDebt` or `ConvertibleDebt` (which can
     # include the current portion) are intentionally excluded to avoid
@@ -641,7 +648,7 @@ def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
         for u in monetary_units(facts, concepts):
             bs_data: dict[str, dict] = {}
             bs_sort_key: dict[str, tuple] = {}
-            for concept in concepts:
+            for rank, concept in enumerate(concepts):
                 for r in usgaap.get(concept, {}).get("units", {}).get(u, []):
                     form = r.get("form", "")
                     if not form.startswith(QUARTERLY_FORMS):
@@ -651,7 +658,7 @@ def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
                     end = r.get("end", "")
                     if not end:
                         continue
-                    sort_key = (r.get("filed", ""), float(r["val"]))
+                    sort_key = (r.get("filed", ""), -rank, float(r["val"]))   # see extract_period_values
                     if end not in bs_sort_key or sort_key > bs_sort_key[end]:
                         bs_sort_key[end] = sort_key
                         bs_data[end] = {
