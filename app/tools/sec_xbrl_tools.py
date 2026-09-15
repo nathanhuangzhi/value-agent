@@ -246,11 +246,12 @@ def extract_period_values(
             year = _fiscal_year_from_end(end)
             if year is None:
                 continue
-            # Latest filing wins (restatements); within one filing the concept
-            # listed first wins (the list is a priority order — a fallback
-            # concept must never beat the primary just because it's larger,
-            # e.g. cash incl. restricted cash vs. cash). Value is the last resort.
-            sort_key = (r.get("filed", ""), -rank, float(r["val"]))
+            # The concept list is a priority order: the first concept that has
+            # a value for the period wins, even over a later filing that only
+            # tagged a fallback (a comparative year re-tagged as equity incl.
+            # NCI must not replace parent-only equity). Within one concept the
+            # latest filing wins (restatements); value is the last resort.
+            sort_key = (-rank, r.get("filed", ""), float(r["val"]))
             if year not in by_year_sort_key or sort_key > by_year_sort_key[year]:
                 by_year_sort_key[year] = sort_key
                 by_year[year] = {
@@ -361,7 +362,7 @@ def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str 
             end = r.get("end", "")
             if not end:
                 continue
-            sort_key = (r.get("filed", ""), -rank, float(r["val"]))   # see extract_period_values
+            sort_key = (-rank, r.get("filed", ""), float(r["val"]))   # see extract_period_values
             if end not in by_period_sort_key or sort_key > by_period_sort_key[end]:
                 by_period_sort_key[end] = sort_key
                 by_period[end] = {
@@ -447,12 +448,10 @@ CASH_FLOW_METRICS: dict[str, list[str]] = {
 }
 
 BALANCE_SHEET_METRICS: dict[str, list[str]] = {
-    "cash": [
-        "CashAndCashEquivalentsAtCarryingValue",
-        "Cash",
-        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
-        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalentsIncludingDisposalGroupAndDiscontinuedOperations",
-    ],
+    # Cash & equivalents only. The cash-flow-statement totals that include
+    # restricted / client cash are deliberately NOT fallbacks (FUTU FY2022:
+    # 55.7B incl. client cash vs 5.0B cash) — yfinance fills a missing year.
+    "cash": ["CashAndCashEquivalentsAtCarryingValue", "Cash"],
     # Short-term investments, and the filer's own cash+ST-investments total
     # when tagged; the adapter derives cash + ST investments otherwise.
     "short_term_investments": [
@@ -513,11 +512,8 @@ BALANCE_SHEET_METRICS: dict[str, list[str]] = {
         "AccountsPayableAndAccruedLiabilitiesCurrent",
     ],
     "accrued_liabilities": ["AccruedLiabilitiesCurrent"],
-    "deferred_revenue": [
-        "ContractWithCustomerLiabilityCurrent",
-        "DeferredRevenueCurrent",
-        "ContractWithCustomerLiability",
-    ],
+    # Current portion only (matches the 6-K definition and Yahoo).
+    "deferred_revenue": ["ContractWithCustomerLiabilityCurrent", "DeferredRevenueCurrent"],
     "lease_liabilities": [
         "OperatingLeaseLiabilityNoncurrent",
         "OperatingLeaseLiability",
@@ -587,6 +583,84 @@ def rescale_shares_filed_in_thousands(period_data: dict) -> None:
             entry["val"] = shares * 1000
 
 
+# Metrics that filers tag either as one total OR as several components
+# (JOYY: no DebtCurrent, but ShortTermBorrowings 37M + ConvertibleDebtCurrent
+# 435M). Each entry: `total` concepts (priority list, used alone when tagged)
+# and `parts` — groups of alternative concepts; the first tagged concept of
+# each group is summed. Groups are chosen so their concepts don't overlap.
+COMPOSITE_METRICS: dict[str, dict] = {
+    "short_term_debt": {
+        "total": ["DebtCurrent"],
+        "parts": [
+            ["ShortTermBorrowings", "LoansPayableCurrent", "SecuredDebtCurrent", "ShortTermBankLoansAndNotesPayable"],
+            ["LongTermDebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent"],
+            ["ConvertibleDebtCurrent", "ConvertibleNotesPayableCurrent"],
+        ],
+    },
+    "long_term_debt": {
+        "total": [],
+        "parts": [
+            ["LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligationsNoncurrent",
+             "LongTermNotesPayable", "LongTermLoansPayable", "SecuredLongTermDebt"],
+            ["ConvertibleDebtNoncurrent", "ConvertibleLongTermNotesPayable"],
+        ],
+    },
+    "receivables": {
+        "total": ["ReceivablesNetCurrent"],
+        "parts": [
+            ["AccountsReceivableNetCurrent"],
+            ["OtherReceivablesNetCurrent", "OtherReceivables"],
+            ["DueFromRelatedPartiesCurrent"],
+            ["InterestReceivableCurrent"],
+            ["LoansAndLeasesReceivableNetReportedAmount", "NotesReceivableNet"],
+        ],
+    },
+    "short_term_investments": {
+        "total": [],
+        "parts": [
+            ["ShortTermInvestments", "MarketableSecuritiesCurrent", "AvailableForSaleSecuritiesDebtSecuritiesCurrent",
+             "OtherShortTermInvestments"],
+            ["HeldToMaturitySecuritiesCurrent"],
+            ["TimeDepositsAtCarryingValue", "BankTimeDeposits"],
+        ],
+    },
+    "restricted_cash": {
+        "total": ["RestrictedCashAndCashEquivalentsAtCarryingValue", "RestrictedCashCurrentAndNoncurrent"],
+        "parts": [["RestrictedCashCurrent"], ["RestrictedCashNoncurrent"]],
+    },
+    "long_term_investments": {
+        "total": ["LongTermInvestments"],
+        "parts": [
+            ["EquityMethodInvestments"],
+            ["EquitySecuritiesWithoutReadilyDeterminableFairValueAmount"],
+            ["EquitySecuritiesFvNiNoncurrent"],
+            ["AvailableForSaleSecuritiesDebtSecuritiesNoncurrent", "MarketableSecuritiesNoncurrent"],
+            ["HeldToMaturitySecuritiesNoncurrent"],
+            ["OtherLongTermInvestments"],
+        ],
+    },
+}
+
+
+def _composite(per_group: list[dict], total: dict) -> dict:
+    """Combine per-period: the total concept when tagged, else the sum of
+    the component groups that have a value. Entries carry `concept="sum(...)"`."""
+    periods = set(total) | {pk for g in per_group for pk in g}
+    out: dict = {}
+    for pk in periods:
+        if pk in total:
+            out[pk] = total[pk]
+            continue
+        parts = [g[pk] for g in per_group if pk in g]
+        if not parts:
+            continue
+        base = dict(parts[0])
+        base["val"] = sum(float(e["val"]) for e in parts)
+        base["concept"] = "sum(" + "+".join(e.get("concept", "?") for e in parts) + ")"
+        out[pk] = base
+    return out
+
+
 def _extract_all_annual(facts: dict, unit: str = "USD") -> dict:
     """Pull every metric for annual (FY) records from 10-K / 20-F / 40-F
     filings. Monetary metrics are read in every currency the filer used and
@@ -617,6 +691,10 @@ def _extract_all_annual(facts: dict, unit: str = "USD") -> dict:
         out[name] = monetary(concepts, is_annual_period)
     for name, concepts in BALANCE_SHEET_METRICS.items():
         out[name] = monetary(concepts, is_instant_at_fy_end)
+    for name, spec in COMPOSITE_METRICS.items():
+        total = monetary(spec["total"], is_instant_at_fy_end) if spec["total"] else {}
+        groups = [monetary(g, is_instant_at_fy_end) for g in spec["parts"]]
+        out[name] = _composite(groups, total)
     return out
 
 
@@ -640,39 +718,54 @@ def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
         out[name] = merge_units({u: extract_quarterly_values(facts, concepts, unit=f"{u}/shares")
                                  for u in monetary_units(facts, INCOME_METRICS["net_income"])})
 
-    # Balance sheet items at quarter-end: instants from 10-Q / 10-K. Pulled
-    # inline because the standard `extract_*` helpers require a start date.
-    usgaap = facts.get("us-gaap", {}) if facts else {}
+    # Balance sheet items at quarter-end: instants from 10-Q / 10-K (and 20-F /
+    # 6-K), every currency merged per period.
     for name, concepts in BALANCE_SHEET_METRICS.items():
-        per_unit: dict[str, dict] = {}
-        for u in monetary_units(facts, concepts):
-            bs_data: dict[str, dict] = {}
-            bs_sort_key: dict[str, tuple] = {}
-            for rank, concept in enumerate(concepts):
-                for r in usgaap.get(concept, {}).get("units", {}).get(u, []):
-                    form = r.get("form", "")
-                    if not form.startswith(QUARTERLY_FORMS):
-                        continue
-                    if not is_instant_any(r):
-                        continue
-                    end = r.get("end", "")
-                    if not end:
-                        continue
-                    sort_key = (r.get("filed", ""), -rank, float(r["val"]))   # see extract_period_values
-                    if end not in bs_sort_key or sort_key > bs_sort_key[end]:
-                        bs_sort_key[end] = sort_key
-                        bs_data[end] = {
-                            "val": float(r["val"]),
-                            "end": end,
-                            "filed": r.get("filed"),
-                            "concept": concept,
-                            "fy": r.get("fy"),
-                            "fp": r.get("fp"),
-                            "form": r.get("form"),
-                        }
-            per_unit[u] = bs_data
-        out[name] = merge_units(per_unit)
+        out[name] = _instants_all_units(facts, concepts)
+    for name, spec in COMPOSITE_METRICS.items():
+        total = _instants_all_units(facts, spec["total"]) if spec["total"] else {}
+        groups = [_instants_all_units(facts, g) for g in spec["parts"]]
+        out[name] = _composite(groups, total)
     return out
+
+
+def extract_instant_values(facts: dict, concepts, *, unit: str = "USD",
+                           forms: tuple[str, ...] = QUARTERLY_FORMS) -> dict[str, dict]:
+    """Point-in-time (balance sheet) values keyed by end date, one entry per
+    period: concept priority, then latest filing, then value."""
+    usgaap = facts.get("us-gaap", {}) if facts else {}
+    bs_data: dict[str, dict] = {}
+    bs_sort_key: dict[str, tuple] = {}
+    for rank, concept in enumerate(concepts):
+        for r in usgaap.get(concept, {}).get("units", {}).get(unit, []):
+            form = r.get("form", "")
+            if not form.startswith(forms):
+                continue
+            if not is_instant_any(r):
+                continue
+            end = r.get("end", "")
+            if not end:
+                continue
+            sort_key = (-rank, r.get("filed", ""), float(r["val"]))   # see extract_period_values
+            if end not in bs_sort_key or sort_key > bs_sort_key[end]:
+                bs_sort_key[end] = sort_key
+                bs_data[end] = {
+                    "val": float(r["val"]),
+                    "end": end,
+                    "filed": r.get("filed"),
+                    "concept": concept,
+                    "fy": r.get("fy"),
+                    "fp": r.get("fp"),
+                    "form": r.get("form"),
+                }
+    return bs_data
+
+
+def _instants_all_units(facts: dict, concepts) -> dict:
+    if not concepts:
+        return {}
+    return merge_units({u: extract_instant_values(facts, concepts, unit=u)
+                        for u in monetary_units(facts, concepts)})
 
 
 def build_sec_row(ticker: str, cik: int, facts: dict, *, fetched_at: str | None = None) -> dict:

@@ -227,9 +227,36 @@ def test_concept_priority_beats_larger_value_within_one_filing():
                                         "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
                                 unit="CNY", period_filter=is_instant_at_fy_end, form_prefix=("20-F",))
     assert out[2025]["val"] == 22.99 and out[2025]["concept"] == "CashAndCashEquivalentsAtCarryingValue"
-    # a later filing still wins over concept order (restatement)
+    # concept order beats a later filing that only tagged the fallback…
     facts["us-gaap"]["CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"]["units"]["CNY"][0]["filed"] = "2026-06-01"
     out = extract_period_values(facts, ["CashAndCashEquivalentsAtCarryingValue",
                                         "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
                                 unit="CNY", period_filter=is_instant_at_fy_end, form_prefix=("20-F",))
-    assert out[2025]["val"] == 24.12
+    assert out[2025]["val"] == 22.99
+    # …while within one concept the latest filing (restatement) wins
+    facts["us-gaap"]["CashAndCashEquivalentsAtCarryingValue"]["units"]["CNY"].append(dict(rec(23.5), filed="2026-07-01"))
+    out = extract_period_values(facts, ["CashAndCashEquivalentsAtCarryingValue"],
+                                unit="CNY", period_filter=is_instant_at_fy_end, form_prefix=("20-F",))
+    assert out[2025]["val"] == 23.5
+
+
+def test_composite_sums_components_when_no_total_is_tagged():
+    from app.tools.sec_xbrl_tools import _extract_all_annual
+    rec = lambda v: [{"val": v, "end": "2022-12-31", "filed": "2023-04-20", "form": "20-F", "fp": "FY", "fy": 2022}]
+    facts = {"us-gaap": {
+        "ShortTermBorrowings": {"units": {"USD": rec(37e6)}},
+        "ConvertibleDebtCurrent": {"units": {"USD": rec(435e6)}},
+        "ConvertibleDebtNoncurrent": {"units": {"USD": rec(401e6)}},
+        "EquityMethodInvestments": {"units": {"USD": rec(458e6)}},
+        "EquitySecuritiesWithoutReadilyDeterminableFairValueAmount": {"units": {"USD": rec(179e6)}},
+        "AvailableForSaleSecuritiesDebtSecuritiesNoncurrent": {"units": {"USD": rec(21e6)}},
+        "Assets": {"units": {"USD": rec(9072e6)}},
+    }}
+    out = _extract_all_annual(facts)
+    assert out["short_term_debt"][2022]["val"] == 472e6
+    assert out["short_term_debt"][2022]["concept"] == "sum(ShortTermBorrowings+ConvertibleDebtCurrent)"
+    assert out["long_term_debt"][2022]["val"] == 401e6
+    assert out["long_term_investments"][2022]["val"] == 658e6
+    # a tagged total wins over the components
+    facts["us-gaap"]["DebtCurrent"] = {"units": {"USD": rec(500e6)}}
+    assert _extract_all_annual(facts)["short_term_debt"][2022]["val"] == 500e6

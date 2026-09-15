@@ -292,6 +292,12 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
             sources["Gross Profit"] = "yfinance" if "yfinance" in (rev_src, cor_src) else "sec"
 
     if derived_fcf:
+        # Capex is an outflow: yfinance and 6-K report it negative, SEC's
+        # PaymentsToAcquire… concepts positive. Normalise to negative so the
+        # API is sign-consistent across sources (renderers show |capex|).
+        if items.get("Capital Expenditure") is not None and items["Capital Expenditure"] > 0 \
+                and sources.get("Capital Expenditure") == "sec":
+            items["Capital Expenditure"] = -items["Capital Expenditure"]
         ocf = items.get("Cash Flow From Continuing Operating Activities")
         ocf_src = sources.get("Cash Flow From Continuing Operating Activities", "sec")
         if items.get("Capital Expenditure") is None and ocf is not None:
