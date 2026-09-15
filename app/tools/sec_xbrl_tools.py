@@ -618,16 +618,20 @@ COMPOSITE_METRICS: dict[str, dict] = {
     },
     "short_term_investments": {
         "total": [],
+        # No separate held-to-maturity group: filers' ShortTermInvestments
+        # already include HTM securities (PDD double-counted 58B otherwise).
         "parts": [
             ["ShortTermInvestments", "MarketableSecuritiesCurrent", "AvailableForSaleSecuritiesDebtSecuritiesCurrent",
-             "OtherShortTermInvestments"],
-            ["HeldToMaturitySecuritiesCurrent"],
+             "HeldToMaturitySecuritiesCurrent", "OtherShortTermInvestments"],
             ["TimeDepositsAtCarryingValue", "BankTimeDeposits"],
         ],
     },
     "restricted_cash": {
         "total": ["RestrictedCashAndCashEquivalentsAtCarryingValue", "RestrictedCashCurrentAndNoncurrent"],
         "parts": [["RestrictedCashCurrent"], ["RestrictedCashNoncurrent"]],
+        # The balance-sheet value is authoritative; Yahoo's "Restricted Cash"
+        # folds brokers' client cash in (FUTU: 50B vs 1M) — never let it win.
+        "authoritative": True,
     },
     "long_term_investments": {
         "total": ["LongTermInvestments"],
@@ -657,7 +661,7 @@ def _group_pick(per_concept: list[dict]) -> dict:
     return out
 
 
-def _composite(per_group: list[dict], total: dict) -> dict:
+def _composite(per_group: list[dict], total: dict, *, partial: bool = True) -> dict:
     """Combine per-period: the total concept when tagged, else the sum of
     the component groups that have a value. Entries carry `concept="sum(...)"`
     and `partial=True` (a sum of us-gaap components can only under-count —
@@ -667,7 +671,7 @@ def _composite(per_group: list[dict], total: dict) -> dict:
     out: dict = {}
     for pk in periods:
         if pk in total:
-            out[pk] = dict(total[pk], partial=True)
+            out[pk] = dict(total[pk], partial=partial)
             continue
         parts = [g[pk] for g in per_group if pk in g]
         if not parts:
@@ -675,7 +679,7 @@ def _composite(per_group: list[dict], total: dict) -> dict:
         base = dict(parts[0])
         base["val"] = sum(float(e["val"]) for e in parts)
         base["concept"] = "sum(" + "+".join(e.get("concept", "?") for e in parts) + ")"
-        base["partial"] = True
+        base["partial"] = partial
         out[pk] = base
     return out
 
@@ -713,7 +717,7 @@ def _extract_all_annual(facts: dict, unit: str = "USD") -> dict:
     for name, spec in COMPOSITE_METRICS.items():
         total = monetary(spec["total"], is_instant_at_fy_end) if spec["total"] else {}
         groups = [_group_pick([monetary([c], is_instant_at_fy_end) for c in g]) for g in spec["parts"]]
-        out[name] = _composite(groups, total)
+        out[name] = _composite(groups, total, partial=not spec.get("authoritative"))
     return out
 
 
@@ -744,7 +748,7 @@ def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
     for name, spec in COMPOSITE_METRICS.items():
         total = _instants_all_units(facts, spec["total"]) if spec["total"] else {}
         groups = [_group_pick([_instants_all_units(facts, [c]) for c in g]) for g in spec["parts"]]
-        out[name] = _composite(groups, total)
+        out[name] = _composite(groups, total, partial=not spec.get("authoritative"))
     return out
 
 

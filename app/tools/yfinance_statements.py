@@ -60,8 +60,9 @@ _BALANCE_LABELS: dict[str, list[str]] = {
     "inventory": ["Inventory"],
     "receivables": ["Receivables", "Accounts Receivable"],   # total receivables (incl. other/related-party) first
     "intangibles": ["Other Intangible Assets"],
-    "long_term_investments": ["Long Term Equity Investment", "Investments And Advances",
-                              "Long Term Investments", "Investmentin Financial Assets"],
+    # Broad first: all non-current investments (matches the SEC / 6-K definition).
+    "long_term_investments": ["Investments And Advances", "Long Term Investments",
+                              "Investmentin Financial Assets", "Long Term Equity Investment"],
     "long_term_debt": ["Long Term Debt"],
     "short_term_debt": ["Current Debt", "Current Debt And Capital Lease Obligation"],
     "debt_total_legacy": ["Total Debt"],
