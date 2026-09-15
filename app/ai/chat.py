@@ -127,12 +127,21 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                     args = json.loads(tc["arguments"] or "{}")
                 except json.JSONDecodeError:
                     args = {}
-                label = args.get("ticker") or args.get("query") or ""
-                yield {"type": "status",
-                       "text": (f"Looking up {label.upper()}…" if tc["name"] == "lookup_company"
-                                else f"Searching companies for “{label}”…")}
+                label = (args.get("ticker") or args.get("query") or "").upper()
+                status = {
+                    "lookup_company": f"Looking up {label}…",
+                    "search_companies": f"Searching companies for “{args.get('query', '')}”…",
+                    "list_filings": f"Listing filings for {label}…",
+                    "get_6k_statement": f"Reading {label}'s 6-K statements{(' ' + args['period_end']) if args.get('period_end') else ''}…",
+                    "get_press_release": f"Reading {label}'s press release…",
+                    "search_xbrl_concepts": f"Searching {label}'s XBRL for “{args.get('keyword', '')}”…",
+                    "get_xbrl_concept": f"Pulling {label} · {args.get('concept', '')} from EDGAR…",
+                    "get_yfinance_raw": f"Reading {label}'s Yahoo {args.get('statement', '')}…",
+                }.get(tc["name"], f"Running {tc['name']}…")
+                yield {"type": "status", "text": status}
                 result = run_tool(tc["name"], args)
-                if tc["name"] == "lookup_company" and not result.startswith("ERROR"):
+                if tc["name"] in ("lookup_company", "get_6k_statement", "get_press_release",
+                                  "get_xbrl_concept", "get_yfinance_raw") and not result.startswith("ERROR"):
                     t = (args.get("ticker") or "").upper()
                     if t and t not in companies_used:
                         companies_used.append(t)

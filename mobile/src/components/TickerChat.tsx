@@ -10,7 +10,7 @@
  * company's data to every question. One conversation per ticker, kept on
  * the server (it also shows up in the AI tab's drawer) and remembered
  * per device so the thread resumes next time the page opens. Model
- * defaults to Pro here — company deep-dives deserve the better model.
+ * defaults to Flash (switch to Pro for a deeper read).
  * The clock button opens past conversations (this ticker's first, then
  * everything else) to load one into the box, or start a fresh thread.
  */
@@ -35,7 +35,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const c = useColors();
   const router = useRouter();
   const prefix = `#${ticker} `;
-  const [model, setModel] = useState<ModelKey>('pro');
+  const [model, setModel] = useState<ModelKey>('flash');
   const [convId, setConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState(prefix);
