@@ -7,12 +7,10 @@
  *   [ #QDEL  what does the debt look like?        ➤ ]
  *
  * The composer is pre-filled with "#TICKER " so the server attaches the
- * company's data to every question. One conversation per ticker, kept on
- * the server (it also shows up in the AI tab's drawer) and remembered
- * per device so the thread resumes next time the page opens. Model
- * defaults to Flash (switch to Pro for a deeper read).
- * The clock button opens past conversations (this ticker's first, then
- * everything else) to load one into the box, or start a fresh thread.
+ * company's data to every question. The box opens BLANK every time the
+ * page is entered; each thread lives on the server (it also shows up in
+ * the AI tab's drawer) and the clock button brings past conversations
+ * back (this ticker's first). Model defaults to Flash.
  */
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,7 +24,6 @@ import { formatDate } from '@/utils/format';
 import { Markdown } from '@/components/Markdown';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
-const CONV_KEY = (t: string) => `ai_conv_ticker_${t}`;
 const LAST_CONV_KEY = 'ai_last_conversation_v1';   // shared with the AI tab
 
 type Streaming = { status: string | null; text: string };
@@ -67,7 +64,6 @@ export function TickerChat({ ticker }: { ticker: string }) {
       const conv = await aiApi.getConversation(id);
       setConvId(conv.id);
       setMessages(conv.messages);
-      AsyncStorage.setItem(CONV_KEY(ticker), conv.id).catch(() => {});
       AsyncStorage.setItem(LAST_CONV_KEY, conv.id).catch(() => {});
     } catch (e) {
       setError(String((e as Error).message ?? e));
@@ -81,25 +77,13 @@ export function TickerChat({ ticker }: { ticker: string }) {
     setConvId(null);
     setMessages([]);
     setInput(prefix);
-    AsyncStorage.removeItem(CONV_KEY(ticker)).catch(() => {});
   };
 
-  // Resume this ticker's thread, if one exists on this device.
+  // A fresh, blank box whenever the page (or the ticker) changes; earlier
+  // threads stay reachable through the history button.
   useEffect(() => {
-    let cancelled = false;
+    abortRef.current?.();
     setConvId(null); setMessages([]); setInput(prefix); setStreaming(null); setError(null);
-    AsyncStorage.getItem(CONV_KEY(ticker))
-      .then(async (id) => {
-        if (!id || cancelled) return;
-        try {
-          const conv = await aiApi.getConversation(id);
-          if (!cancelled) { setConvId(conv.id); setMessages(conv.messages); }
-        } catch {
-          AsyncStorage.removeItem(CONV_KEY(ticker)).catch(() => {});
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
   }, [ticker, prefix]);
 
   const send = async () => {
@@ -113,7 +97,6 @@ export function TickerChat({ ticker }: { ticker: string }) {
         const conv = await aiApi.createConversation(model);
         id = conv.id;
         setConvId(id);
-        AsyncStorage.setItem(CONV_KEY(ticker), id).catch(() => {});
       } catch (e) {
         setError(String((e as Error).message ?? e));
         setInput(text);
