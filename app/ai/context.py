@@ -73,7 +73,7 @@ def _analyzed_name_index() -> list[tuple[str, str]]:
 def detect_companies(text: str, *, limit: int = 4) -> list[str]:
     """Tickers the user is talking about, in order of appearance.
 
-    Matches: `$QDEL` cashtags; upper-case tokens that are analyzed tickers
+    Matches: `$QDEL` / `#QDEL` tags; upper-case tokens that are analyzed tickers
     (skipping words that are usually just English); and company names
     (suffix-stripped, ≥5 chars) as substrings. Capped at `limit` so a list
     of ten tickers doesn't blow the context."""
@@ -84,7 +84,9 @@ def detect_companies(text: str, *, limit: int = 4) -> list[str]:
         if t in analyzed and t not in found:
             found.append(t)
 
-    for m in re.finditer(r"\$([A-Za-z]{1,6}(?:\.[A-Za-z])?)", text):
+    # `$QDEL` cashtags and `#QDEL` hashtags (the app's company-page chat
+    # pre-fills "#TICKER ") — case-insensitive, any word length.
+    for m in re.finditer(r"[$#]([A-Za-z]{1,6}(?:\.[A-Za-z])?)\b", text):
         _add(m.group(1).upper())
     for tok in re.findall(r"\b[A-Z]{2,6}(?:\.[A-Z])?\b", text):
         if tok not in _AMBIGUOUS:

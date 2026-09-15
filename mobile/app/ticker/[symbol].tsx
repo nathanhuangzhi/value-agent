@@ -40,6 +40,7 @@ import {
   usePriceHistory,
 } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
+import { TickerChat } from '@/components/TickerChat';
 import { SHOW_LLM_ANALYSIS, TICKER_SWIPE_NAV } from '@/config';
 import {
   HISTORICAL_TABLE_HEADER_HEIGHT,
@@ -158,6 +159,8 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView
         style={{ backgroundColor: c.background }}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scroll,
           contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
@@ -309,6 +312,8 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
               ))}
           </View>
         )}
+
+        <TickerChat ticker={data.ticker} />
 
         <View style={[styles.footer, { borderTopColor: c.border }]}>
           <Text style={[styles.disclaimer, { color: c.textMuted }]}>
