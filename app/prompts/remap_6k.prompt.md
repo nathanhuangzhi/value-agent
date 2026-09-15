@@ -33,7 +33,7 @@ Balance sheet (period end):
 - `short_term_debt`: short-term borrowings/loans + current portion of long-term debt + securities sold under agreements to repurchase + current convertible notes. Exclude lease liabilities and payables to clients/brokers.
 - `long_term_debt`: non-current borrowings, notes, bonds, convertible notes. Exclude lease liabilities.
 - `accounts_payable`: accounts payable (trade).
-- `deferred_revenue`: deferred revenue / contract liabilities + advances from customers, current + non-current.
+- `deferred_revenue`: CURRENT deferred revenue / contract liabilities + advances/deposits from customers. Exclude non-current deferred income (often government grants or asset-related deferrals, not customer money).
 
 Cash flow (three-month column if the statement has one; otherwise null for both):
 - `operating_cf`: net cash provided by/(used in) operating activities.

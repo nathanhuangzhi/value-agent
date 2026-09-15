@@ -186,6 +186,9 @@ def main():
         # Foreign filers' quarterly results come as 6-K press releases; pick
         # up any new one (DeepSeek Flash, ~$0.01 per new release, idempotent).
         _run_stage("fetch_6k_statements", ["-m", "scripts.fetch_6k_statements"])
+        # Map any newly extracted release onto the Yahoo-aligned standard
+        # definitions (remap_6k.prompt.md); already-mapped filings are skipped.
+        _run_stage("remap_6k_standard", ["-m", "scripts.remap_6k_standard"])
 
     # ---- 3. Validate ----
     if not args.skip_validate:
