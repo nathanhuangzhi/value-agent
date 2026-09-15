@@ -173,10 +173,15 @@ def _merge_period_dicts(sec_section: dict, yf_section: dict) -> tuple[dict, dict
         m_entries = {}
         m_sources = {}
         for pk in period_keys:
-            # SEC wins — unless its value is flagged `partial` (a narrower
-            # concept than the metric means, e.g. accounts receivable only)
-            # and the gap-fill side has a value for the same period.
-            if pk in sec_d and not ((sec_d[pk] or {}).get("partial") and pk in yf_d):
+            # SEC wins — unless its value is flagged `partial` (an aggregate
+            # whose us-gaap components can only under-count: custom-taxonomy
+            # lines are invisible here) and the gap-fill side has a LARGER
+            # value for the same period.
+            sec_e = sec_d.get(pk) if pk in sec_d else None
+            yields = (sec_e is not None and sec_e.get("partial") and pk in yf_d
+                      and (yf_d[pk] or {}).get("val") is not None
+                      and float(yf_d[pk]["val"]) > float(sec_e.get("val") or 0))
+            if pk in sec_d and not yields:
                 m_entries[pk] = sec_d[pk]
                 m_sources[pk] = "sec"
             else:
@@ -424,8 +429,8 @@ _EPS_KEYS = ("diluted_eps",)
 def infer_ads_ratio(sec_row: dict | None, yfinance_row: dict | None) -> float | None:
     """Ordinary shares per ADS, inferred from annual periods where both
     sources report diluted shares: the median SEC/yfinance ratio, kept only
-    when it's a clear integer ≥ 2 and stable across periods. None → the
-    ticker is not an ADS (or can't be checked), leave the SEC data alone."""
+    when it's a clear integer ≥ 2 or 1/k (an ADS worth a fraction of a share)
+    and stable across periods. None → not an ADS (or can't be checked)."""
     sec_sh = _normalize_annual_keys((sec_row or {}).get("annual")).get("diluted_shares") or {}
     yf_sh = _normalize_annual_keys((yfinance_row or {}).get("annual")).get("diluted_shares") or {}
     ratios = []
@@ -437,12 +442,15 @@ def infer_ads_ratio(sec_row: dict | None, yfinance_row: dict | None) -> float | 
         return None
     ratios.sort()
     med = ratios[len(ratios) // 2]
-    rounded = round(med)
-    if rounded < 2 or abs(med - rounded) > 0.15:
+    # Ordinary shares per ADS: an integer ≥ 2 (PDD 4, FUTU 8) or 1/k for an
+    # ADS worth a fraction of a share (VIPS: 1 ADS = 0.2 ordinary → 0.2).
+    candidates = [float(k) for k in range(2, 101)] + [1.0 / k for k in range(2, 21)]
+    target = min(candidates, key=lambda c: abs(med - c) / c)
+    if abs(med - target) / target > 0.15:
         return None
-    if any(abs(r - rounded) > 0.25 * rounded for r in ratios):
+    if any(abs(r - target) / target > 0.25 for r in ratios):
         return None
-    return float(rounded)
+    return target
 
 
 def _ads_normalized(sec_row: dict | None, yfinance_row: dict | None) -> dict:

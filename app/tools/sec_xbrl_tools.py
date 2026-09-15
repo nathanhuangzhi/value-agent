@@ -603,6 +603,7 @@ COMPOSITE_METRICS: dict[str, dict] = {
             ["LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligationsNoncurrent",
              "LongTermNotesPayable", "LongTermLoansPayable", "SecuredLongTermDebt"],
             ["ConvertibleDebtNoncurrent", "ConvertibleLongTermNotesPayable"],
+            ["UnsecuredLongTermDebt", "SeniorLongTermNotes", "SeniorNotes"],
         ],
     },
     "receivables": {
@@ -642,14 +643,31 @@ COMPOSITE_METRICS: dict[str, dict] = {
 }
 
 
+def _group_pick(per_concept: list[dict]) -> dict:
+    """One entry per period from a group of alternative concepts: the first
+    concept (priority order) with a NON-ZERO value, else the first with any
+    value — a filer tagging ShortTermBorrowings = 0 must not hide its
+    SecuredDebtCurrent."""
+    out: dict = {}
+    periods = {pk for d in per_concept for pk in d}
+    for pk in periods:
+        entries = [d[pk] for d in per_concept if pk in d]
+        nonzero = [e for e in entries if float(e.get("val") or 0) != 0]
+        out[pk] = (nonzero or entries)[0]
+    return out
+
+
 def _composite(per_group: list[dict], total: dict) -> dict:
     """Combine per-period: the total concept when tagged, else the sum of
-    the component groups that have a value. Entries carry `concept="sum(...)"`."""
+    the component groups that have a value. Entries carry `concept="sum(...)"`
+    and `partial=True` (a sum of us-gaap components can only under-count —
+    custom-taxonomy lines are invisible — so the adapter lets a larger
+    gap-fill value win)."""
     periods = set(total) | {pk for g in per_group for pk in g}
     out: dict = {}
     for pk in periods:
         if pk in total:
-            out[pk] = total[pk]
+            out[pk] = dict(total[pk], partial=True)
             continue
         parts = [g[pk] for g in per_group if pk in g]
         if not parts:
@@ -657,6 +675,7 @@ def _composite(per_group: list[dict], total: dict) -> dict:
         base = dict(parts[0])
         base["val"] = sum(float(e["val"]) for e in parts)
         base["concept"] = "sum(" + "+".join(e.get("concept", "?") for e in parts) + ")"
+        base["partial"] = True
         out[pk] = base
     return out
 
@@ -693,7 +712,7 @@ def _extract_all_annual(facts: dict, unit: str = "USD") -> dict:
         out[name] = monetary(concepts, is_instant_at_fy_end)
     for name, spec in COMPOSITE_METRICS.items():
         total = monetary(spec["total"], is_instant_at_fy_end) if spec["total"] else {}
-        groups = [monetary(g, is_instant_at_fy_end) for g in spec["parts"]]
+        groups = [_group_pick([monetary([c], is_instant_at_fy_end) for c in g]) for g in spec["parts"]]
         out[name] = _composite(groups, total)
     return out
 
@@ -724,7 +743,7 @@ def _extract_all_quarterly(facts: dict, unit: str = "USD") -> dict:
         out[name] = _instants_all_units(facts, concepts)
     for name, spec in COMPOSITE_METRICS.items():
         total = _instants_all_units(facts, spec["total"]) if spec["total"] else {}
-        groups = [_instants_all_units(facts, g) for g in spec["parts"]]
+        groups = [_group_pick([_instants_all_units(facts, [c]) for c in g]) for g in spec["parts"]]
         out[name] = _composite(groups, total)
     return out
 
@@ -788,9 +807,11 @@ def build_sec_row(ticker: str, cik: int, facts: dict, *, fetched_at: str | None 
     # narrow AccountsReceivableNetCurrent, mark the entry partial so the
     # adapter lets a fuller gap-fill value (6-K total, yfinance
     # 'Receivables') win for that period — see _merge_period_dicts.
+    # Aggregates whose us-gaap concepts miss filer-specific lines (land-use
+    # rights, payables to merchants…): partial → a larger gap-fill value wins.
     for scope in (annual, quarterly):
-        for e in (scope.get("receivables") or {}).values():
-            if e.get("concept") == "AccountsReceivableNetCurrent":
+        for metric in ("intangibles", "accounts_payable"):
+            for e in (scope.get(metric) or {}).values():
                 e["partial"] = True
 
     # Row-level currency = the latest annual period's; per-entry `ccy` tags

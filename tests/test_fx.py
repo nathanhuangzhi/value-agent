@@ -214,6 +214,10 @@ def test_partial_sec_value_yields_to_fuller_gap_fill():
     assert merged["receivables"]["2025"]["val"] == 4.52 and sources["receivables"]["2025"] == "6k"
     assert merged["receivables"]["2024"]["val"] == 0.80 and sources["receivables"]["2024"] == "sec"  # nothing fuller
     assert merged["cash"]["2025"]["val"] == 29.0 and sources["cash"]["2025"] == "sec"           # not partial
+    # a SMALLER gap-fill value never replaces a partial SEC aggregate
+    yf["receivables"]["2025"]["val"] = 0.10
+    merged, sources = _merge_period_dicts(sec, yf)
+    assert merged["receivables"]["2025"]["val"] == 0.89 and sources["receivables"]["2025"] == "sec"
 
 
 def test_concept_priority_beats_larger_value_within_one_filing():
@@ -260,3 +264,18 @@ def test_composite_sums_components_when_no_total_is_tagged():
     # a tagged total wins over the components
     facts["us-gaap"]["DebtCurrent"] = {"units": {"USD": rec(500e6)}}
     assert _extract_all_annual(facts)["short_term_debt"][2022]["val"] == 500e6
+
+
+def test_fractional_ads_ratio_and_group_pick():
+    from app.tools.report.sec_adapter import infer_ads_ratio
+    from app.tools.sec_xbrl_tools import _group_pick, _extract_all_annual
+    sec = {"annual": {"diluted_shares": {2023: {"val": 113e6}, 2024: {"val": 108e6}}}, "quarterly": {}}
+    yf = {"annual": {"diluted_shares": {"2023": {"val": 563e6}, "2024": {"val": 539e6}}}}
+    assert infer_ads_ratio(sec, yf) == 0.2                       # VIPS: 1 ADS = 0.2 ordinary
+    # a zero-tagged first concept doesn't hide a non-zero alternative
+    assert _group_pick([{"2023": {"val": 0.0, "concept": "A"}}, {"2023": {"val": 216.0, "concept": "B"}}])["2023"]["concept"] == "B"
+    rec = lambda v: [{"val": v, "end": "2023-12-31", "filed": "2024-04-20", "form": "20-F", "fp": "FY", "fy": 2023}]
+    facts = {"us-gaap": {"ShortTermBorrowings": {"units": {"CNY": rec(0.0)}},
+                         "SecuredDebtCurrent": {"units": {"CNY": rec(216e6)}},
+                         "Assets": {"units": {"CNY": rec(1e9)}}}}
+    assert _extract_all_annual(facts)["short_term_debt"][2023]["val"] == 216e6
