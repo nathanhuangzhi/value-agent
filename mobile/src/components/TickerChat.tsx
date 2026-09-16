@@ -45,7 +45,8 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
   const [chatW, setChatW] = useState(0);
-  const contentW = chatW ? Math.floor(chatW * 0.94) - 2 * spacing.md : undefined;   // inside a wide bubble
+  // Inner width of a full-width bubble: the wrap's padding, then 94%, then the bubble's own padding.
+  const contentW = chatW ? Math.floor((chatW - 2 * spacing.lg) * 0.94) - 2 * spacing.md : undefined;
   const [history, setHistory] = useState<ConversationSummary[] | null>(null);
 
   const openHistory = () => {
@@ -170,16 +171,17 @@ export function TickerChat({ ticker }: { ticker: string }) {
         </Text>
       ) : null}
 
-      {messages.map((m, i) => (
-        <View key={i} style={[styles.row, m.role === 'user' && styles.rowUser]}>
-          {/* Long-press (or the icon) opens the message in a sheet where any part can be selected and copied. */}
-          <Pressable onLongPress={() => setSelectText(m.role === 'user' ? m.content : toPlainText(m.content))} style={[styles.bubble, m.role === 'user'
-            ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
-            : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
-            m.role === 'assistant' && hasTable(m.content) && styles.bubbleWide]}>
+      {messages.map((m, i) => {
+        const table = m.role === 'assistant' && hasTable(m.content);
+        const bubbleStyle = [styles.bubble, m.role === 'user'
+          ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
+          : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
+          table && styles.bubbleWide];
+        const inner = (
+          <>
             {m.role === 'user'
               ? <Text style={[styles.userText, { color: '#fff' }]}>{m.content}</Text>
-              : <Markdown text={m.content} color={c.textPrimary} width={hasTable(m.content) ? contentW : undefined} />}
+              : <Markdown text={m.content} color={c.textPrimary} width={table ? contentW : undefined} />}
             {m.role === 'assistant' ? (
               <View style={styles.footer}>
                 <Text style={[styles.meta, { color: c.textMuted }]}>
@@ -193,9 +195,18 @@ export function TickerChat({ ticker }: { ticker: string }) {
                 </Pressable>
               </View>
             ) : null}
-          </Pressable>
-        </View>
-      ))}
+          </>
+        );
+        return (
+          <View key={i} style={[styles.row, m.role === 'user' && styles.rowUser]}>
+            {/* Long-press opens the select/copy sheet. A bubble holding a table is a plain
+                View so nothing sits between the table's horizontal ScrollView and the touch. */}
+            {table
+              ? <View style={bubbleStyle}>{inner}</View>
+              : <Pressable onLongPress={() => setSelectText(m.role === 'user' ? m.content : toPlainText(m.content))} style={bubbleStyle}>{inner}</Pressable>}
+          </View>
+        );
+      })}
       {streaming ? (
         <View style={styles.row}>
           <View style={[styles.bubble, { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },

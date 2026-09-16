@@ -185,13 +185,7 @@ function Table({ rows, body, width }: { rows: string[][]; body: TextStyle; width
       onLayout={width ? undefined : (e) => setMeasured(e.nativeEvent.layout.width)}
     >
       {fits ? grid : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator
-          nestedScrollEnabled
-          style={avail > 0 && { width: avail }}
-          contentContainerStyle={{ flexGrow: 0 }}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator style={avail > 0 && { width: avail }}>
           {grid}
         </ScrollView>
       )}
@@ -252,7 +246,7 @@ const styles = StyleSheet.create({
   li: { flexDirection: 'row', gap: spacing.sm, marginBottom: 2, paddingLeft: 2 },
   marker: { minWidth: 16 },
   code: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, padding: spacing.sm, marginVertical: spacing.sm },
-  tableWrap: { marginVertical: spacing.sm, alignSelf: 'stretch', overflow: 'hidden' },
+  tableWrap: { marginVertical: spacing.sm, alignSelf: 'stretch' },
   table: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, overflow: 'hidden' },
   tr: { flexDirection: 'row' },
   td: { paddingVertical: 5, paddingHorizontal: 6, justifyContent: 'center' },

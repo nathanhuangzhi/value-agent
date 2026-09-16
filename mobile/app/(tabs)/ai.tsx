@@ -417,48 +417,49 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
   const c = useColors();
   const isUser = msg.role === 'user';
   const usage = msg.usage;
+  const table = !isUser && hasTable(msg.content);
+  const bubbleStyle = [
+    styles.bubble,
+    isUser
+      ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
+      : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
+    table && styles.bubbleWide,
+  ];
+  const inner = isUser ? (
+    <Text style={[styles.userText, { color: '#fff' }]}>{msg.content}</Text>
+  ) : (
+    <>
+      {streaming?.status ? (
+        <View style={styles.statusRow}>
+          <ActivityIndicator size="small" color={c.textMuted} />
+          <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
+        </View>
+      ) : null}
+      {msg.content ? <Markdown text={msg.content} color={c.textPrimary} width={table ? contentW : undefined} /> : null}
+      {!streaming ? (
+        <View style={styles.footer}>
+          <Text style={[styles.meta, { color: c.textMuted, flexShrink: 1 }]}>
+            {[
+              msg.companies?.length ? `data: ${msg.companies.join(', ')}` : null,
+              msg.model ? (msg.model.includes('pro') ? 'Pro' : 'Flash') : null,
+              usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
+            ].filter(Boolean).join(' · ')}
+          </Text>
+          <Pressable onPress={() => onSelect(toPlainText(msg.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
+            <Ionicons name="copy-outline" size={14} color={c.textMuted} />
+            <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </>
+  );
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
-      {/* Long-press (or the icon) opens the message in a sheet where any part can be selected and copied. */}
-      <Pressable
-        onLongPress={() => onSelect(isUser ? msg.content : toPlainText(msg.content))}
-        style={[
-          styles.bubble,
-          isUser
-            ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
-            : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
-          !isUser && hasTable(msg.content) && styles.bubbleWide,
-        ]}
-      >
-        {isUser ? (
-          <Text style={[styles.userText, { color: '#fff' }]}>{msg.content}</Text>
-        ) : (
-          <>
-            {streaming?.status ? (
-              <View style={styles.statusRow}>
-                <ActivityIndicator size="small" color={c.textMuted} />
-                <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
-              </View>
-            ) : null}
-            {msg.content ? <Markdown text={msg.content} color={c.textPrimary} width={hasTable(msg.content) ? contentW : undefined} /> : null}
-            {!streaming ? (
-              <View style={styles.footer}>
-                <Text style={[styles.meta, { color: c.textMuted, flexShrink: 1 }]}>
-                  {[
-                    msg.companies?.length ? `data: ${msg.companies.join(', ')}` : null,
-                    msg.model ? (msg.model.includes('pro') ? 'Pro' : 'Flash') : null,
-                    usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
-                  ].filter(Boolean).join(' · ')}
-                </Text>
-                <Pressable onPress={() => onSelect(toPlainText(msg.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
-                  <Ionicons name="copy-outline" size={14} color={c.textMuted} />
-                  <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </>
-        )}
-      </Pressable>
+      {/* Long-press opens the select/copy sheet. A bubble holding a table is a plain
+          View so nothing sits between the table's horizontal ScrollView and the touch. */}
+      {table
+        ? <View style={bubbleStyle}>{inner}</View>
+        : <Pressable onLongPress={() => onSelect(isUser ? msg.content : toPlainText(msg.content))} style={bubbleStyle}>{inner}</Pressable>}
     </View>
   );
 }
