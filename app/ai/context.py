@@ -421,6 +421,47 @@ TOOLS += [
     {
         "type": "function",
         "function": {
+            "name": "list_earnings_calls",
+            "description": "Which earnings-call transcripts are on file for a company (quarter labels like "
+                           "2026Q2, speakers, length). A recent quarter not yet cached is fetched on demand. "
+                           "Then call get_earnings_call or search_earnings_calls.",
+            "parameters": {"type": "object", "properties": {"ticker": {"type": "string"}}, "required": ["ticker"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_earnings_call",
+            "description": "Read an earnings-call transcript: part='remarks' (management's prepared remarks), "
+                           "'qa' (analyst questions and answers) or 'all'. Speaker-labelled. Returns up to "
+                           "max_chars (default 15000) from `offset`; the result says how much remains. Use it "
+                           "for guidance, management's explanation of a number, strategy, buybacks, and what "
+                           "analysts pushed on.",
+            "parameters": {"type": "object",
+                           "properties": {"ticker": {"type": "string"},
+                                          "quarter": {"type": "string", "description": "e.g. 2026Q2; omit for the latest"},
+                                          "part": {"type": "string", "enum": ["remarks", "qa", "all"]},
+                                          "offset": {"type": "integer"},
+                                          "max_chars": {"type": "integer"}},
+                           "required": ["ticker"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_earnings_calls",
+            "description": "Search every cached earnings call of a company for a keyword/phrase (e.g. "
+                           "'buyback', 'guidance', 'take rate', 'Shan Shan'); returns up to 12 hits with quarter, "
+                           "speaker and surrounding text — good for tracking what management said over time.",
+            "parameters": {"type": "object",
+                           "properties": {"ticker": {"type": "string"}, "keyword": {"type": "string"},
+                                          "quarter": {"type": "string", "description": "restrict to one quarter, e.g. 2026Q2"}},
+                           "required": ["ticker", "keyword"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "search_xbrl_concepts",
             "description": "Search a company's raw SEC XBRL companyfacts (10-K/10-Q/20-F) for us-gaap concept "
                            "names matching a keyword (e.g. 'Lease', 'Restricted', 'Goodwill'). Returns concept "
@@ -508,6 +549,10 @@ def tool_list_filings(ticker: str) -> str:
                    + ", ".join(f"{f['form']} FY{f['fiscal_year']}" for f in ar))
     else:
         out.append("Annual reports as filed: none cached yet (list_annual_reports fetches the latest on demand)")
+    from app.tools.earnings_calls import load_store as load_calls
+    calls = load_calls(t).get("calls") or {}
+    out.append("Earnings-call transcripts: " + (", ".join(sorted(calls, reverse=True)) if calls
+               else "none cached (list_earnings_calls fetches the latest quarter on demand)"))
     cik = _cik_for(t)
     raw = load_raw_companyfacts(cik) if cik else None
     if raw:
@@ -628,6 +673,90 @@ def tool_search_annual_report(ticker: str, keyword: str, fiscal_year: str | None
     return "\n".join(out)
 
 
+def _calls_store(ticker: str, *, fetch_latest: bool = True):
+    """Cached transcripts; when the newest ended quarter isn't on file yet, try to fetch it
+    (one Alpha Vantage request — the free key allows 25 a day)."""
+    from app.tools.earnings_calls import NoApiKey, load_store, quarters_to_check, save_store, fetch_transcript
+    from datetime import date, datetime, timezone
+    t = ticker.upper()
+    store = load_store(t)
+    if fetch_latest:
+        todo = quarters_to_check(store)
+        if todo:
+            q = todo[0]
+            try:
+                turns = fetch_transcript(t, q)
+                if turns:
+                    store["calls"][q] = {"fetched_at": datetime.now(timezone.utc).isoformat(), "turns": turns}
+                else:
+                    store["checked"][q] = date.today().isoformat()
+                save_store(store)
+            except NoApiKey:
+                pass
+            except Exception:
+                pass                              # rate-limited or offline: serve what's cached
+    return store
+
+
+def tool_list_earnings_calls(ticker: str) -> str:
+    from app.tools.earnings_calls import split_call
+    store = _calls_store(ticker)
+    if not store["calls"]:
+        return (f"No earnings-call transcripts on file for {ticker.upper()} (the company may not hold "
+                f"quarterly calls, or the transcript source doesn't cover it).")
+    out = [f"## Earnings calls on file for {ticker.upper()}"]
+    for q in sorted(store["calls"], reverse=True):
+        turns = store["calls"][q]["turns"]
+        remarks, qa = split_call(turns)
+        speakers = []
+        for x in turns:
+            tag = f"{x['speaker']} ({x['title']})"
+            if x["speaker"] not in ("Operator",) and tag not in speakers:
+                speakers.append(tag)
+        out.append(f"- {q}: {len(turns)} turns, {sum(len(x['content']) for x in turns):,} chars "
+                   f"(remarks {len(remarks)} turns, Q&A {len(qa)} turns) — {'; '.join(speakers[:8])}")
+    return "\n".join(out)
+
+
+def tool_get_earnings_call(ticker: str, quarter: str | None, part: str | None,
+                           offset: int | None, max_chars: int | None) -> str:
+    from app.tools.earnings_calls import render_turns, split_call
+    store = _calls_store(ticker)
+    if not store["calls"]:
+        return f"ERROR: no earnings-call transcripts on file for {ticker.upper()}"
+    q = (quarter or "").upper().strip() or max(store["calls"])
+    if q not in store["calls"]:
+        return f"ERROR: no transcript for {q}; available: {', '.join(sorted(store['calls'], reverse=True))}"
+    turns = store["calls"][q]["turns"]
+    remarks, qa = split_call(turns)
+    part = (part or "remarks").lower()
+    chosen = {"remarks": remarks, "qa": qa, "all": turns}.get(part, remarks)
+    text = render_turns(chosen)
+    limit = max(2000, min(int(max_chars or 15000), 60000))
+    off = int(offset or 0)
+    chunk = text[off: off + limit]
+    nxt = min(off + limit, len(text))
+    head = f"## {ticker.upper()} earnings call {q} — {part} (chars {off:,}–{nxt:,} of {len(text):,})\n\n"
+    tail = f"\n\n…({len(text) - nxt:,} chars remain — call again with offset={nxt})" if nxt < len(text) else ""
+    return head + chunk + tail
+
+
+def tool_search_earnings_calls(ticker: str, keyword: str, quarter: str | None) -> str:
+    from app.tools.earnings_calls import search_calls
+    store = _calls_store(ticker)
+    if not store["calls"]:
+        return f"ERROR: no earnings-call transcripts on file for {ticker.upper()}"
+    if not (keyword or "").strip():
+        return "ERROR: keyword is required"
+    hits = search_calls(store, keyword.strip(), quarter=(quarter or "").upper().strip() or None)
+    if not hits:
+        return f"No hits for {keyword!r} in {ticker.upper()}'s calls ({', '.join(sorted(store['calls'], reverse=True))})."
+    out = [f"## {ticker.upper()} calls: {len(hits)} hits for {keyword!r}"]
+    for h in hits:
+        out.append(f"\n[{h['quarter']} · {h['speaker']} ({h['title']})]\n{h['snippet']}")
+    return "\n".join(out)
+
+
 def tool_search_xbrl_concepts(ticker: str, keyword: str) -> str:
     from app.tools.sec_xbrl_tools import load_raw_companyfacts
     cik = _cik_for(ticker)
@@ -708,6 +837,13 @@ def run_tool(name: str, args: dict) -> str:
                                               args.get("fiscal_year"), args.get("offset"), args.get("max_chars"))
     if name == "search_annual_report":
         return tool_search_annual_report(args.get("ticker") or "", args.get("keyword") or "", args.get("fiscal_year"))
+    if name == "list_earnings_calls":
+        return tool_list_earnings_calls(args.get("ticker") or "")
+    if name == "get_earnings_call":
+        return tool_get_earnings_call(args.get("ticker") or "", args.get("quarter"), args.get("part"),
+                                      args.get("offset"), args.get("max_chars"))
+    if name == "search_earnings_calls":
+        return tool_search_earnings_calls(args.get("ticker") or "", args.get("keyword") or "", args.get("quarter"))
     if name == "search_xbrl_concepts":
         return tool_search_xbrl_concepts(args.get("ticker") or "", args.get("keyword") or "")
     if name == "get_xbrl_concept":

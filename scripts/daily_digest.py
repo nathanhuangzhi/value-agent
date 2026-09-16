@@ -192,6 +192,9 @@ def main():
         # Annual reports (20-F / 10-K) as filed, for the AI chat's section
         # tools — watchlist companies, newest three each (no LLM, idempotent).
         _run_stage("fetch_annual_reports", ["-m", "scripts.fetch_annual_reports"])
+        # Earnings-call transcripts (Alpha Vantage, free key: 25 requests/day)
+        # for the watchlist — new quarters only, budgeted, no LLM.
+        _run_stage("fetch_earnings_calls", ["-m", "scripts.fetch_earnings_calls"])
 
     # ---- 3. Validate ----
     if not args.skip_validate:

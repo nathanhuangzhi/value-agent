@@ -137,6 +137,9 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                     "list_annual_reports": f"Listing {label}'s annual reports…",
                     "get_annual_report_section": f"Reading {label}'s annual report · {args.get('section', '')}…",
                     "search_annual_report": f"Searching {label}'s annual report for “{args.get('keyword', '')}”…",
+                    "list_earnings_calls": f"Listing {label}'s earnings calls…",
+                    "get_earnings_call": f"Reading {label}'s {args.get('quarter') or 'latest'} earnings call ({args.get('part') or 'remarks'})…",
+                    "search_earnings_calls": f"Searching {label}'s earnings calls for “{args.get('keyword', '')}”…",
                     "search_xbrl_concepts": f"Searching {label}'s XBRL for “{args.get('keyword', '')}”…",
                     "get_xbrl_concept": f"Pulling {label} · {args.get('concept', '')} from EDGAR…",
                     "get_yfinance_raw": f"Reading {label}'s Yahoo {args.get('statement', '')}…",
@@ -145,7 +148,7 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                 result = run_tool(tc["name"], args)
                 if tc["name"] in ("lookup_company", "get_6k_statement", "get_press_release",
                                   "get_xbrl_concept", "get_yfinance_raw", "get_annual_report_section",
-                                  "search_annual_report") and not result.startswith("ERROR"):
+                                  "search_annual_report", "get_earnings_call", "search_earnings_calls") and not result.startswith("ERROR"):
                     t = (args.get("ticker") or "").upper()
                     if t and t not in companies_used:
                         companies_used.append(t)
