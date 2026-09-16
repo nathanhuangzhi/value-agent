@@ -106,10 +106,20 @@ def fetch_transcript(symbol: str, quarter: str) -> list[dict]:
              "sentiment": t.get("sentiment")} for t in d["transcript"] if (t.get("content") or "").strip()]
 
 
+NO_CALLS_RECHECK_DAYS = 30   # a company with no transcript at all: re-probe the newest quarter monthly
+
+
 def quarters_to_check(store: dict, *, today: date | None = None) -> list[str]:
     today = today or date.today()
+    recent = quarters_ended(today=today)
+    if not store["calls"] and store["checked"]:
+        # Nothing ever found (e.g. no quarterly calls, or not covered): don't burn
+        # the daily budget on eight empty quarters — probe the newest one monthly.
+        q = recent[0]
+        last = store["checked"].get(q)
+        return [] if last and (today - date.fromisoformat(last)).days < NO_CALLS_RECHECK_DAYS else [q]
     todo = []
-    for q in quarters_ended(today=today):
+    for q in recent:
         if q in store["calls"]:
             continue
         last = store["checked"].get(q)
