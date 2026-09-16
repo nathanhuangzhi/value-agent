@@ -113,12 +113,19 @@ def html_to_text(doc: str, *, max_chars: int = 120_000) -> str:
     `|`-separated columns and rows keep their line breaks, so the model
     sees the statements as aligned rows instead of a word soup."""
     s = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", doc)
-    s = re.sub(r"(?i)</t[dh]>", " | ", s)
-    s = re.sub(r"(?i)<t[dh][^>]*>", "", s)
-    s = re.sub(r"(?i)</tr>", "\n", s)
+
+    # Table rows first: one line per <tr>, cells joined by " | ". Block tags
+    # inside a cell (<p>, <div> — iXBRL wraps every number in one) become
+    # spaces, so a row never splits across lines.
+    def _row(m):
+        cells = re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", m.group(1))
+        texts = [re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", c)).strip() for c in cells]
+        return "\n" + " | ".join(texts) + "\n"
+    s = re.sub(r"(?is)<tr[^>]*>(.*?)</tr>", _row, s)
+
     s = re.sub(r"(?i)<br\s*/?>|</p>|</div>|</li>|</h\d>", "\n", s)
     s = re.sub(r"<[^>]+>", " ", s)
-    s = html_lib.unescape(s).replace("\xa0", " ")
+    s = html_lib.unescape(s).replace("\xa0", " ").replace("\u200b", "")
     lines = []
     for line in s.split("\n"):
         line = re.sub(r"[ \t]+", " ", line).strip()

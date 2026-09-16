@@ -189,6 +189,9 @@ def main():
         # Map any newly extracted release onto the Yahoo-aligned standard
         # definitions (remap_6k.prompt.md); already-mapped filings are skipped.
         _run_stage("remap_6k_standard", ["-m", "scripts.remap_6k_standard"])
+        # Annual reports (20-F / 10-K) as filed, for the AI chat's section
+        # tools — watchlist companies, newest three each (no LLM, idempotent).
+        _run_stage("fetch_annual_reports", ["-m", "scripts.fetch_annual_reports"])
 
     # ---- 3. Validate ----
     if not args.skip_validate:

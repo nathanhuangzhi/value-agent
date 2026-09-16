@@ -134,6 +134,9 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                     "list_filings": f"Listing filings for {label}…",
                     "get_6k_statement": f"Reading {label}'s 6-K statements{(' ' + args['period_end']) if args.get('period_end') else ''}…",
                     "get_press_release": f"Reading {label}'s press release…",
+                    "list_annual_reports": f"Listing {label}'s annual reports…",
+                    "get_annual_report_section": f"Reading {label}'s annual report · {args.get('section', '')}…",
+                    "search_annual_report": f"Searching {label}'s annual report for “{args.get('keyword', '')}”…",
                     "search_xbrl_concepts": f"Searching {label}'s XBRL for “{args.get('keyword', '')}”…",
                     "get_xbrl_concept": f"Pulling {label} · {args.get('concept', '')} from EDGAR…",
                     "get_yfinance_raw": f"Reading {label}'s Yahoo {args.get('statement', '')}…",
@@ -141,7 +144,8 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                 yield {"type": "status", "text": status}
                 result = run_tool(tc["name"], args)
                 if tc["name"] in ("lookup_company", "get_6k_statement", "get_press_release",
-                                  "get_xbrl_concept", "get_yfinance_raw") and not result.startswith("ERROR"):
+                                  "get_xbrl_concept", "get_yfinance_raw", "get_annual_report_section",
+                                  "search_annual_report") and not result.startswith("ERROR"):
                     t = (args.get("ticker") or "").upper()
                     if t and t not in companies_used:
                         companies_used.append(t)
