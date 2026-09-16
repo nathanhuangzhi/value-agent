@@ -69,12 +69,35 @@ function parse(md: string): Block[] {
   return blocks;
 }
 
+/**
+ * The message as plain text for the select/copy sheet: Markdown markers
+ * stripped, list markers kept, tables flattened to "a · b · c" lines.
+ */
+export function toPlainText(md: string): string {
+  const out: string[] = [];
+  for (const b of parse(md)) {
+    switch (b.kind) {
+      case 'h': out.push(strip(b.text), ''); break;
+      case 'p': out.push(strip(b.text), ''); break;
+      case 'li': out.push(`${b.marker} ${strip(b.text)}`); break;
+      case 'code': out.push(b.text, ''); break;
+      case 'table':
+        for (const row of b.rows) out.push(row.map(strip).join('  ·  '));
+        out.push('');
+        break;
+    }
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+const strip = (t: string) => t.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+
 /** Inline **bold** and `code`; everything else verbatim. */
 function Inline({ text, style }: { text: string; style: TextStyle }) {
   const c = useColors();
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
   return (
-    <Text style={style} selectable>
+    <Text style={style}>
       {parts.map((p, i) => {
         if (p.startsWith('**') && p.endsWith('**')) {
           return <Text key={i} style={{ fontWeight: '700' }}>{p.slice(2, -2)}</Text>;
@@ -90,6 +113,55 @@ function Inline({ text, style }: { text: string; style: TextStyle }) {
       })}
     </Text>
   );
+}
+
+const NUMERIC = /^[\s$€£¥(+-]*[\d.,]+[\s%)xX×BMKbmk]*$|^[-–—]$/;
+
+/**
+ * Pipe table. Up to 4 columns it fills the bubble and wraps cell text;
+ * wider tables keep fixed column widths and scroll sideways. A column is
+ * right-aligned when its body cells are numbers.
+ */
+function Table({ rows, body }: { rows: string[][]; body: TextStyle }) {
+  const c = useColors();
+  const cols = Math.max(...rows.map((r) => r.length));
+  const numeric = Array.from({ length: cols }, (_, k) =>
+    k > 0 && rows.slice(1).every((r) => !r[k] || NUMERIC.test(r[k].trim())));
+  const wide = cols > 4;
+  const cell: TextStyle = { ...body, fontSize: fontSize.sm, lineHeight: 18, fontVariant: ['tabular-nums'] };
+  const grid = (
+    <View style={[styles.table, { borderColor: c.border }]}>
+      {rows.map((row, r) => (
+        <View
+          key={r}
+          style={[
+            styles.tr,
+            r === 0 ? { borderBottomWidth: 1, borderBottomColor: c.border } : { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+            r > 0 && r % 2 === 0 && { backgroundColor: c.background },
+          ]}
+        >
+          {Array.from({ length: cols }, (_, k) => (
+            <View
+              key={k}
+              style={[
+                styles.td,
+                wide ? { width: k === 0 ? 140 : 92 } : { flex: k === 0 ? 1.5 : 1 },
+                { alignItems: numeric[k] ? 'flex-end' : 'flex-start' },
+              ]}
+            >
+              <Inline
+                text={row[k] ?? ''}
+                style={{ ...cell, fontWeight: r === 0 ? '700' : '400', textAlign: numeric[k] ? 'right' : 'left' }}
+              />
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+  return wide
+    ? <ScrollView horizontal showsHorizontalScrollIndicator style={styles.tableWrap}>{grid}</ScrollView>
+    : <View style={styles.tableWrap}>{grid}</View>;
 }
 
 export function Markdown({ text, color }: { text: string; color: string }) {
@@ -111,32 +183,18 @@ export function Markdown({ text, color }: { text: string; color: string }) {
           case 'li':
             return (
               <View key={i} style={styles.li}>
-                <Text style={[body, styles.marker]} selectable>{b.marker}</Text>
+                <Text style={[body, styles.marker]}>{b.marker}</Text>
                 <View style={{ flex: 1 }}><Inline text={b.text} style={body} /></View>
               </View>
             );
           case 'code':
             return (
               <ScrollView key={i} horizontal style={[styles.code, { backgroundColor: c.surface, borderColor: c.border }]}>
-                <Text style={{ color, fontFamily: 'Menlo', fontSize: fontSize.sm }} selectable>{b.text}</Text>
+                <Text style={{ color, fontFamily: 'Menlo', fontSize: fontSize.sm }}>{b.text}</Text>
               </ScrollView>
             );
           case 'table':
-            return (
-              <ScrollView key={i} horizontal style={styles.tableWrap}>
-                <View>
-                  {b.rows.map((row, r) => (
-                    <View key={r} style={[styles.tr, { borderBottomColor: c.border }]}>
-                      {row.map((cell, k) => (
-                        <View key={k} style={[styles.td, k === 0 && styles.tdFirst]}>
-                          <Inline text={cell} style={{ ...body, fontSize: fontSize.sm, lineHeight: 18, fontWeight: r === 0 ? '700' : '400' }} />
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            );
+            return <Table key={i} rows={b.rows} body={body} />;
           default:
             return <Inline key={i} text={b.text} style={{ ...body, marginBottom: spacing.sm }} />;
         }
@@ -150,7 +208,7 @@ const styles = StyleSheet.create({
   marker: { minWidth: 16 },
   code: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, padding: spacing.sm, marginVertical: spacing.sm },
   tableWrap: { marginVertical: spacing.sm },
-  tr: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
-  td: { minWidth: 72, paddingVertical: 4, paddingHorizontal: 6, alignItems: 'flex-end' },
-  tdFirst: { minWidth: 110, alignItems: 'flex-start' },
+  table: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, overflow: 'hidden' },
+  tr: { flexDirection: 'row' },
+  td: { paddingVertical: 5, paddingHorizontal: 6, justifyContent: 'center' },
 });

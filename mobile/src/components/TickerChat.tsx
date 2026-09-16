@@ -22,9 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aiApi, type ChatMessage, type ConversationSummary, type ModelKey, type StreamEvent } from '@/api/ai';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { formatDate } from '@/utils/format';
-import { CopyButton } from '@/components/CopyButton';
-import { Markdown } from '@/components/Markdown';
-import { copyText } from '@/utils/clipboard';
+import { Markdown, toPlainText } from '@/components/Markdown';
+import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
 const LAST_CONV_KEY = 'ai_last_conversation_v1';   // shared with the AI tab
@@ -44,6 +43,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const reply = useReplyStream();
   const insets = useSafeAreaInsets();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
   const [history, setHistory] = useState<ConversationSummary[] | null>(null);
 
   const openHistory = () => {
@@ -170,12 +170,12 @@ export function TickerChat({ ticker }: { ticker: string }) {
 
       {messages.map((m, i) => (
         <View key={i} style={[styles.row, m.role === 'user' && styles.rowUser]}>
-          {/* Text is selectable for partial copies; long-press (or the icon) copies the whole message. */}
-          <Pressable onLongPress={() => copyText(m.content)} style={[styles.bubble, m.role === 'user'
+          {/* Long-press (or the icon) opens the message in a sheet where any part can be selected and copied. */}
+          <Pressable onLongPress={() => setSelectText(m.role === 'user' ? m.content : toPlainText(m.content))} style={[styles.bubble, m.role === 'user'
             ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
             : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 }]}>
             {m.role === 'user'
-              ? <Text style={[styles.userText, { color: '#fff' }]} selectable>{m.content}</Text>
+              ? <Text style={[styles.userText, { color: '#fff' }]}>{m.content}</Text>
               : <Markdown text={m.content} color={c.textPrimary} />}
             {m.role === 'assistant' ? (
               <View style={styles.footer}>
@@ -184,7 +184,10 @@ export function TickerChat({ ticker }: { ticker: string }) {
                     ? `${m.model?.includes('pro') ? 'Pro' : 'Flash'} · $${m.usage.estimated_cost_usd.toFixed(4)}`
                     : ''}
                 </Text>
-                <CopyButton text={m.content} color={c.textMuted} />
+                <Pressable onPress={() => setSelectText(toPlainText(m.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
+                  <Ionicons name="copy-outline" size={14} color={c.textMuted} />
+                  <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
+                </Pressable>
               </View>
             ) : null}
           </Pressable>
@@ -234,6 +237,8 @@ export function TickerChat({ ticker }: { ticker: string }) {
           <Text style={[styles.openText, { color: c.brand }]}>Continue in the AI tab →</Text>
         </Pressable>
       ) : null}
+
+      <SelectTextSheet text={selectText} visible={selectText !== null} onClose={() => setSelectText(null)} />
 
       <Modal visible={historyOpen} animationType="slide" transparent onRequestClose={() => setHistoryOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setHistoryOpen(false)} />
@@ -292,6 +297,7 @@ const styles = StyleSheet.create({
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
   meta: { fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
+  selectBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingLeft: spacing.sm, paddingVertical: 2 },
   errorBar: { padding: spacing.sm, borderRadius: radii.md, marginBottom: spacing.sm },
   errorText: { fontSize: fontSize.sm },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginTop: spacing.xs },

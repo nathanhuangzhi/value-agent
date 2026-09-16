@@ -38,9 +38,8 @@ import {
   type ModelKey,
   type StreamEvent,
 } from '@/api/ai';
-import { CopyButton } from '@/components/CopyButton';
-import { Markdown } from '@/components/Markdown';
-import { copyText } from '@/utils/clipboard';
+import { Markdown, toPlainText } from '@/components/Markdown';
+import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 import { formatDate } from '@/utils/format';
@@ -234,6 +233,7 @@ export default function AiScreen() {
   // ---- drawer ----
   const drawerWidth = Math.min(320, width * 0.82);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
   const drawerX = useRef(new Animated.Value(-drawerWidth)).current;
   const backdrop = useRef(new Animated.Value(0)).current;
   const toggleDrawer = (open: boolean) => {
@@ -303,6 +303,7 @@ export default function AiScreen() {
             <Bubble
               msg={item}
               streaming={item._streaming ? streaming : null}
+              onSelect={setSelectText}
             />
           )}
           ListEmptyComponent={
@@ -311,7 +312,7 @@ export default function AiScreen() {
               <Text style={[styles.emptyTitle, { color: c.textPrimary }]}>Ask about any company</Text>
               <Text style={[styles.emptyHint, { color: c.textMuted }]}>
                 Mention a ticker or name — e.g. “Is QDEL’s debt manageable?” or “Compare Inogen and
-                Bioventus on FCF” — and the reply uses the archive’s SEC data, ratios and memos.
+                Bioventus on FCF” — and the reply uses the archive’s SEC data, ratios and filings.
               </Text>
             </View>
           }
@@ -323,6 +324,8 @@ export default function AiScreen() {
           <Text style={[styles.errorText, { color: c.negative }]} numberOfLines={3}>{error}</Text>
         </Pressable>
       ) : null}
+
+      <SelectTextSheet text={selectText} visible={selectText !== null} onClose={() => setSelectText(null)} />
 
       {/* Composer */}
       <View style={[styles.composer, { borderTopColor: c.border, backgroundColor: c.background, paddingBottom: spacing.sm }]}>
@@ -406,15 +409,15 @@ export default function AiScreen() {
   );
 }
 
-function Bubble({ msg, streaming }: { msg: ChatMessage; streaming: Streaming | null }) {
+function Bubble({ msg, streaming, onSelect }: { msg: ChatMessage; streaming: Streaming | null; onSelect: (text: string) => void }) {
   const c = useColors();
   const isUser = msg.role === 'user';
   const usage = msg.usage;
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
-      {/* Text is selectable for partial copies; long-press (or the icon) copies the whole message. */}
+      {/* Long-press (or the icon) opens the message in a sheet where any part can be selected and copied. */}
       <Pressable
-        onLongPress={() => copyText(msg.content)}
+        onLongPress={() => onSelect(isUser ? msg.content : toPlainText(msg.content))}
         style={[
           styles.bubble,
           isUser
@@ -423,7 +426,7 @@ function Bubble({ msg, streaming }: { msg: ChatMessage; streaming: Streaming | n
         ]}
       >
         {isUser ? (
-          <Text style={[styles.userText, { color: '#fff' }]} selectable>{msg.content}</Text>
+          <Text style={[styles.userText, { color: '#fff' }]}>{msg.content}</Text>
         ) : (
           <>
             {streaming?.status ? (
@@ -442,7 +445,10 @@ function Bubble({ msg, streaming }: { msg: ChatMessage; streaming: Streaming | n
                     usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
                   ].filter(Boolean).join(' · ')}
                 </Text>
-                <CopyButton text={msg.content} color={c.textMuted} />
+                <Pressable onPress={() => onSelect(toPlainText(msg.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
+                  <Ionicons name="copy-outline" size={14} color={c.textMuted} />
+                  <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
+                </Pressable>
               </View>
             ) : null}
           </>
@@ -476,6 +482,7 @@ const styles = StyleSheet.create({
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
   meta: { fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
+  selectBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingLeft: spacing.sm, paddingVertical: 2 },
   empty: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontSize: fontSize.lg, fontWeight: '700' },
   emptyHint: { fontSize: fontSize.sm, lineHeight: 20, textAlign: 'center' },
