@@ -15,11 +15,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { aiApi, streamMessage, type ChatMessage, type ConversationSummary, type ModelKey } from '@/api/ai';
+import { aiApi, type ChatMessage, type ConversationSummary, type ModelKey, type StreamEvent } from '@/api/ai';
+import { useReplyStream } from '@/hooks/useReplyStream';
 import { formatDate } from '@/utils/format';
 import { Markdown } from '@/components/Markdown';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
@@ -38,7 +39,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const [input, setInput] = useState(prefix);
   const [streaming, setStreaming] = useState<Streaming | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef<(() => void) | null>(null);
+  const reply = useReplyStream();
   const insets = useSafeAreaInsets();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<ConversationSummary[] | null>(null);
@@ -58,13 +59,17 @@ export function TickerChat({ ticker }: { ticker: string }) {
 
   const loadConversation = async (id: string) => {
     setHistoryOpen(false);
-    abortRef.current?.();
+    reply.stop();
     setStreaming(null);
     try {
       const conv = await aiApi.getConversation(id);
       setConvId(conv.id);
       setMessages(conv.messages);
       AsyncStorage.setItem(LAST_CONV_KEY, conv.id).catch(() => {});
+      if (conv.pending) {   // a reply is still being written server-side — watch it
+        setStreaming({ status: 'Thinking…', text: '' });
+        reply.follow({ convId: conv.id, ...streamHandlers });
+      }
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
@@ -72,7 +77,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
 
   const newThread = () => {
     setHistoryOpen(false);
-    abortRef.current?.();
+    reply.stop();
     setStreaming(null);
     setConvId(null);
     setMessages([]);
@@ -82,9 +87,30 @@ export function TickerChat({ ticker }: { ticker: string }) {
   // A fresh, blank box whenever the page (or the ticker) changes; earlier
   // threads stay reachable through the history button.
   useEffect(() => {
-    abortRef.current?.();
+    reply.stop();
     setConvId(null); setMessages([]); setInput(prefix); setStreaming(null); setError(null);
-  }, [ticker, prefix]);
+  }, [ticker, prefix, reply]);
+
+  // Events of a streamed reply, whether freshly sent or re-attached.
+  const streamHandlers = {
+    onEvent: (ev: StreamEvent) => {
+      switch (ev.type) {
+        case 'companies': setStreaming((s) => s && { ...s, status: `Reading ${ev.tickers.join(', ')}…` }); break;
+        case 'status': setStreaming((s) => s && { ...s, status: ev.text }); break;
+        case 'delta': setStreaming((s) => s && { status: null, text: s.text + ev.text }); break;
+        case 'done': setMessages((m) => [...m, ev.message]); setStreaming(null); break;
+        case 'error': setError(ev.text); setStreaming(null); break;
+      }
+    },
+    // The server no longer has the live reply buffered: the stored
+    // conversation holds it in full if it finished.
+    onGone: (cid: string) => {
+      aiApi.getConversation(cid)
+        .then((conv) => setMessages(conv.messages))
+        .catch((e) => setError(String((e as Error).message ?? e)))
+        .finally(() => setStreaming(null));
+    },
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -106,22 +132,11 @@ export function TickerChat({ ticker }: { ticker: string }) {
     AsyncStorage.setItem(LAST_CONV_KEY, id).catch(() => {});
     setMessages((m) => [...m, { role: 'user', content: text }]);
     setStreaming({ status: 'Thinking…', text: '' });
-    const { promise, abort } = streamMessage(id, text, model, (ev) => {
-      switch (ev.type) {
-        case 'companies': setStreaming((s) => s && { ...s, status: `Reading ${ev.tickers.join(', ')}…` }); break;
-        case 'status': setStreaming((s) => s && { ...s, status: ev.text }); break;
-        case 'delta': setStreaming((s) => s && { status: null, text: s.text + ev.text }); break;
-        case 'done': setMessages((m) => [...m, ev.message]); setStreaming(null); break;
-        case 'error': setError(ev.text); setStreaming(null); break;
-      }
-    });
-    abortRef.current = abort;
-    try { await promise; } catch (e) { setError(String((e as Error).message ?? e)); }
-    finally { abortRef.current = null; setStreaming((s) => (s ? null : s)); }
+    reply.send({ convId: id, text, model, ...streamHandlers });
   };
 
   const stop = () => {
-    abortRef.current?.();
+    reply.stop();   // the server still finishes and stores the full reply
     const partial = streaming?.text ?? '';
     setStreaming(null);
     if (partial) setMessages((m) => [...m, { role: 'assistant', content: partial + '\n\n_(stopped)_' }]);

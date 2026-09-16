@@ -32,13 +32,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   aiApi,
-  streamMessage,
   type ChatMessage,
   type Conversation,
   type ConversationSummary,
   type ModelKey,
+  type StreamEvent,
 } from '@/api/ai';
 import { Markdown } from '@/components/Markdown';
+import { useReplyStream } from '@/hooks/useReplyStream';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 import { formatDate } from '@/utils/format';
 
@@ -60,7 +61,7 @@ export default function AiScreen() {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState<Streaming | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef<(() => void) | null>(null);
+  const reply = useReplyStream();
 
   // ---- persistence of small prefs ----
   useEffect(() => {
@@ -83,13 +84,62 @@ export default function AiScreen() {
     }
   }, []);
 
+  // Events of a streamed reply, whether freshly sent or re-attached.
+  const streamHandlers = (convId: string) => ({
+    onEvent: (ev: StreamEvent) => {
+      switch (ev.type) {
+        case 'companies':
+          setStreaming((s) => s && { ...s, companies: ev.tickers, status: `Reading ${ev.tickers.join(', ')}…` });
+          break;
+        case 'status':
+          setStreaming((s) => s && { ...s, status: ev.text });
+          break;
+        case 'delta':
+          setStreaming((s) => s && { ...s, status: null, text: s.text + ev.text });
+          break;
+        case 'done':
+          setCurrent((prev) =>
+            prev && prev.id === convId
+              ? {
+                  ...prev,
+                  title: ev.conversation.title,
+                  model: ev.conversation.model,
+                  messages: [...prev.messages, ev.message],
+                }
+              : prev,
+          );
+          setStreaming(null);
+          refreshList();
+          break;
+        case 'error':
+          setError(ev.text);
+          setStreaming(null);
+          break;
+      }
+    },
+    // The server no longer has the live reply buffered: the stored
+    // conversation holds it in full if it finished.
+    onGone: (cid: string) => {
+      aiApi.getConversation(cid)
+        .then((conv) => { setCurrent((prev) => (prev && prev.id === cid ? conv : prev)); refreshList(); })
+        .catch((e) => setError(String((e as Error).message ?? e)))
+        .finally(() => setStreaming(null));
+    },
+  });
+
   const openConversation = useCallback(async (id: string) => {
     setLoadingConv(true);
     try {
       const conv = await aiApi.getConversation(id);
+      reply.stop();
+      setStreaming(null);
       setCurrent(conv);
       AsyncStorage.setItem(LAST_CONV_KEY, id).catch(() => {});
       setError(null);
+      if (conv.pending) {   // a reply is still being written server-side — watch it
+        setStreaming({ status: 'Thinking…', text: '', companies: [] });
+        reply.follow({ convId: conv.id, ...streamHandlers(conv.id) });
+      }
     } catch (e) {
       setError(String((e as Error).message ?? e));
     } finally {
@@ -110,7 +160,7 @@ export default function AiScreen() {
   }, [refreshList, openConversation]);
 
   const newChat = () => {
-    abortRef.current?.();
+    reply.stop();
     setStreaming(null);
     setCurrent(null);
     AsyncStorage.removeItem(LAST_CONV_KEY).catch(() => {});
@@ -162,51 +212,11 @@ export default function AiScreen() {
         : prev,
     );
     setStreaming({ status: 'Thinking…', text: '', companies: [] });
-
-    const { promise, abort } = streamMessage(convId, text, model, (ev) => {
-      switch (ev.type) {
-        case 'companies':
-          setStreaming((s) => s && { ...s, companies: ev.tickers, status: `Reading ${ev.tickers.join(', ')}…` });
-          break;
-        case 'status':
-          setStreaming((s) => s && { ...s, status: ev.text });
-          break;
-        case 'delta':
-          setStreaming((s) => s && { ...s, status: null, text: s.text + ev.text });
-          break;
-        case 'done':
-          setCurrent((prev) =>
-            prev && prev.id === convId
-              ? {
-                  ...prev,
-                  title: ev.conversation.title,
-                  model: ev.conversation.model,
-                  messages: [...prev.messages, ev.message],
-                }
-              : prev,
-          );
-          setStreaming(null);
-          refreshList();
-          break;
-        case 'error':
-          setError(ev.text);
-          setStreaming(null);
-          break;
-      }
-    });
-    abortRef.current = abort;
-    try {
-      await promise;
-    } catch (e) {
-      setError(String((e as Error).message ?? e));
-    } finally {
-      abortRef.current = null;
-      setStreaming((s) => (s ? null : s));
-    }
+    reply.send({ convId, text, model, ...streamHandlers(convId) });
   };
 
   const stop = () => {
-    abortRef.current?.();
+    reply.stop();
     // Keep what arrived so far as a local turn. The server finishes the
     // generation on its own and stores the full reply — reopening the
     // chat from the drawer shows that version.

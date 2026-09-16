@@ -5,8 +5,10 @@
  * the same host).
  *
  * Replies stream as server-sent events. React Native's fetch has no
- * ReadableStream, so `streamMessage` uses XMLHttpRequest and parses the
- * growing `responseText` on each progress event.
+ * ReadableStream, so the stream helpers use XMLHttpRequest and parse the
+ * growing `responseText` on each progress event. Generation happens in a
+ * server-side job that outlives the connection: if the app is suspended
+ * mid-reply, `resumeStream` picks the same reply up where it stopped.
  */
 import { ApiError, BASE_URL } from './client';
 
@@ -41,8 +43,6 @@ export type ConversationSummary = {
   message_count: number;
 };
 
-export type Conversation = ConversationSummary & { messages: ChatMessage[] };
-
 export type StreamEvent =
   | { type: 'companies'; tickers: string[] }
   | { type: 'status'; text: string }
@@ -76,19 +76,27 @@ export const aiApi = {
     req<{ deleted: string }>(`/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
+export type Conversation = ConversationSummary & { messages: ChatMessage[]; pending?: boolean };
+
+export type StreamOutcome = 'finished' | 'lost';
+
 /**
- * POST a user message and stream the reply. `onEvent` fires per SSE event;
- * the returned function aborts the request. Resolves when the stream ends
- * (after `done` or `error`), rejects only on transport failure.
+ * Open an SSE connection and feed each event to `onEvent`. The promise
+ * resolves `'finished'` when a terminal `done` / `error` event arrived and
+ * `'lost'` when the transport ended before one (the OS suspended the app,
+ * the socket dropped, or `abort()` was called) — the server keeps
+ * generating either way, so the caller can `resumeStream` from the number
+ * of events it has already seen. Rejects only on an HTTP error status.
  */
-export function streamMessage(
-  conversationId: string,
-  content: string,
-  model: ModelKey,
+function openStream(
+  method: 'POST' | 'GET',
+  url: string,
+  body: string | null,
   onEvent: (ev: StreamEvent) => void,
-): { promise: Promise<void>; abort: () => void } {
+): { promise: Promise<StreamOutcome>; abort: () => void } {
   const xhr = new XMLHttpRequest();
   let consumed = 0;
+  let terminal = false;
 
   const drain = () => {
     const text = xhr.responseText ?? '';
@@ -100,7 +108,9 @@ export function streamMessage(
       const line = raw.split('\n').find((l) => l.startsWith('data:'));
       if (line) {
         try {
-          onEvent(JSON.parse(line.slice(5)) as StreamEvent);
+          const ev = JSON.parse(line.slice(5)) as StreamEvent;
+          if (ev.type === 'done' || ev.type === 'error') terminal = true;
+          onEvent(ev);
         } catch {
           // malformed frame — skip
         }
@@ -109,22 +119,57 @@ export function streamMessage(
     }
   };
 
-  const promise = new Promise<void>((resolve, reject) => {
-    xhr.open('POST', `${AI_URL}/conversations/${encodeURIComponent(conversationId)}/messages`);
+  const promise = new Promise<StreamOutcome>((resolve, reject) => {
+    xhr.open(method, url);
     xhr.setRequestHeader('content-type', 'application/json');
     xhr.setRequestHeader('accept', 'text/event-stream');
     xhr.onprogress = drain;
     xhr.onload = () => {
       drain();
-      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      if (xhr.status >= 200 && xhr.status < 300) resolve(terminal ? 'finished' : 'lost');
       else reject(new ApiError(xhr.status, `${xhr.status} from AI service`));
     };
-    xhr.onerror = () => reject(new ApiError(0, 'Network error reaching the AI service'));
-    xhr.onabort = () => resolve();
-    xhr.send(JSON.stringify({ content, model }));
+    xhr.onerror = () => { drain(); resolve(terminal ? 'finished' : 'lost'); };
+    xhr.ontimeout = () => { drain(); resolve(terminal ? 'finished' : 'lost'); };
+    xhr.onabort = () => { drain(); resolve(terminal ? 'finished' : 'lost'); };
+    xhr.send(body);
   });
 
   return { promise, abort: () => xhr.abort() };
+}
+
+/** POST a user message and stream the reply from event 0. */
+export function streamMessage(
+  conversationId: string,
+  content: string,
+  model: ModelKey,
+  onEvent: (ev: StreamEvent) => void,
+) {
+  return openStream(
+    'POST',
+    `${AI_URL}/conversations/${encodeURIComponent(conversationId)}/messages`,
+    JSON.stringify({ content, model }),
+    onEvent,
+  );
+}
+
+/**
+ * Re-attach to a reply the server is still generating (or finished within
+ * the last few minutes), replaying events from index `from`. Rejects with
+ * ApiError(404) when nothing is buffered any more — reload the conversation
+ * instead, the stored reply is there if it ever finished.
+ */
+export function resumeStream(
+  conversationId: string,
+  from: number,
+  onEvent: (ev: StreamEvent) => void,
+) {
+  return openStream(
+    'GET',
+    `${AI_URL}/conversations/${encodeURIComponent(conversationId)}/stream?from=${from}`,
+    null,
+    onEvent,
+  );
 }
 
 export { AI_URL };
