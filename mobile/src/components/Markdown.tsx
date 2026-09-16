@@ -4,6 +4,7 @@
  * `code`, and pipe tables (rendered as a horizontally-scrollable grid).
  * No dependency; anything fancier falls through as plain text.
  */
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
 
 import { useColors, fontSize, spacing } from '@/theme/colors';
@@ -116,18 +117,37 @@ function Inline({ text, style }: { text: string; style: TextStyle }) {
 }
 
 const NUMERIC = /^[\s$€£¥(+-]*[\d.,]+[\s%)xX×BMKbmk]*$|^[-–—]$/;
+const CJK = /[\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/;
+
+/** Rough rendered width of a cell at the table's 13px font, incl. padding. */
+function estWidth(text: string, bold: boolean): number {
+  let w = 0;
+  for (const ch of strip(text)) {
+    w += CJK.test(ch) ? 13 : /[0-9]/.test(ch) ? 7.4 : /[A-Z]/.test(ch) ? 8.6 : /[ .,:;'|()-]/.test(ch) ? 3.8 : 7;
+  }
+  return (bold ? w * 1.06 : w) + 14;
+}
 
 /**
- * Pipe table. Up to 4 columns it fills the bubble and wraps cell text;
- * wider tables keep fixed column widths and scroll sideways. A column is
- * right-aligned when its body cells are numbers.
+ * Pipe table. Column widths come from the content: when they add up to
+ * less than the bubble, the columns stretch to fill it and cell text
+ * wraps; when they don't, the table keeps its natural width and scrolls
+ * sideways — never overflowing the screen. A column is right-aligned when
+ * its body cells are numbers.
  */
 function Table({ rows, body }: { rows: string[][]; body: TextStyle }) {
   const c = useColors();
+  const [avail, setAvail] = useState(0);
   const cols = Math.max(...rows.map((r) => r.length));
   const numeric = Array.from({ length: cols }, (_, k) =>
     k > 0 && rows.slice(1).every((r) => !r[k] || NUMERIC.test(r[k].trim())));
-  const wide = cols > 4;
+  const natural = Array.from({ length: cols }, (_, k) => {
+    const longest = Math.max(...rows.map((r, i) => estWidth(r[k] ?? '', i === 0)));
+    return k === 0 ? Math.min(Math.max(longest, 72), 220) : Math.min(Math.max(longest, 56), 180);
+  });
+  const total = natural.reduce((a, b) => a + b, 0);
+  const fits = avail > 0 && total <= avail;
+  const widths = fits ? natural.map((w) => (w / total) * avail) : natural;
   const cell: TextStyle = { ...body, fontSize: fontSize.sm, lineHeight: 18, fontVariant: ['tabular-nums'] };
   const grid = (
     <View style={[styles.table, { borderColor: c.border }]}>
@@ -143,11 +163,7 @@ function Table({ rows, body }: { rows: string[][]; body: TextStyle }) {
           {Array.from({ length: cols }, (_, k) => (
             <View
               key={k}
-              style={[
-                styles.td,
-                wide ? { width: k === 0 ? 140 : 92 } : { flex: k === 0 ? 1.5 : 1 },
-                { alignItems: numeric[k] ? 'flex-end' : 'flex-start' },
-              ]}
+              style={[styles.td, { width: widths[k], alignItems: numeric[k] ? 'flex-end' : 'flex-start' }]}
             >
               <Inline
                 text={row[k] ?? ''}
@@ -159,9 +175,18 @@ function Table({ rows, body }: { rows: string[][]; body: TextStyle }) {
       ))}
     </View>
   );
-  return wide
-    ? <ScrollView horizontal showsHorizontalScrollIndicator style={styles.tableWrap}>{grid}</ScrollView>
-    : <View style={styles.tableWrap}>{grid}</View>;
+  return (
+    <View style={styles.tableWrap} onLayout={(e) => setAvail(e.nativeEvent.layout.width)}>
+      {fits ? grid : (
+        <ScrollView horizontal showsHorizontalScrollIndicator nestedScrollEnabled>{grid}</ScrollView>
+      )}
+    </View>
+  );
+}
+
+/** True when the reply carries a pipe table — the bubble should then take the full width. */
+export function hasTable(md: string): boolean {
+  return /^\s*\|.*\|\s*$/m.test(md);
 }
 
 export function Markdown({ text, color }: { text: string; color: string }) {
@@ -207,7 +232,7 @@ const styles = StyleSheet.create({
   li: { flexDirection: 'row', gap: spacing.sm, marginBottom: 2, paddingLeft: 2 },
   marker: { minWidth: 16 },
   code: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, padding: spacing.sm, marginVertical: spacing.sm },
-  tableWrap: { marginVertical: spacing.sm },
+  tableWrap: { marginVertical: spacing.sm, alignSelf: 'stretch' },
   table: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, overflow: 'hidden' },
   tr: { flexDirection: 'row' },
   td: { paddingVertical: 5, paddingHorizontal: 6, justifyContent: 'center' },

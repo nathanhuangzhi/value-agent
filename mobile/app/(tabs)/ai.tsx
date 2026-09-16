@@ -38,7 +38,7 @@ import {
   type ModelKey,
   type StreamEvent,
 } from '@/api/ai';
-import { Markdown, toPlainText } from '@/components/Markdown';
+import { Markdown, hasTable, toPlainText } from '@/components/Markdown';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
@@ -423,6 +423,7 @@ function Bubble({ msg, streaming, onSelect }: { msg: ChatMessage; streaming: Str
           isUser
             ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
             : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
+          !isUser && hasTable(msg.content) && styles.bubbleWide,
         ]}
       >
         {isUser ? (
@@ -477,6 +478,7 @@ const styles = StyleSheet.create({
   bubbleRow: { flexDirection: 'row', marginBottom: spacing.sm },
   bubbleRowUser: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '92%', borderRadius: 16, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
+  bubbleWide: { width: '92%' },
   userText: { fontSize: fontSize.md, lineHeight: 22 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },

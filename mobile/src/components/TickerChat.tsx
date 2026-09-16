@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aiApi, type ChatMessage, type ConversationSummary, type ModelKey, type StreamEvent } from '@/api/ai';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { formatDate } from '@/utils/format';
-import { Markdown, toPlainText } from '@/components/Markdown';
+import { Markdown, hasTable, toPlainText } from '@/components/Markdown';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
@@ -173,7 +173,8 @@ export function TickerChat({ ticker }: { ticker: string }) {
           {/* Long-press (or the icon) opens the message in a sheet where any part can be selected and copied. */}
           <Pressable onLongPress={() => setSelectText(m.role === 'user' ? m.content : toPlainText(m.content))} style={[styles.bubble, m.role === 'user'
             ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
-            : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 }]}>
+            : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
+            m.role === 'assistant' && hasTable(m.content) && styles.bubbleWide]}>
             {m.role === 'user'
               ? <Text style={[styles.userText, { color: '#fff' }]}>{m.content}</Text>
               : <Markdown text={m.content} color={c.textPrimary} />}
@@ -195,7 +196,8 @@ export function TickerChat({ ticker }: { ticker: string }) {
       ))}
       {streaming ? (
         <View style={styles.row}>
-          <View style={[styles.bubble, { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 }]}>
+          <View style={[styles.bubble, { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
+            hasTable(streaming.text) && styles.bubbleWide]}>
             {streaming.status ? (
               <View style={styles.statusRow}>
                 <ActivityIndicator size="small" color={c.textMuted} />
@@ -292,6 +294,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', marginBottom: spacing.sm },
   rowUser: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '94%', borderRadius: 16, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
+  bubbleWide: { width: '94%' },
   userText: { fontSize: fontSize.md, lineHeight: 22 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },
