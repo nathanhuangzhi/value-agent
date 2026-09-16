@@ -135,9 +135,10 @@ function estWidth(text: string, bold: boolean): number {
  * sideways — never overflowing the screen. A column is right-aligned when
  * its body cells are numbers.
  */
-function Table({ rows, body }: { rows: string[][]; body: TextStyle }) {
+function Table({ rows, body, width }: { rows: string[][]; body: TextStyle; width?: number }) {
   const c = useColors();
-  const [avail, setAvail] = useState(0);
+  const [measured, setMeasured] = useState(0);
+  const avail = width ?? measured;
   const cols = Math.max(...rows.map((r) => r.length));
   const numeric = Array.from({ length: cols }, (_, k) =>
     k > 0 && rows.slice(1).every((r) => !r[k] || NUMERIC.test(r[k].trim())));
@@ -175,10 +176,24 @@ function Table({ rows, body }: { rows: string[][]; body: TextStyle }) {
       ))}
     </View>
   );
+  // The wrapper always has a definite width (the caller's, else measured)
+  // and clips; anything wider than it lives inside the horizontal
+  // ScrollView, so the table can never push the bubble off-screen.
   return (
-    <View style={styles.tableWrap} onLayout={(e) => setAvail(e.nativeEvent.layout.width)}>
+    <View
+      style={[styles.tableWrap, avail > 0 && { width: avail }]}
+      onLayout={width ? undefined : (e) => setMeasured(e.nativeEvent.layout.width)}
+    >
       {fits ? grid : (
-        <ScrollView horizontal showsHorizontalScrollIndicator nestedScrollEnabled>{grid}</ScrollView>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator
+          nestedScrollEnabled
+          style={avail > 0 && { width: avail }}
+          contentContainerStyle={{ flexGrow: 0 }}
+        >
+          {grid}
+        </ScrollView>
       )}
     </View>
   );
@@ -189,7 +204,12 @@ export function hasTable(md: string): boolean {
   return /^\s*\|.*\|\s*$/m.test(md);
 }
 
-export function Markdown({ text, color }: { text: string; color: string }) {
+/**
+ * `width` is the content width available to the block (the bubble's inner
+ * width). Pass it whenever it is known — tables size their columns from it
+ * and scroll sideways when they don't fit.
+ */
+export function Markdown({ text, color, width }: { text: string; color: string; width?: number }) {
   const c = useColors();
   const body: TextStyle = { color, fontSize: fontSize.md, lineHeight: 22 };
   const blocks = parse(text);
@@ -219,7 +239,7 @@ export function Markdown({ text, color }: { text: string; color: string }) {
               </ScrollView>
             );
           case 'table':
-            return <Table key={i} rows={b.rows} body={body} />;
+            return <Table key={i} rows={b.rows} body={body} width={width} />;
           default:
             return <Inline key={i} text={b.text} style={{ ...body, marginBottom: spacing.sm }} />;
         }
@@ -232,7 +252,7 @@ const styles = StyleSheet.create({
   li: { flexDirection: 'row', gap: spacing.sm, marginBottom: 2, paddingLeft: 2 },
   marker: { minWidth: 16 },
   code: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, padding: spacing.sm, marginVertical: spacing.sm },
-  tableWrap: { marginVertical: spacing.sm, alignSelf: 'stretch' },
+  tableWrap: { marginVertical: spacing.sm, alignSelf: 'stretch', overflow: 'hidden' },
   table: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, overflow: 'hidden' },
   tr: { flexDirection: 'row' },
   td: { paddingVertical: 5, paddingHorizontal: 6, justifyContent: 'center' },

@@ -44,6 +44,8 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const insets = useSafeAreaInsets();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
+  const [chatW, setChatW] = useState(0);
+  const contentW = chatW ? Math.floor(chatW * 0.94) - 2 * spacing.md : undefined;   // inside a wide bubble
   const [history, setHistory] = useState<ConversationSummary[] | null>(null);
 
   const openHistory = () => {
@@ -147,7 +149,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const canSend = input.trim().length > prefix.trim().length && !streaming;
 
   return (
-    <View style={[styles.wrap, { borderTopColor: c.border }]}>
+    <View style={[styles.wrap, { borderTopColor: c.border }]} onLayout={(e) => setChatW(e.nativeEvent.layout.width)}>
       <View style={styles.head}>
         <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>ASK AI ABOUT {ticker}</Text>
         <Pressable onPress={openHistory} hitSlop={10} style={styles.iconBtn} accessibilityLabel="Past conversations">
@@ -177,7 +179,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
             m.role === 'assistant' && hasTable(m.content) && styles.bubbleWide]}>
             {m.role === 'user'
               ? <Text style={[styles.userText, { color: '#fff' }]}>{m.content}</Text>
-              : <Markdown text={m.content} color={c.textPrimary} />}
+              : <Markdown text={m.content} color={c.textPrimary} width={hasTable(m.content) ? contentW : undefined} />}
             {m.role === 'assistant' ? (
               <View style={styles.footer}>
                 <Text style={[styles.meta, { color: c.textMuted }]}>
@@ -204,7 +206,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
                 <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
               </View>
             ) : null}
-            {streaming.text ? <Markdown text={streaming.text} color={c.textPrimary} /> : null}
+            {streaming.text ? <Markdown text={streaming.text} color={c.textPrimary} width={hasTable(streaming.text) ? contentW : undefined} /> : null}
           </View>
         </View>
       ) : null}

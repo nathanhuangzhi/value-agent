@@ -234,6 +234,8 @@ export default function AiScreen() {
   const drawerWidth = Math.min(320, width * 0.82);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
+  const [listW, setListW] = useState(0);
+  const contentW = listW ? Math.floor((listW - 2 * spacing.md) * 0.92) - 2 * spacing.md : undefined;   // inside a wide bubble
   const drawerX = useRef(new Animated.Value(-drawerWidth)).current;
   const backdrop = useRef(new Animated.Value(0)).current;
   const toggleDrawer = (open: boolean) => {
@@ -294,6 +296,7 @@ export default function AiScreen() {
       ) : (
         <FlatList
           inverted
+          onLayout={(e) => setListW(e.nativeEvent.layout.width)}
           data={data}
           keyExtractor={(_, i) => String(i)}
           contentContainerStyle={styles.messages}
@@ -304,6 +307,7 @@ export default function AiScreen() {
               msg={item}
               streaming={item._streaming ? streaming : null}
               onSelect={setSelectText}
+              contentW={contentW}
             />
           )}
           ListEmptyComponent={
@@ -409,7 +413,7 @@ export default function AiScreen() {
   );
 }
 
-function Bubble({ msg, streaming, onSelect }: { msg: ChatMessage; streaming: Streaming | null; onSelect: (text: string) => void }) {
+function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; streaming: Streaming | null; onSelect: (text: string) => void; contentW?: number }) {
   const c = useColors();
   const isUser = msg.role === 'user';
   const usage = msg.usage;
@@ -436,7 +440,7 @@ function Bubble({ msg, streaming, onSelect }: { msg: ChatMessage; streaming: Str
                 <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
               </View>
             ) : null}
-            {msg.content ? <Markdown text={msg.content} color={c.textPrimary} /> : null}
+            {msg.content ? <Markdown text={msg.content} color={c.textPrimary} width={hasTable(msg.content) ? contentW : undefined} /> : null}
             {!streaming ? (
               <View style={styles.footer}>
                 <Text style={[styles.meta, { color: c.textMuted, flexShrink: 1 }]}>
