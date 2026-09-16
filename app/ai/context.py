@@ -676,7 +676,7 @@ def tool_search_annual_report(ticker: str, keyword: str, fiscal_year: str | None
 def _calls_store(ticker: str, *, fetch_latest: bool = True):
     """Cached transcripts; when the newest ended quarter isn't on file yet, try to fetch it
     (one Alpha Vantage request — the free key allows 25 a day)."""
-    from app.tools.earnings_calls import NoApiKey, load_store, quarters_to_check, save_store, fetch_transcript
+    from app.tools.earnings_calls import load_store, quarters_to_check, save_store, fetch_transcript
     from datetime import date, datetime, timezone
     t = ticker.upper()
     store = load_store(t)
@@ -691,10 +691,8 @@ def _calls_store(ticker: str, *, fetch_latest: bool = True):
                 else:
                     store["checked"][q] = date.today().isoformat()
                 save_store(store)
-            except NoApiKey:
-                pass
             except Exception:
-                pass                              # rate-limited or offline: serve what's cached
+                pass                              # no key, rate-limited or offline: serve what's cached
     return store
 
 

@@ -8,7 +8,9 @@ gitignored — third-party content, ~30k chars per call).
       "checked": {"2026Q3": "2026-09-16"}      # quarters that returned nothing, and when
     }
 
-The free key allows 25 requests a day at ~1/s, so `sync_ticker` is
+A free key allows 25 requests a day at ~1/s (the limit is per key —
+`ALPHAVANTAGE_API_KEY` may hold several, comma-separated, and a key that
+hits its limit is retired for the process's lifetime), so `sync_ticker` is
 frugal: it asks only for quarters that have ended, aren't cached, and —
 for empty results — were last checked more than `RECHECK_DAYS` ago while
 the quarter is still recent enough for a call to appear. Alpha Vantage
@@ -46,11 +48,25 @@ class NoApiKey(RuntimeError):
     pass
 
 
-def api_key() -> str:
-    k = os.environ.get("ALPHAVANTAGE_API_KEY", "").strip()
-    if not k:
+class RateLimited(RuntimeError):
+    """Every key has hit its daily limit."""
+
+
+_exhausted: set[str] = set()
+
+
+def api_keys() -> list[str]:
+    ks = [k.strip() for k in os.environ.get("ALPHAVANTAGE_API_KEY", "").split(",") if k.strip()]
+    if not ks:
         raise NoApiKey("ALPHAVANTAGE_API_KEY is not set in .env")
-    return k
+    return ks
+
+
+def daily_budget(per_key: int = 15) -> int:
+    try:
+        return per_key * len(api_keys())
+    except NoApiKey:
+        return 0
 
 
 def store_path(ticker: str) -> Path:
@@ -89,21 +105,30 @@ def quarters_ended(*, today: date | None = None, n: int = RECENT_QUARTERS) -> li
 
 
 def fetch_transcript(symbol: str, quarter: str) -> list[dict]:
-    """One request; [] when Alpha Vantage has no transcript. Raises on a
-    rate-limit / error payload so callers can stop for the day."""
+    """One request; [] when Alpha Vantage has no transcript. A key that
+    answers with its rate-limit notice is retired and the next key is
+    tried; RateLimited once none is left."""
     global _last_request
-    wait = _MIN_INTERVAL_S - (time.monotonic() - _last_request)
-    if wait > 0:
-        time.sleep(wait)
-    _last_request = time.monotonic()
-    r = requests.get(_URL, params={"function": "EARNINGS_CALL_TRANSCRIPT", "symbol": symbol,
-                                   "quarter": quarter, "apikey": api_key()}, timeout=30)
-    r.raise_for_status()
-    d = r.json()
-    if "transcript" not in d:
-        raise RuntimeError(d.get("Information") or d.get("Error Message") or d.get("Note") or str(d)[:200])
-    return [{"speaker": t.get("speaker"), "title": t.get("title"), "content": (t.get("content") or "").strip(),
-             "sentiment": t.get("sentiment")} for t in d["transcript"] if (t.get("content") or "").strip()]
+    for key in api_keys():
+        if key in _exhausted:
+            continue
+        wait = _MIN_INTERVAL_S - (time.monotonic() - _last_request)
+        if wait > 0:
+            time.sleep(wait)
+        _last_request = time.monotonic()
+        r = requests.get(_URL, params={"function": "EARNINGS_CALL_TRANSCRIPT", "symbol": symbol,
+                                       "quarter": quarter, "apikey": key}, timeout=30)
+        r.raise_for_status()
+        d = r.json()
+        if "transcript" in d:
+            return [{"speaker": t.get("speaker"), "title": t.get("title"), "content": (t.get("content") or "").strip(),
+                     "sentiment": t.get("sentiment")} for t in d["transcript"] if (t.get("content") or "").strip()]
+        msg = d.get("Information") or d.get("Note") or ""
+        if "rate limit" in msg.lower() or "requests per day" in msg.lower() or "premium" in msg.lower():
+            _exhausted.add(key)
+            continue
+        raise RuntimeError(d.get("Error Message") or msg or str(d)[:200])
+    raise RateLimited("all Alpha Vantage keys have used their daily quota")
 
 
 NO_CALLS_RECHECK_DAYS = 30   # a company with no transcript at all: re-probe the newest quarter monthly
@@ -198,5 +223,5 @@ def search_calls(store: dict, keyword: str, *, quarter: str | None = None, limit
     return hits
 
 
-__all__ = ["CALLS_DIR", "NoApiKey", "load_store", "save_store", "sync_ticker", "fetch_transcript",
+__all__ = ["CALLS_DIR", "NoApiKey", "RateLimited", "daily_budget", "load_store", "save_store", "sync_ticker", "fetch_transcript",
            "quarters_ended", "quarters_to_check", "split_call", "render_turns", "search_calls"]
