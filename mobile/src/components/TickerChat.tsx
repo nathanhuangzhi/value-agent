@@ -30,7 +30,7 @@ const LAST_CONV_KEY = 'ai_last_conversation_v1';   // shared with the AI tab
 
 type Streaming = { status: string | null; text: string };
 
-export function TickerChat({ ticker }: { ticker: string }) {
+export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiveChange?: (active: boolean) => void }) {
   const c = useColors();
   const router = useRouter();
   const prefix = `#${ticker} `;
@@ -87,6 +87,10 @@ export function TickerChat({ ticker }: { ticker: string }) {
     setMessages([]);
     setInput(prefix);
   };
+
+  // Let the page know a conversation is on screen (it shows a jump-to-bottom button).
+  const active = messages.length > 0 || streaming !== null;
+  useEffect(() => { onActiveChange?.(active); }, [active, onActiveChange]);
 
   // A fresh, blank box whenever the page (or the ticker) changes; earlier
   // threads stay reachable through the history button.

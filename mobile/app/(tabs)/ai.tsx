@@ -39,6 +39,7 @@ import {
   type StreamEvent,
 } from '@/api/ai';
 import { Markdown, hasTable, toPlainText } from '@/components/Markdown';
+import { ScrollToBottomButton } from '@/components/ScrollToBottomButton';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { useColors, chatType, fontSize, radii, spacing } from '@/theme/colors';
@@ -235,6 +236,8 @@ export default function AiScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
   const [listW, setListW] = useState(0);
+  const listRef = useRef<FlatList<Row>>(null);
+  const [awayFromBottom, setAwayFromBottom] = useState(false);   // inverted list: offset 0 is the newest message
   const contentW = listW ? listW - 2 * spacing.md : undefined;   // replies run the full width of the list
   const drawerX = useRef(new Animated.Value(-drawerWidth)).current;
   const backdrop = useRef(new Animated.Value(0)).current;
@@ -294,9 +297,16 @@ export default function AiScreen() {
       {loadingConv && !current ? (
         <View style={styles.center}><ActivityIndicator color={c.brand} /></View>
       ) : (
+        <View style={{ flex: 1 }}>
         <FlatList
+          ref={listRef}
           inverted
           onLayout={(e) => setListW(e.nativeEvent.layout.width)}
+          onScroll={(e) => {
+            const away = e.nativeEvent.contentOffset.y > 160;
+            setAwayFromBottom((prev) => (prev === away ? prev : away));
+          }}
+          scrollEventThrottle={48}
           data={data}
           keyExtractor={(_, i) => String(i)}
           contentContainerStyle={styles.messages}
@@ -321,6 +331,11 @@ export default function AiScreen() {
             </View>
           }
         />
+        <ScrollToBottomButton
+          visible={awayFromBottom}
+          onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+        />
+        </View>
       )}
 
       {error ? (

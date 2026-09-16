@@ -40,6 +40,7 @@ import {
   usePriceHistory,
 } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
+import { ScrollToBottomButton } from '@/components/ScrollToBottomButton';
 import { TickerChat } from '@/components/TickerChat';
 import { SHOW_LLM_ANALYSIS, TICKER_SWIPE_NAV } from '@/config';
 import {
@@ -98,6 +99,10 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
   const tableTopRef = useRef<number | null>(null);
   const tableHeightRef = useRef<number | null>(null);
   const [showStickyOverlay, setShowStickyOverlay] = useState(false);
+  // "Jump to bottom" while a chat is going on down there and the reader is scrolled up.
+  const pageScrollRef = useRef<ScrollView>(null);
+  const [chatActive, setChatActive] = useState(false);
+  const [farFromBottom, setFarFromBottom] = useState(false);
   const tableColumns = useMemo(
     () =>
       ticker.data
@@ -107,12 +112,15 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
   );
 
   const onPageScroll = useCallback(
-    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+    (e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
       if (!isCenter) return;
+      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+      const y = contentOffset.y;
+      const far = contentSize.height - layoutMeasurement.height - y > 400;
+      setFarFromBottom((prev) => (prev === far ? prev : far));
       const top = tableTopRef.current;
       const h = tableHeightRef.current;
       if (top == null || h == null) return;
-      const y = e.nativeEvent.contentOffset.y;
       const show = y > top && y < top + h - HISTORICAL_TABLE_HEADER_HEIGHT;
       setShowStickyOverlay((prev) => (prev === show ? prev : show));
     },
@@ -158,6 +166,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView
+        ref={pageScrollRef}
         style={{ backgroundColor: c.background }}
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
@@ -313,7 +322,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
           </View>
         )}
 
-        <TickerChat ticker={data.ticker} />
+        <TickerChat ticker={data.ticker} onActiveChange={setChatActive} />
 
         <View style={[styles.footer, { borderTopColor: c.border }]}>
           <Text style={[styles.disclaimer, { color: c.textMuted }]}>
@@ -325,6 +334,11 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
           </Text>
         </View>
       </ScrollView>
+
+      <ScrollToBottomButton
+        visible={isCenter && chatActive && farFromBottom}
+        onPress={() => pageScrollRef.current?.scrollToEnd({ animated: true })}
+      />
 
       {showStickyOverlay && (
         <View
