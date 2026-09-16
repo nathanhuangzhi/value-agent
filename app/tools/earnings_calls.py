@@ -36,7 +36,8 @@ load_dotenv(ENV_FILE)
 
 CALLS_DIR = DATA_DIR / "earnings_calls"
 _URL = "https://www.alphavantage.co/query"
-_MIN_INTERVAL_S = 1.5
+_MIN_INTERVAL_S = 3.0
+_THROTTLE_RETRY_S = 20      # a rate notice can be the burst throttle, not the daily quota: wait once, retry
 _last_request = 0.0
 RECHECK_DAYS = 3
 RECENT_QUARTERS = 8          # how far back a first sync looks
@@ -104,30 +105,37 @@ def quarters_ended(*, today: date | None = None, n: int = RECENT_QUARTERS) -> li
     return out
 
 
-def fetch_transcript(symbol: str, quarter: str) -> list[dict]:
-    """One request; [] when Alpha Vantage has no transcript. A key that
-    answers with its rate-limit notice is retired and the next key is
-    tried; RateLimited once none is left."""
+def _request(key: str, symbol: str, quarter: str) -> dict:
     global _last_request
+    wait = _MIN_INTERVAL_S - (time.monotonic() - _last_request)
+    if wait > 0:
+        time.sleep(wait)
+    _last_request = time.monotonic()
+    r = requests.get(_URL, params={"function": "EARNINGS_CALL_TRANSCRIPT", "symbol": symbol,
+                                   "quarter": quarter, "apikey": key}, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def fetch_transcript(symbol: str, quarter: str) -> list[dict]:
+    """One request; [] when Alpha Vantage has no transcript. A rate notice
+    is retried once after a pause (it may be the burst throttle); if it
+    persists the key is retired for the day and the next key is tried;
+    RateLimited once none is left."""
     for key in api_keys():
         if key in _exhausted:
             continue
-        wait = _MIN_INTERVAL_S - (time.monotonic() - _last_request)
-        if wait > 0:
-            time.sleep(wait)
-        _last_request = time.monotonic()
-        r = requests.get(_URL, params={"function": "EARNINGS_CALL_TRANSCRIPT", "symbol": symbol,
-                                       "quarter": quarter, "apikey": key}, timeout=30)
-        r.raise_for_status()
-        d = r.json()
-        if "transcript" in d:
-            return [{"speaker": t.get("speaker"), "title": t.get("title"), "content": (t.get("content") or "").strip(),
-                     "sentiment": t.get("sentiment")} for t in d["transcript"] if (t.get("content") or "").strip()]
-        msg = d.get("Information") or d.get("Note") or ""
-        if "rate limit" in msg.lower() or "requests per day" in msg.lower() or "premium" in msg.lower():
-            _exhausted.add(key)
-            continue
-        raise RuntimeError(d.get("Error Message") or msg or str(d)[:200])
+        for attempt in range(2):
+            d = _request(key, symbol, quarter)
+            if "transcript" in d:
+                return [{"speaker": t.get("speaker"), "title": t.get("title"), "content": (t.get("content") or "").strip(),
+                         "sentiment": t.get("sentiment")} for t in d["transcript"] if (t.get("content") or "").strip()]
+            msg = d.get("Information") or d.get("Note") or ""
+            if not ("rate limit" in msg.lower() or "requests per" in msg.lower() or "premium" in msg.lower()):
+                raise RuntimeError(d.get("Error Message") or msg or str(d)[:200])
+            if attempt == 0:
+                time.sleep(_THROTTLE_RETRY_S)
+        _exhausted.add(key)
     raise RateLimited("all Alpha Vantage keys have used their daily quota")
 
 
@@ -162,20 +170,22 @@ def sync_ticker(ticker: str, *, budget: int, today: date | None = None, log=prin
     today = today or date.today()
     store = load_store(t)
     used = 0
-    for q in quarters_to_check(store, today=today):
-        if used >= budget:
-            break
-        turns = fetch_transcript(t, q)
-        used += 1
-        if turns:
-            store["calls"][q] = {"fetched_at": datetime.now(timezone.utc).isoformat(), "turns": turns}
-            store["checked"].pop(q, None)
-            log(f"  {t} {q}: {len(turns)} turns, {sum(len(x['content']) for x in turns):,} chars")
-        else:
-            store["checked"][q] = today.isoformat()
-            log(f"  {t} {q}: no transcript")
-    if used:
-        save_store(store)
+    try:
+        for q in quarters_to_check(store, today=today):
+            if used >= budget:
+                break
+            turns = fetch_transcript(t, q)
+            used += 1
+            if turns:
+                store["calls"][q] = {"fetched_at": datetime.now(timezone.utc).isoformat(), "turns": turns}
+                store["checked"].pop(q, None)
+                log(f"  {t} {q}: {len(turns)} turns, {sum(len(x['content']) for x in turns):,} chars")
+            else:
+                store["checked"][q] = today.isoformat()
+                log(f"  {t} {q}: no transcript")
+    finally:
+        if used:
+            save_store(store)      # keep what arrived even if a later request raised
     return used
 
 
