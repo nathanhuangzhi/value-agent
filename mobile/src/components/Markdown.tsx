@@ -74,7 +74,7 @@ function Inline({ text, style }: { text: string; style: TextStyle }) {
   const c = useColors();
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
   return (
-    <Text style={style}>
+    <Text style={style} selectable>
       {parts.map((p, i) => {
         if (p.startsWith('**') && p.endsWith('**')) {
           return <Text key={i} style={{ fontWeight: '700' }}>{p.slice(2, -2)}</Text>;
@@ -111,14 +111,14 @@ export function Markdown({ text, color }: { text: string; color: string }) {
           case 'li':
             return (
               <View key={i} style={styles.li}>
-                <Text style={[body, styles.marker]}>{b.marker}</Text>
+                <Text style={[body, styles.marker]} selectable>{b.marker}</Text>
                 <View style={{ flex: 1 }}><Inline text={b.text} style={body} /></View>
               </View>
             );
           case 'code':
             return (
               <ScrollView key={i} horizontal style={[styles.code, { backgroundColor: c.surface, borderColor: c.border }]}>
-                <Text style={{ color, fontFamily: 'Menlo', fontSize: fontSize.sm }}>{b.text}</Text>
+                <Text style={{ color, fontFamily: 'Menlo', fontSize: fontSize.sm }} selectable>{b.text}</Text>
               </ScrollView>
             );
           case 'table':

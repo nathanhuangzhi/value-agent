@@ -38,7 +38,9 @@ import {
   type ModelKey,
   type StreamEvent,
 } from '@/api/ai';
+import { CopyButton } from '@/components/CopyButton';
 import { Markdown } from '@/components/Markdown';
+import { copyText } from '@/utils/clipboard';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 import { formatDate } from '@/utils/format';
@@ -410,7 +412,9 @@ function Bubble({ msg, streaming }: { msg: ChatMessage; streaming: Streaming | n
   const usage = msg.usage;
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
-      <View
+      {/* Text is selectable for partial copies; long-press (or the icon) copies the whole message. */}
+      <Pressable
+        onLongPress={() => copyText(msg.content)}
         style={[
           styles.bubble,
           isUser
@@ -419,7 +423,7 @@ function Bubble({ msg, streaming }: { msg: ChatMessage; streaming: Streaming | n
         ]}
       >
         {isUser ? (
-          <Text style={[styles.userText, { color: '#fff' }]}>{msg.content}</Text>
+          <Text style={[styles.userText, { color: '#fff' }]} selectable>{msg.content}</Text>
         ) : (
           <>
             {streaming?.status ? (
@@ -429,18 +433,21 @@ function Bubble({ msg, streaming }: { msg: ChatMessage; streaming: Streaming | n
               </View>
             ) : null}
             {msg.content ? <Markdown text={msg.content} color={c.textPrimary} /> : null}
-            {!streaming && (msg.companies?.length || usage) ? (
-              <Text style={[styles.meta, { color: c.textMuted }]}>
-                {[
-                  msg.companies?.length ? `data: ${msg.companies.join(', ')}` : null,
-                  msg.model ? (msg.model.includes('pro') ? 'Pro' : 'Flash') : null,
-                  usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
-                ].filter(Boolean).join(' · ')}
-              </Text>
+            {!streaming ? (
+              <View style={styles.footer}>
+                <Text style={[styles.meta, { color: c.textMuted, flexShrink: 1 }]}>
+                  {[
+                    msg.companies?.length ? `data: ${msg.companies.join(', ')}` : null,
+                    msg.model ? (msg.model.includes('pro') ? 'Pro' : 'Flash') : null,
+                    usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
+                  ].filter(Boolean).join(' · ')}
+                </Text>
+                <CopyButton text={msg.content} color={c.textMuted} />
+              </View>
             ) : null}
           </>
         )}
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -467,7 +474,8 @@ const styles = StyleSheet.create({
   userText: { fontSize: fontSize.md, lineHeight: 22 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },
-  meta: { fontSize: fontSize.xs - 1, marginTop: spacing.xs, letterSpacing: 0.3 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
+  meta: { fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
   empty: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontSize: fontSize.lg, fontWeight: '700' },
   emptyHint: { fontSize: fontSize.sm, lineHeight: 20, textAlign: 'center' },

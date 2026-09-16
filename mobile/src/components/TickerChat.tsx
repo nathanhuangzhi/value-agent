@@ -22,7 +22,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aiApi, type ChatMessage, type ConversationSummary, type ModelKey, type StreamEvent } from '@/api/ai';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { formatDate } from '@/utils/format';
+import { CopyButton } from '@/components/CopyButton';
 import { Markdown } from '@/components/Markdown';
+import { copyText } from '@/utils/clipboard';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
 const LAST_CONV_KEY = 'ai_last_conversation_v1';   // shared with the AI tab
@@ -168,18 +170,24 @@ export function TickerChat({ ticker }: { ticker: string }) {
 
       {messages.map((m, i) => (
         <View key={i} style={[styles.row, m.role === 'user' && styles.rowUser]}>
-          <View style={[styles.bubble, m.role === 'user'
+          {/* Text is selectable for partial copies; long-press (or the icon) copies the whole message. */}
+          <Pressable onLongPress={() => copyText(m.content)} style={[styles.bubble, m.role === 'user'
             ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
             : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 }]}>
             {m.role === 'user'
-              ? <Text style={[styles.userText, { color: '#fff' }]}>{m.content}</Text>
+              ? <Text style={[styles.userText, { color: '#fff' }]} selectable>{m.content}</Text>
               : <Markdown text={m.content} color={c.textPrimary} />}
-            {m.role === 'assistant' && m.usage?.estimated_cost_usd != null ? (
-              <Text style={[styles.meta, { color: c.textMuted }]}>
-                {m.model?.includes('pro') ? 'Pro' : 'Flash'} · ${m.usage.estimated_cost_usd.toFixed(4)}
-              </Text>
+            {m.role === 'assistant' ? (
+              <View style={styles.footer}>
+                <Text style={[styles.meta, { color: c.textMuted }]}>
+                  {m.usage?.estimated_cost_usd != null
+                    ? `${m.model?.includes('pro') ? 'Pro' : 'Flash'} · $${m.usage.estimated_cost_usd.toFixed(4)}`
+                    : ''}
+                </Text>
+                <CopyButton text={m.content} color={c.textMuted} />
+              </View>
             ) : null}
-          </View>
+          </Pressable>
         </View>
       ))}
       {streaming ? (
@@ -282,7 +290,8 @@ const styles = StyleSheet.create({
   userText: { fontSize: fontSize.md, lineHeight: 22 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },
-  meta: { fontSize: fontSize.xs - 1, marginTop: spacing.xs, letterSpacing: 0.3 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
+  meta: { fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
   errorBar: { padding: spacing.sm, borderRadius: radii.md, marginBottom: spacing.sm },
   errorText: { fontSize: fontSize.sm },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginTop: spacing.xs },
