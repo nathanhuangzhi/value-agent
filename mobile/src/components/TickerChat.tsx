@@ -24,7 +24,7 @@ import { useReplyStream } from '@/hooks/useReplyStream';
 import { formatDate } from '@/utils/format';
 import { Markdown, hasTable, toPlainText } from '@/components/Markdown';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
-import { useColors, fontSize, radii, spacing } from '@/theme/colors';
+import { useColors, chatType, fontSize, radii, spacing } from '@/theme/colors';
 
 const LAST_CONV_KEY = 'ai_last_conversation_v1';   // shared with the AI tab
 
@@ -45,8 +45,7 @@ export function TickerChat({ ticker }: { ticker: string }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
   const [chatW, setChatW] = useState(0);
-  // Inner width of a full-width bubble: the wrap's padding, then 94%, then the bubble's own padding.
-  const contentW = chatW ? Math.floor((chatW - 2 * spacing.lg) * 0.94) - 2 * spacing.md : undefined;
+  const contentW = chatW ? chatW - 2 * spacing.lg : undefined;   // replies run the full width
   const [history, setHistory] = useState<ConversationSummary[] | null>(null);
 
   const openHistory = () => {
@@ -172,53 +171,48 @@ export function TickerChat({ ticker }: { ticker: string }) {
       ) : null}
 
       {messages.map((m, i) => {
-        const table = m.role === 'assistant' && hasTable(m.content);
-        const bubbleStyle = [styles.bubble, m.role === 'user'
-          ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
-          : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
-          table && styles.bubbleWide];
+        if (m.role === 'user') {
+          // ChatGPT / Claude layout: only the user's own messages sit in a bubble.
+          return (
+            <View key={i} style={styles.userRow}>
+              <Pressable onLongPress={() => setSelectText(m.content)} style={[styles.userBubble, { backgroundColor: c.chatBubble }]}>
+                <Text style={[styles.userText, { color: c.textPrimary }]}>{m.content}</Text>
+              </Pressable>
+            </View>
+          );
+        }
+        const table = hasTable(m.content);
         const inner = (
           <>
-            {m.role === 'user'
-              ? <Text style={[styles.userText, { color: '#fff' }]}>{m.content}</Text>
-              : <Markdown text={m.content} color={c.textPrimary} width={table ? contentW : undefined} />}
-            {m.role === 'assistant' ? (
-              <View style={styles.footer}>
-                <Text style={[styles.meta, { color: c.textMuted }]}>
-                  {m.usage?.estimated_cost_usd != null
-                    ? `${m.model?.includes('pro') ? 'Pro' : 'Flash'} · $${m.usage.estimated_cost_usd.toFixed(4)}`
-                    : ''}
-                </Text>
-                <Pressable onPress={() => setSelectText(toPlainText(m.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
-                  <Ionicons name="copy-outline" size={14} color={c.textMuted} />
-                  <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
-                </Pressable>
-              </View>
-            ) : null}
+            <Markdown text={m.content} color={c.textPrimary} width={table ? contentW : undefined} />
+            <View style={styles.footer}>
+              <Pressable onPress={() => setSelectText(toPlainText(m.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
+                <Ionicons name="copy-outline" size={15} color={c.textMuted} />
+                <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
+              </Pressable>
+              <Text style={[styles.meta, { color: c.textMuted }]}>
+                {m.usage?.estimated_cost_usd != null
+                  ? `${m.model?.includes('pro') ? 'Pro' : 'Flash'} · $${m.usage.estimated_cost_usd.toFixed(4)}`
+                  : ''}
+              </Text>
+            </View>
           </>
         );
-        return (
-          <View key={i} style={[styles.row, m.role === 'user' && styles.rowUser]}>
-            {/* Long-press opens the select/copy sheet. A bubble holding a table is a plain
-                View so nothing sits between the table's horizontal ScrollView and the touch. */}
-            {table
-              ? <View style={bubbleStyle}>{inner}</View>
-              : <Pressable onLongPress={() => setSelectText(m.role === 'user' ? m.content : toPlainText(m.content))} style={bubbleStyle}>{inner}</Pressable>}
-          </View>
-        );
+        // The reply is plain text across the full width. A reply holding a table is a plain
+        // View so nothing sits between the table's horizontal ScrollView and the touch.
+        return table
+          ? <View key={i} style={styles.reply}>{inner}</View>
+          : <Pressable key={i} onLongPress={() => setSelectText(toPlainText(m.content))} style={styles.reply}>{inner}</Pressable>;
       })}
       {streaming ? (
-        <View style={styles.row}>
-          <View style={[styles.bubble, { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
-            hasTable(streaming.text) && styles.bubbleWide]}>
-            {streaming.status ? (
-              <View style={styles.statusRow}>
-                <ActivityIndicator size="small" color={c.textMuted} />
-                <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
-              </View>
-            ) : null}
-            {streaming.text ? <Markdown text={streaming.text} color={c.textPrimary} width={hasTable(streaming.text) ? contentW : undefined} /> : null}
-          </View>
+        <View style={styles.reply}>
+          {streaming.status ? (
+            <View style={styles.statusRow}>
+              <ActivityIndicator size="small" color={c.textMuted} />
+              <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
+            </View>
+          ) : null}
+          {streaming.text ? <Markdown text={streaming.text} color={c.textPrimary} width={hasTable(streaming.text) ? contentW : undefined} /> : null}
         </View>
       ) : null}
       {error ? (
@@ -304,16 +298,15 @@ const styles = StyleSheet.create({
   segmentBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill },
   segmentLabel: { fontSize: fontSize.xs, fontWeight: '700' },
   hint: { fontSize: fontSize.sm, lineHeight: 20, marginBottom: spacing.sm },
-  row: { flexDirection: 'row', marginBottom: spacing.sm },
-  rowUser: { justifyContent: 'flex-end' },
-  bubble: { maxWidth: '94%', borderRadius: 16, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  bubbleWide: { width: '94%' },
-  userText: { fontSize: fontSize.md, lineHeight: 22 },
+  userRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.md, marginBottom: spacing.lg },
+  userBubble: { maxWidth: '80%', borderRadius: 20, paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 2 },
+  userText: { fontSize: chatType.size, lineHeight: chatType.lineHeight - 2 },
+  reply: { marginBottom: spacing.lg },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },
   meta: { fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
-  selectBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingLeft: spacing.sm, paddingVertical: 2 },
+  selectBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2 },
   errorBar: { padding: spacing.sm, borderRadius: radii.md, marginBottom: spacing.sm },
   errorText: { fontSize: fontSize.sm },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginTop: spacing.xs },

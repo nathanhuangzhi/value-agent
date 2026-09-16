@@ -41,7 +41,7 @@ import {
 import { Markdown, hasTable, toPlainText } from '@/components/Markdown';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useReplyStream } from '@/hooks/useReplyStream';
-import { useColors, fontSize, radii, spacing } from '@/theme/colors';
+import { useColors, chatType, fontSize, radii, spacing } from '@/theme/colors';
 import { formatDate } from '@/utils/format';
 
 const MODEL_KEY = 'ai_model_v1';
@@ -235,7 +235,7 @@ export default function AiScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectText, setSelectText] = useState<string | null>(null);   // message open in the select/copy sheet
   const [listW, setListW] = useState(0);
-  const contentW = listW ? Math.floor((listW - 2 * spacing.md) * 0.92) - 2 * spacing.md : undefined;   // inside a wide bubble
+  const contentW = listW ? listW - 2 * spacing.md : undefined;   // replies run the full width of the list
   const drawerX = useRef(new Animated.Value(-drawerWidth)).current;
   const backdrop = useRef(new Animated.Value(0)).current;
   const toggleDrawer = (open: boolean) => {
@@ -415,19 +415,19 @@ export default function AiScreen() {
 
 function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; streaming: Streaming | null; onSelect: (text: string) => void; contentW?: number }) {
   const c = useColors();
-  const isUser = msg.role === 'user';
   const usage = msg.usage;
-  const table = !isUser && hasTable(msg.content);
-  const bubbleStyle = [
-    styles.bubble,
-    isUser
-      ? { backgroundColor: c.brand, borderBottomRightRadius: 4 }
-      : { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 4 },
-    table && styles.bubbleWide,
-  ];
-  const inner = isUser ? (
-    <Text style={[styles.userText, { color: '#fff' }]}>{msg.content}</Text>
-  ) : (
+  if (msg.role === 'user') {
+    // ChatGPT / Claude layout: only the user's own messages sit in a bubble.
+    return (
+      <View style={styles.userRow}>
+        <Pressable onLongPress={() => onSelect(msg.content)} style={[styles.userBubble, { backgroundColor: c.chatBubble }]}>
+          <Text style={[styles.userText, { color: c.textPrimary }]}>{msg.content}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  const table = hasTable(msg.content);
+  const inner = (
     <>
       {streaming?.status ? (
         <View style={styles.statusRow}>
@@ -438,6 +438,10 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
       {msg.content ? <Markdown text={msg.content} color={c.textPrimary} width={table ? contentW : undefined} /> : null}
       {!streaming ? (
         <View style={styles.footer}>
+          <Pressable onPress={() => onSelect(toPlainText(msg.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
+            <Ionicons name="copy-outline" size={15} color={c.textMuted} />
+            <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
+          </Pressable>
           <Text style={[styles.meta, { color: c.textMuted, flexShrink: 1 }]}>
             {[
               msg.companies?.length ? `data: ${msg.companies.join(', ')}` : null,
@@ -445,23 +449,15 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
               usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
             ].filter(Boolean).join(' · ')}
           </Text>
-          <Pressable onPress={() => onSelect(toPlainText(msg.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
-            <Ionicons name="copy-outline" size={14} color={c.textMuted} />
-            <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
-          </Pressable>
         </View>
       ) : null}
     </>
   );
-  return (
-    <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
-      {/* Long-press opens the select/copy sheet. A bubble holding a table is a plain
-          View so nothing sits between the table's horizontal ScrollView and the touch. */}
-      {table
-        ? <View style={bubbleStyle}>{inner}</View>
-        : <Pressable onLongPress={() => onSelect(isUser ? msg.content : toPlainText(msg.content))} style={bubbleStyle}>{inner}</Pressable>}
-    </View>
-  );
+  // The reply is plain text across the full width. A reply holding a table is a plain
+  // View so nothing sits between the table's horizontal ScrollView and the touch.
+  return table
+    ? <View style={styles.reply}>{inner}</View>
+    : <Pressable onLongPress={() => onSelect(toPlainText(msg.content))} style={styles.reply}>{inner}</Pressable>;
 }
 
 const styles = StyleSheet.create({
@@ -480,16 +476,15 @@ const styles = StyleSheet.create({
   segmentLabel: { fontSize: fontSize.xs, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   messages: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flexGrow: 1 },
-  bubbleRow: { flexDirection: 'row', marginBottom: spacing.sm },
-  bubbleRowUser: { justifyContent: 'flex-end' },
-  bubble: { maxWidth: '92%', borderRadius: 16, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  bubbleWide: { width: '92%' },
-  userText: { fontSize: fontSize.md, lineHeight: 22 },
+  userRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.md, marginBottom: spacing.lg },
+  userBubble: { maxWidth: '80%', borderRadius: 20, paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 2 },
+  userText: { fontSize: chatType.size, lineHeight: chatType.lineHeight - 2 },
+  reply: { marginBottom: spacing.lg },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
   status: { fontSize: fontSize.sm, fontStyle: 'italic' },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },
   meta: { fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
-  selectBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingLeft: spacing.sm, paddingVertical: 2 },
+  selectBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2 },
   empty: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontSize: fontSize.lg, fontWeight: '700' },
   emptyHint: { fontSize: fontSize.sm, lineHeight: 20, textAlign: 'center' },

@@ -11,6 +11,7 @@ import { useColorScheme } from 'react-native';
 type Palette = {
   background: string;
   surface: string;
+  chatBubble: string;   // the user's own message in the AI chat
   textPrimary: string;
   textMuted: string;
   brand: string;
@@ -33,6 +34,7 @@ type Palette = {
 const light: Palette = {
   background: '#FFFFFF',
   surface: '#FAFAF9',
+  chatBubble: '#F1F1F0',
   textPrimary: '#111111',
   textMuted: '#6B7280',
   brand: '#166534',
@@ -53,6 +55,7 @@ const light: Palette = {
 const dark: Palette = {
   background: '#0F0F10',
   surface: '#1C1C1E',
+  chatBubble: '#2E2E30',
   textPrimary: '#F5F5F4',
   textMuted: '#9CA3AF',
   brand: '#4ADE80',
@@ -84,4 +87,18 @@ export const fontSize = {
   lg: 17,
   xl: 22,
   xxl: 28,
+};
+
+/**
+ * Chat typography — the ChatGPT / Claude mobile reading size: 16pt system
+ * font on a 26pt line, headings only a step up, code a step down.
+ */
+export const chatType = {
+  size: 16,
+  lineHeight: 26,
+  h1: 20,
+  h2: 18,
+  h3: 16,
+  code: 14,
+  paragraphGap: 14,
 };

@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
 
-import { useColors, fontSize, spacing } from '@/theme/colors';
+import { useColors, chatType, fontSize, spacing } from '@/theme/colors';
 
 type Block =
   | { kind: 'h'; level: number; text: string }
@@ -105,7 +105,7 @@ function Inline({ text, style }: { text: string; style: TextStyle }) {
         }
         if (p.startsWith('`') && p.endsWith('`')) {
           return (
-            <Text key={i} style={{ fontFamily: 'Menlo', backgroundColor: c.surface, fontSize: (style.fontSize ?? 15) - 1 }}>
+            <Text key={i} style={{ fontFamily: 'Menlo', backgroundColor: c.surface, fontSize: (style.fontSize ?? chatType.size) - 2 }}>
               {p.slice(1, -1)}
             </Text>
           );
@@ -205,7 +205,7 @@ export function hasTable(md: string): boolean {
  */
 export function Markdown({ text, color, width }: { text: string; color: string; width?: number }) {
   const c = useColors();
-  const body: TextStyle = { color, fontSize: fontSize.md, lineHeight: 22 };
+  const body: TextStyle = { color, fontSize: chatType.size, lineHeight: chatType.lineHeight };
   const blocks = parse(text);
   return (
     <View>
@@ -216,7 +216,14 @@ export function Markdown({ text, color, width }: { text: string; color: string; 
               <Inline
                 key={i}
                 text={b.text}
-                style={{ ...body, fontWeight: '700', fontSize: b.level <= 2 ? fontSize.lg : fontSize.md, marginTop: i ? spacing.sm : 0, marginBottom: 2 }}
+                style={{
+                  ...body,
+                  fontWeight: '600',
+                  fontSize: b.level === 1 ? chatType.h1 : b.level === 2 ? chatType.h2 : chatType.h3,
+                  lineHeight: b.level === 1 ? 28 : chatType.lineHeight,
+                  marginTop: i ? spacing.md : 0,
+                  marginBottom: spacing.xs,
+                }}
               />
             );
           case 'li':
@@ -229,13 +236,13 @@ export function Markdown({ text, color, width }: { text: string; color: string; 
           case 'code':
             return (
               <ScrollView key={i} horizontal style={[styles.code, { backgroundColor: c.surface, borderColor: c.border }]}>
-                <Text style={{ color, fontFamily: 'Menlo', fontSize: fontSize.sm }}>{b.text}</Text>
+                <Text style={{ color, fontFamily: 'Menlo', fontSize: chatType.code, lineHeight: 20 }}>{b.text}</Text>
               </ScrollView>
             );
           case 'table':
             return <Table key={i} rows={b.rows} body={body} width={width} />;
           default:
-            return <Inline key={i} text={b.text} style={{ ...body, marginBottom: spacing.sm }} />;
+            return <Inline key={i} text={b.text} style={{ ...body, marginBottom: chatType.paragraphGap }} />;
         }
       })}
     </View>
@@ -243,8 +250,8 @@ export function Markdown({ text, color, width }: { text: string; color: string; 
 }
 
 const styles = StyleSheet.create({
-  li: { flexDirection: 'row', gap: spacing.sm, marginBottom: 2, paddingLeft: 2 },
-  marker: { minWidth: 16 },
+  li: { flexDirection: 'row', gap: spacing.sm, marginBottom: 4, paddingLeft: 4 },
+  marker: { minWidth: 18 },
   code: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, padding: spacing.sm, marginVertical: spacing.sm },
   tableWrap: { marginVertical: spacing.sm, alignSelf: 'stretch' },
   table: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, overflow: 'hidden' },

@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useColors, fontSize, radii, spacing } from '@/theme/colors';
+import { useColors, chatType, fontSize, radii, spacing } from '@/theme/colors';
 import { copyText } from '@/utils/clipboard';
 
 export function SelectTextSheet({ text, visible, onClose }: { text: string | null; visible: boolean; onClose: () => void }) {
@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
   pillText: { fontSize: fontSize.xs, fontWeight: '700' },
   done: { paddingLeft: spacing.sm, paddingVertical: 4 },
   doneText: { fontSize: fontSize.md, fontWeight: '700' },
-  body: { flex: 1, fontSize: fontSize.md, lineHeight: 24, paddingHorizontal: spacing.md, paddingTop: spacing.md },
+  body: { flex: 1, fontSize: chatType.size, lineHeight: chatType.lineHeight, paddingHorizontal: spacing.md, paddingTop: spacing.md },
 });
