@@ -18,9 +18,10 @@ from pathlib import Path
 
 from app.tools.fx import load_fx, sec_row_to_usd
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
-from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_SEC, COMPANIES_VALIDATION, COMPANIES_YFINANCE_DIR
+from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_VALIDATION, COMPANIES_YFINANCE_DIR
 from app.tools.report.sec_adapter import _ads_normalized, load_sharded_by_ticker
 from app.tools.sec_6k import load_all_stores, sixk_as_source_row
+from app.tools.sec_store import load_all as load_all_sec
 from app.tools.validation import validate_ticker, worst_severity
 
 
@@ -50,7 +51,7 @@ def main():
                     help="print every warn/error issue to stdout")
     args = ap.parse_args()
 
-    sec = load_latest_by_ticker(COMPANIES_SEC, date_key="fetched_at")
+    sec = load_all_sec()
     analyzed = load_latest_by_ticker(COMPANIES_ANALYZED, date_key="analyzed_date")
 
     targets = sorted(set(sec) | set(analyzed))

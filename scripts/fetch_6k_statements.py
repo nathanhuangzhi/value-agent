@@ -18,8 +18,8 @@ from datetime import date, timedelta
 
 from dotenv import load_dotenv
 
-from app.tools.json_io import read_json_array, read_jsonl
-from app.tools.paths import COMPANIES_JSONL, COMPANIES_SEC, ENV_FILE
+from app.tools.json_io import read_jsonl
+from app.tools.paths import COMPANIES_JSONL, ENV_FILE
 from app.tools.sec_6k import (
     SIXK_DIR,
     extract_with_llm,
@@ -32,6 +32,7 @@ from app.tools.sec_6k import (
     looks_like_results_release,
     save_store,
 )
+from app.tools.sec_store import SecStore
 from app.tools.watchlist import load_watchlist
 
 load_dotenv(ENV_FILE)
@@ -45,9 +46,9 @@ def _targets(explicit: str | None) -> list[str]:
     if explicit:
         return [explicit.upper()]
     t = set(load_watchlist()) | set(load_all_stores())
-    for r in read_json_array(COMPANIES_SEC):
+    for ticker, r in SecStore().items():
         if (r.get("currency") or "USD").upper() != "USD":
-            t.add(r["ticker"])
+            t.add(ticker)
     return sorted(t)
 
 

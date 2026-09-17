@@ -7,7 +7,7 @@ of GitHub Actions. What lives where:
 |---|---|
 | Code | `~/value-agent` — a clone of this repo; `run_daily.sh` does `git pull` first, so pushing to `main` deploys |
 | Secrets | `~/value-agent/.env` (chmod 600) — same keys as the old Actions secrets |
-| SEC cache | `~/value-agent/data/companies_sec.json` — persistent, incremental (no cold fetch) |
+| SEC cache | `~/value-agent/data/sec/<TICKER>.json` — persistent, incremental (no cold fetch) |
 | State files | `~/value-agent/data/*.json` — committed + pushed back to GitHub after each run via a write deploy key (`~/.ssh/id_ed25519_valueagent`) |
 | Watchlist | `data/watchlist.json` — the app's Saved tab syncs here (`/watchlist` on the same uvicorn); `daily_scan` folds these tickers into each day's batch. `daily_scan --watchlist-only --no-llm` fetches them on demand. |
 | Published site | `~/public/value-agent/` — HTML + `api/`, served by `serve_reports.sh` on `127.0.0.1:8091`, fronted by `tailscale serve` at `https://debian-mac-air.tail38ab8e.ts.net/reports/` (tailnet only) |

@@ -5,7 +5,7 @@
 #   git pull → classify → filter → daily_scan → daily_digest --publish-dir
 #   → commit whitelisted state files back to GitHub (rebase-retry on race)
 # plus what a persistent box makes possible / necessary:
-#   - companies_sec.json + yfinance shards stay on disk → incremental fetches
+#   - data/sec/ + yfinance shards stay on disk → incremental fetches
 #   - a failure emails an alert (there's no Actions red X to look at)
 #
 # Install (as the pipeline user):

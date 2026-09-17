@@ -1,6 +1,6 @@
 """Stage 4.5: pull SEC EDGAR XBRL annual (and quarterly) statements for each
-analyzed ticker. Writes a sidecar file `data/companies_sec.json` keyed by
-ticker. The report-rendering layer prefers SEC data over yfinance for the
+analyzed ticker. Writes one row per ticker to `data/sec/<TICKER>.json`
+(see app.tools.sec_store). The report-rendering layer prefers SEC data over yfinance for the
 historical table when SEC has it (deeper history — 10+ years typical vs
 yfinance's 3-5).
 
@@ -22,18 +22,17 @@ import argparse
 import json
 from pathlib import Path
 
-from app.tools.json_io import atomic_write_json, read_jsonl
-from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_JSONL, COMPANIES_SEC
+from app.tools.json_io import read_jsonl
+from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_JSONL, COMPANIES_SEC_DIR
+from app.tools.sec_store import SecStore
 from app.tools.sec_xbrl_tools import build_sec_row, fetch_companyfacts, load_raw_companyfacts
-
-CHECKPOINT_EVERY = 20  # rows between full-file rewrites
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--ticker", help="One ticker to fetch (else: all in companies_analyzed.json).")
     ap.add_argument("--limit", type=int, help="Process only the first N tickers.")
-    ap.add_argument("--output", type=Path, default=COMPANIES_SEC)
+    ap.add_argument("--out-dir", type=Path, default=COMPANIES_SEC_DIR, help="per-ticker row directory (data/sec/)")
     ap.add_argument("--refresh", action="store_true",
                     help="Re-fetch tickers already in the cache (e.g. after adding "
                          "XBRL concepts to sec_xbrl_tools). Default: skip cached.")
@@ -56,9 +55,8 @@ def main():
 
     universe = {r["ticker"]: r for r in read_jsonl(COMPANIES_JSONL) if r.get("ticker")}
 
-    existing = {}
-    if args.output.exists():
-        existing = {r["ticker"]: r for r in json.loads(args.output.read_text()) if r.get("ticker")}
+    store = SecStore(args.out_dir)
+    existing = set(store.tickers())
 
     todo = sorted(targets)
     if args.limit:
@@ -69,7 +67,7 @@ def main():
     print(f"  already fetched:  {sum(1 for t in todo if t in existing)}")
     print()
 
-    results = dict(existing)
+    n_written = 0
     stale_before = None
     if args.max_age_days is not None:
         from datetime import datetime, timedelta, timezone
@@ -81,8 +79,8 @@ def main():
             print(f"  [{i}/{len(todo)}] {ticker}: no CIK; skip")
             continue
         use_raw = not args.refresh          # raw cache is the default source when present
-        if ticker in results and not args.ticker and not args.refresh:
-            fetched_at = (results[ticker] or {}).get("fetched_at") or ""
+        if ticker in existing and not args.ticker and not args.refresh:
+            fetched_at = (store.get(ticker) or {}).get("fetched_at") or ""
             stale = bool(stale_before and fetched_at < stale_before)
             if not stale and not args.reparse:
                 continue
@@ -109,22 +107,19 @@ def main():
         except Exception as e:
             print(f"  [{i}/{len(todo)}] {ticker}: extract error {type(e).__name__}: {e}")
             continue
-        results[ticker] = row
+        store.put(row)                      # one file per ticker — every row is its own checkpoint
+        n_written += 1
         n_years = len(row["annual"].get("revenue", {}))
         flagged = row.get("mna_flagged_years") or []
         flag_str = f"  ⚠ M&A flag {flagged}" if flagged else ""
         print(f"  [{i}/{len(todo)}] {ticker} ({row['entity_name'][:30]:<30}): {n_years} FY years{flag_str}")
 
-        if i % CHECKPOINT_EVERY == 0:
-            atomic_write_json(args.output, list(results.values()))
-
-    atomic_write_json(args.output, list(results.values()))
     print()
     if stale_before:
         print(f"  refreshed {n_stale} cached ticker(s) older than {args.max_age_days} days")
     if n_reparsed:
         print(f"  re-parsed {n_reparsed} ticker(s) from the raw cache (no download)")
-    print(f"Wrote {len(results)} rows → {args.output}")
+    print(f"Wrote {n_written} row(s) → {args.out_dir} ({len(store.tickers())} tickers on disk)")
 
 
 if __name__ == "__main__":

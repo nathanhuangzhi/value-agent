@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,7 +29,7 @@ from app.tools.paths import (
     COMPANIES_ANALYZED,
     COMPANIES_DIGEST,
     COMPANIES_JSONL,
-    COMPANIES_SEC,
+    COMPANIES_SEC_DIR,
     COMPANIES_VALIDATION,
     COMPANIES_YFINANCE_DIR,
     DAILY_LOG,
@@ -37,13 +38,13 @@ from app.tools.paths import (
 from app.tools.report.format import latest_by_ticker
 from app.tools.report.ratios import compute_snapshot_ratios
 from app.tools.report.sec_adapter import (
-    load_sec_by_ticker,
     load_sharded_by_ticker,
     overlay_source_row,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
 )
 from app.tools.sec_6k import SIXK_DIR, load_all_stores, sixk_as_source_row
+from app.tools.sec_store import SecStore
 
 router = APIRouter(prefix="/api", tags=["mobile-api"])
 
@@ -53,7 +54,7 @@ class _DataPaths:
     """Encapsulates the on-disk paths. Tests swap this out to point at
     fixture files instead of the real `data/` directory."""
     analyzed: Path = COMPANIES_ANALYZED
-    sec: Path = COMPANIES_SEC
+    sec: Path = COMPANIES_SEC_DIR              # directory of per-ticker rows (SecStore)
     yfinance: Path = COMPANIES_YFINANCE_DIR   # directory of per-industry shards
     validation: Path = COMPANIES_VALIDATION
     daily_log: Path = DAILY_LOG
@@ -140,10 +141,16 @@ def _load_validation() -> dict:
                                   if r.get("ticker")})
 
 
-def _load_sec() -> dict:
-    """mtime-cached SEC sidecar. The XBRL JSON is the largest input — caching
-    drops industry-list latency from ~1.5s to <50ms."""
-    return _mtime_load(_paths.sec, load_sec_by_ticker)
+_sec_stores: dict[Path, SecStore] = {}
+
+
+def _load_sec() -> SecStore:
+    """Lazy per-ticker SEC rows (data/sec/<T>.json) with their own mtime
+    cache — the service never parses the whole universe."""
+    store = _sec_stores.get(_paths.sec)
+    if store is None or store.dir != _paths.sec:
+        store = _sec_stores[_paths.sec] = SecStore(_paths.sec)
+    return store
 
 
 def _load_yf() -> dict:
@@ -185,7 +192,7 @@ def _blended_annual(sec_row, yf_row):
 
 
 def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
-                         sec_by_ticker: dict, yf_by_ticker: dict) -> dict:
+                         sec_by_ticker: Mapping[str, dict] | SecStore, yf_by_ticker: dict) -> dict:
     """Compute the 15-field snapshot KPI bundle the report renders:
     market_cap, valuation multiples (TTM/Static P/E, EV/Revenue,
     P/B, P/S, P/FCF, P/OCF), profitability (margins, ROE, ROA, Debt/Asset),
