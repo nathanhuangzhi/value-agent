@@ -73,7 +73,7 @@ ignore = [
 "app/tools/report/tables.py" = ["E731"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"   # what CI, the box and dev boxes run; 3.10 syntax rules choke on current numpy stubs
 # Start permissive so we can land config without rewriting the world.
 # Tighten file-by-file once the easy wins are clean.
 files = ["app", "scripts"]
