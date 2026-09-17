@@ -16,7 +16,8 @@ from collections.abc import Iterator
 from datetime import date
 
 from app.ai import store
-from app.ai.context import TOOLS, company_block, detect_companies, run_tool
+from app.ai.context import company_block, detect_companies
+from app.ai.tools import TOOLS, marks_company, run_tool, status_for
 from app.core.prompt_manager import load_prompt
 from app.log import get_logger
 from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS, build_deepseek_client, run_prompt
@@ -191,31 +192,13 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                     args = json.loads(tc["arguments"] or "{}")
                 except json.JSONDecodeError:
                     args = {}
-                label = (args.get("ticker") or args.get("query") or "").upper()
-                status = {
-                    "lookup_company": f"Looking up {label}…",
-                    "search_companies": f"Searching companies for “{args.get('query', '')}”…",
-                    "list_filings": f"Listing filings for {label}…",
-                    "get_6k_statement": f"Reading {label}'s 6-K statements{(' ' + args['period_end']) if args.get('period_end') else ''}…",
-                    "get_press_release": f"Reading {label}'s press release…",
-                    "list_annual_reports": f"Listing {label}'s annual reports…",
-                    "get_annual_report_section": f"Reading {label}'s annual report · {args.get('section', '')}…",
-                    "search_annual_report": f"Searching {label}'s annual report for “{args.get('keyword', '')}”…",
-                    "list_earnings_calls": f"Listing {label}'s earnings calls…",
-                    "get_earnings_call": f"Reading {label}'s {args.get('quarter') or 'latest'} earnings call ({args.get('part') or 'remarks'})…",
-                    "search_earnings_calls": f"Searching {label}'s earnings calls for “{args.get('keyword', '')}”…",
-                    "search_xbrl_concepts": f"Searching {label}'s XBRL for “{args.get('keyword', '')}”…",
-                    "get_xbrl_concept": f"Pulling {label} · {args.get('concept', '')} from EDGAR…",
-                    "get_yfinance_raw": f"Reading {label}'s Yahoo {args.get('statement', '')}…",
-                }.get(tc["name"], f"Running {tc['name']}…")
+                status = status_for(tc["name"], args)
                 yield {"type": "status", "text": status}
                 t0 = time.monotonic()
                 result = run_tool(tc["name"], args)
                 log.info("tool %s %s -> %s chars in %.1fs%s", tc["name"], json.dumps(args, ensure_ascii=False),
                          len(result), time.monotonic() - t0, " (ERROR)" if result.startswith("ERROR") else "")
-                if tc["name"] in ("lookup_company", "get_6k_statement", "get_press_release",
-                                  "get_xbrl_concept", "get_yfinance_raw", "get_annual_report_section",
-                                  "search_annual_report", "get_earnings_call", "search_earnings_calls") and not result.startswith("ERROR"):
+                if marks_company(tc["name"]) and not result.startswith("ERROR"):
                     t = (args.get("ticker") or "").upper()
                     if t and t not in companies_used:
                         companies_used.append(t)

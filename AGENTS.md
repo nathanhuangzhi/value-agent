@@ -137,6 +137,8 @@ Most of `app/tools/` and `scripts/` maps obviously to a pipeline stage (see Arch
 - `app/tools/json_io.py` — shared I/O: `atomic_write_json`, `read_json_array`, `read_jsonl`, `jsonl_field_set`. All scripts import these — do not re-implement.
 - `app/tools/report/` — Value-Line HTML generator (package). Public API: `from app.tools.report import render_company_report`. `sec_adapter.py` blends SEC primary + yfinance fallback **per cell**, tagging provenance. `format.py` is the canonical home for color constants + shared formatters (`_format_money_compact`, `_status_badge`) — `email_tools` and `build_index` import from here.
 - `app/tools/sec_xbrl_tools.py` — SEC XBRL fetcher + period extractor. Holds `_fiscal_year_from_end` (52-week year heuristic) and `extract_quarterly_cash_flow` (YTD differencing). See Gotchas — both are easy to break.
+- `app/data/repo.py` — the read side of every state file (analyzed, universe, SEC rows via `SecStore`, yfinance shards, 6-K, FX, validation), mtime-cached, parameterised by a `DataPaths` so tests can point it at fixtures. API routes, the AI tools and bake scripts all read through it — never re-implement a loader.
+- `app/ai/tools/` — the AI chat's tools, one module per source (`company`, `filings`, `annual_reports`, `earnings_calls`, `raw_sources`). A tool is a function under `@tool(name, description=…, params=…, required=…, status=…)` (`registry.py`); the schema list, dispatch and status line all derive from the registry, so adding a tool is one definition in one place. `app/ai/context.py` keeps ticker/name detection and the compact `company_block`.
 - `app/tools/validation.py` — pure data-quality rules; each is `(sec_row, analyzed_row, today) -> list[Issue]`. `validate_ticker(...)` runs all 15 rules across 4 tiers (presence / sanity ranges / cross-period / cross-source).
 
 ## Data files (under `data/`)
@@ -217,5 +219,5 @@ GEMINI_API_KEY=...          # only if you re-enable the dormant Gemini path in l
 
 - Keep prompts in `app/prompts/`, not in Python strings (see Prompt skills).
 - Tool wrappers in `app/tools/` should return JSON-serializable dicts. Errors become a field in the dict (e.g. `{"history": "PREMIUM_GATED"}`), not exceptions, so the workflow can branch on them.
-- New FastAPI routes go in `app/main.py`. Keep them thin — they should call into `workflow.py` or `tools/`, not embed logic.
+- New FastAPI routes go in a router under `app/api/` (or `app/ai/`) and are mounted in `app/main.py`. Keep them thin — they compose `app.data.repo` + `tools/`, not embed logic.
 - Don't add error handling, retries, or validation past system boundaries (DeepSeek call, Exa/yfinance/SEC HTTP). Trust internal calls.

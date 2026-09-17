@@ -36,7 +36,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from app.api.routes import _load_sec, _load_yf, _snapshot_ratios_for, _ticker_summary
+from app.api.routes import _snapshot_ratios_for, _ticker_summary
+from app.data import repo
 from app.tools.daily_selector import display_industries
 from app.tools.email_tools import build_summary_digest_html, send_digest_email
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
@@ -256,8 +257,8 @@ def _build_digest_summary(tickers: list[str], log_date: str, industry_label: str
 
     # Reuse the API's row shape so the mobile app sees the same fields
     # whether it reads /api/digest/latest.json or /api/industries/<slug>.json.
-    sec_by_ticker = _load_sec()
-    yf_by_ticker = _load_yf()
+    sec_by_ticker = repo.sec()
+    yf_by_ticker = repo.yfinance()
 
     narrative_blocks: list[str] = []
     table_rows: list[dict] = []

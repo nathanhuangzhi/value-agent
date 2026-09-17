@@ -49,6 +49,6 @@ DRY_RUN=1 deploy/run_daily.sh    # everything except email + commit-back
 tail -f logs/daily-$(date +%F).log
 ```
 
-The old `.github/workflows/daily.yml` is kept but disabled
-(`gh workflow disable daily.yml`); re-enable it as a fallback if the box is
-down for an extended period (it still needs a valid `REPORTS_REPO_TOKEN`).
+The GitHub Actions daily workflow was removed on 2026-09-17 (it depended on
+the retired Vercel reports repo); `git show 7cc50243:.github/workflows/daily.yml`
+has the last version if a cloud fallback is ever needed again.

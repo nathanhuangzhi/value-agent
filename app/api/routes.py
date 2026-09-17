@@ -2,77 +2,45 @@
 
 Every endpoint composes data from the existing pipeline outputs:
   - companies_analyzed.json  — per-ticker identity + narrative + price
-  - companies_sec.json       — SEC XBRL financial statements
+  - data/sec/<T>.json        — SEC XBRL financial statements
   - data/yfinance/*.json     — yfinance gap-fill (sharded one file per industry)
   - companies_validation.json — data-quality status
   - daily_industry_log.json  — daily-scan record
 
-Pure read-only; the pipeline writes, this reads. The helpers (`_load_*`)
-are kept module-private so the test suite can patch the data paths via
-the `_DataPaths` singleton.
+Pure read-only; the pipeline writes, this reads — through `app.data.repo`.
+The thin `_load_*` wrappers read the module-level `_paths` so the test
+suite can point the whole API at fixtures by swapping that one object.
 """
 from __future__ import annotations
 
-import json
 from collections import defaultdict
 from collections.abc import Mapping
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from app.data import repo
+from app.data.repo import DataPaths
 from app.tools.daily_selector import display_industries
-from app.tools.fx import currency_meta, load_fx, reporting_currency, source_currencies, to_usd_statements
-from app.tools.json_io import read_jsonl
-from app.tools.paths import (
-    COMPANIES_ANALYZED,
-    COMPANIES_DIGEST,
-    COMPANIES_JSONL,
-    COMPANIES_SEC_DIR,
-    COMPANIES_VALIDATION,
-    COMPANIES_YFINANCE_DIR,
-    DAILY_LOG,
-    FX_RATES,
-)
-from app.tools.report.format import latest_by_ticker
+from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
 from app.tools.report.ratios import compute_snapshot_ratios
-from app.tools.report.sec_adapter import (
-    load_sharded_by_ticker,
-    overlay_source_row,
-    sec_to_yfinance_annual,
-    sec_to_yfinance_quarterly,
-)
-from app.tools.sec_6k import SIXK_DIR, load_all_stores, sixk_as_source_row
+from app.tools.report.sec_adapter import sec_to_yfinance_annual, sec_to_yfinance_quarterly
 from app.tools.sec_store import SecStore
 
 router = APIRouter(prefix="/api", tags=["mobile-api"])
 
 
-@dataclass
-class _DataPaths:
-    """Encapsulates the on-disk paths. Tests swap this out to point at
-    fixture files instead of the real `data/` directory."""
-    analyzed: Path = COMPANIES_ANALYZED
-    sec: Path = COMPANIES_SEC_DIR              # directory of per-ticker rows (SecStore)
-    yfinance: Path = COMPANIES_YFINANCE_DIR   # directory of per-industry shards
-    validation: Path = COMPANIES_VALIDATION
-    daily_log: Path = DAILY_LOG
-    digest: Path = COMPANIES_DIGEST
-    fx: Path = FX_RATES                        # USD→reporting-currency rates
-    sixk: Path = SIXK_DIR                      # 6-K extractions (foreign filers)
-    universe: Path = COMPANIES_JSONL          # Stage 1 NYSE+Nasdaq universe
-
-
-_paths = _DataPaths()
+# The loaders live in app.data.repo; `_paths` stays a module-level object so
+# the test suite can point the whole API at fixture files by swapping it.
+_DataPaths = DataPaths
+_paths = DataPaths()
 
 
 # ---------- Helpers ----------
 
 def _read_json(path: Path, default):
-    if not path.exists():
-        return default
-    return json.loads(path.read_text())
+    return repo.read_json(path, default)
 
 
 def _slug(s: str) -> str:
@@ -82,99 +50,36 @@ def _slug(s: str) -> str:
     return s or "uncategorized"
 
 
-# ---- mtime-keyed loader cache --------------------------------------------
-# The pipeline writes each sidecar via tmp-file + rename (`atomic_write_json`),
-# so every batch produces a fresh mtime — automatic cache invalidation with
-# zero coordination. Keyed by Path so tests that monkeypatch `_paths` to
-# point at tmp fixtures get their own cache entries without collisions.
-# --------------------------------------------------------------------------
-_cache: dict[Path, tuple[int, object]] = {}
-
-
-def _mtime_load(path: Path, loader, mtime_key=None):
-    """Return `loader(path)`, memoized until `mtime_key(path)` changes.
-
-    `mtime_key` defaults to the file's own mtime. Sharded inputs (a directory
-    of files) pass a key that folds in every shard's mtime, so editing any
-    shard busts the cache — a single dir mtime wouldn't change on file edits."""
-    if mtime_key is None:
-        try:
-            mtime = path.stat().st_mtime_ns
-        except FileNotFoundError:
-            mtime = 0
-    else:
-        mtime = mtime_key(path)
-    cached = _cache.get(path)
-    if cached is not None and cached[0] == mtime:
-        return cached[1]
-    payload = loader(path)
-    _cache[path] = (mtime, payload)
-    return payload
-
-
-def _dir_mtime(path: Path) -> int:
-    """Max mtime across a shard directory's *.json files (0 if absent)."""
-    try:
-        return max((p.stat().st_mtime_ns for p in path.glob("*.json")), default=0)
-    except (FileNotFoundError, NotADirectoryError):
-        return 0
-
-
 def _load_analyzed() -> dict:
-    """Map ticker → latest analyzed row. mtime-cached: reloading
-    `companies_analyzed.json` (often several MB) was the dominant cost of
-    every /api request before the cache."""
-    return _mtime_load(_paths.analyzed,
-                       lambda p: latest_by_ticker(_read_json(p, [])))
+    return repo.analyzed(_paths)
 
 
 def _load_universe() -> dict:
-    """Map ticker → Stage 1 universe row (companies.jsonl). mtime-cached."""
-    return _mtime_load(_paths.universe,
-                       lambda p: {r["ticker"]: r for r in read_jsonl(p) if r.get("ticker")})
+    return repo.universe(_paths)
 
 
 def _load_validation() -> dict:
-    """Map ticker → validation row. mtime-cached."""
-    return _mtime_load(_paths.validation,
-                       lambda p: {r["ticker"]: r for r in _read_json(p, [])
-                                  if r.get("ticker")})
-
-
-_sec_stores: dict[Path, SecStore] = {}
+    return repo.validation(_paths)
 
 
 def _load_sec() -> SecStore:
-    """Lazy per-ticker SEC rows (data/sec/<T>.json) with their own mtime
-    cache — the service never parses the whole universe."""
-    store = _sec_stores.get(_paths.sec)
-    if store is None or store.dir != _paths.sec:
-        store = _sec_stores[_paths.sec] = SecStore(_paths.sec)
-    return store
+    return repo.sec(_paths)
 
 
 def _load_yf() -> dict:
-    """mtime-cached yfinance shards — a directory of per-industry files merged
-    into one ticker-keyed dict (same shape as the SEC sidecar). Cache key folds
-    in every shard's mtime so editing any one shard invalidates it."""
-    return _mtime_load(_paths.yfinance, load_sharded_by_ticker, mtime_key=_dir_mtime)
+    return repo.yfinance(_paths)
 
 
 def _load_sixk() -> dict:
-    """ticker → 6-K store. mtime-cached on the directory."""
-    if not _paths.sixk.exists():
-        return {}
-    return _mtime_load(_paths.sixk, lambda p: load_all_stores(), mtime_key=_dir_mtime)
+    return repo.sixk(_paths)
 
 
 def _gap_fill_row(ticker: str, yf_row: dict | None) -> dict | None:
-    """yfinance row with any 6-K extractions laid over it (SEC XBRL > 6-K > yfinance)."""
-    return overlay_source_row(yf_row, sixk_as_source_row(_load_sixk().get(ticker)))
+    return repo.gap_fill_row(ticker, yf_row, _paths)
 
 
 def _load_fx() -> dict:
-    """USD→reporting-currency rates. mtime-cached."""
-    return _mtime_load(_paths.fx, lambda p: load_fx())
+    return repo.fx(_paths)
 
 
 def _blended_quarterly(sec_row, yf_row):

@@ -199,24 +199,6 @@ def merge_units(per_unit: dict[str, dict]) -> dict:
     return out
 
 
-def detect_reporting_currency(facts: dict) -> str:
-    """The currency the filer reports in — the monetary unit with the most
-    records across a few headline concepts. FPIs often tag a USD
-    convenience translation for the latest year only, so 'most records'
-    (not 'has USD') is the right test. Defaults to USD."""
-    usgaap = facts.get("us-gaap", {}) if facts else {}
-    counts: dict[str, int] = {}
-    for concept in ("Assets", "Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax",
-                    "NetIncomeLoss", "StockholdersEquity", "Liabilities"):
-        for unit, recs in (usgaap.get(concept, {}).get("units", {}) or {}).items():
-            if unit in _NON_MONETARY_UNITS or "/" in unit or len(unit) != 3:
-                continue
-            counts[unit] = counts.get(unit, 0) + len(recs)
-    if not counts:
-        return "USD"
-    return max(counts.items(), key=lambda kv: (kv[1], kv[0] == "USD"))[0]
-
-
 def extract_period_values(
     facts: dict,
     concepts: Sequence[str],

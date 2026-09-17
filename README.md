@@ -72,10 +72,11 @@ EXA_API_KEY=your_key_here
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/` | Health check |
-| GET | `/report/{ticker}` | Run the full per-ticker workflow (Exa market commentary + DeepSeek narrative) and return the result dict |
-| GET | `/scout/{ticker}` | Exa-based qualitative market-commentary search |
+| GET | `/api/...` | Read-only JSON for the mobile app (see AGENTS.md → Commands) |
+| POST/GET | `/ai/conversations…` | The in-app AI chat (streamed replies, resumable) |
+| GET/PUT/DELETE | `/watchlist` | The app's Saved tab |
 
-The legacy `/scan` route (Exa+Gemini "pick a ticker") and the FMP-specific routes (`/analyze`, `/check-symbol`) have been removed. Recover via `git show legacy-discovery-snapshot:<path>` or git history if ever needed.
+The legacy `/scan`, `/report/{ticker}` and `/scout/{ticker}` debug routes were removed; recover via git history if ever needed.
 
 ## Project layout
 
