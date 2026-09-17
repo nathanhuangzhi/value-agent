@@ -32,3 +32,38 @@ def test_split_call_at_operator_handover():
     ]
     remarks, qa = split_call(turns)
     assert len(remarks) == 2 and qa[0]["speaker"] == "Operator"
+
+
+def test_key_rotation_and_redaction(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    from app.tools import earnings_calls as ec
+
+    monkeypatch.setenv("ALPHAVANTAGE_API_KEY", "KEY1,KEY2")
+    monkeypatch.setattr(ec, "_MIN_INTERVAL_S", 0)
+    monkeypatch.setattr(ec, "_THROTTLE_RETRY_S", 0)
+    ec._exhausted.clear()
+    seen = []
+
+    def fake_get(url, params, timeout):
+        seen.append(params["apikey"])
+        if params["apikey"] == "KEY1":
+            body = {"Information": "We have detected your API key as KEY1 and our standard API rate limit is 25 requests per day."}
+        else:
+            body = {"symbol": "VIPS", "quarter": "2026Q2", "transcript": [{"speaker": "CEO", "title": "CEO", "content": "hello", "sentiment": "0.1"}]}
+        return NS(raise_for_status=lambda: None, json=lambda: body)
+
+    monkeypatch.setattr(ec.requests, "get", fake_get)
+    turns = ec.fetch_transcript("VIPS", "2026Q2")
+    assert turns[0]["content"] == "hello"
+    assert seen == ["KEY1", "KEY1", "KEY2"]          # one retry on the throttle notice, then the next key
+    assert "KEY1" in ec._exhausted and ec.daily_budget() == 30
+    assert "KEY1" not in ec._redact("detected your API key as KEY1")
+
+    # every key exhausted → RateLimited, and the store keeps what was fetched earlier
+    monkeypatch.setattr(ec.requests, "get", lambda url, params, timeout: NS(
+        raise_for_status=lambda: None, json=lambda: {"Information": "rate limit is 25 requests per day"}))
+    ec._exhausted.clear()
+    import pytest
+    with pytest.raises(ec.RateLimited):
+        ec.fetch_transcript("VIPS", "2026Q1")
