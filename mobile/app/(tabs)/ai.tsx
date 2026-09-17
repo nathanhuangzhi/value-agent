@@ -38,7 +38,7 @@ import {
   type ModelKey,
   type StreamEvent,
 } from '@/api/ai';
-import { Markdown, hasTable, toPlainText } from '@/components/Markdown';
+import { Markdown, SelectableProse, hasTable, toPlainText } from '@/components/Markdown';
 import { ScrollToBottomButton } from '@/components/ScrollToBottomButton';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useReplyStream } from '@/hooks/useReplyStream';
@@ -435,9 +435,9 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
     // ChatGPT / Claude layout: only the user's own messages sit in a bubble.
     return (
       <View style={styles.userRow}>
-        <Pressable onLongPress={() => onSelect(msg.content)} style={[styles.userBubble, { backgroundColor: c.chatBubble }]}>
-          <Text style={[styles.userText, { color: c.textPrimary }]}>{msg.content}</Text>
-        </Pressable>
+        <View style={[styles.userBubble, { backgroundColor: c.chatBubble }]}>
+          <SelectableProse style={{ ...styles.userText, color: c.textPrimary }}>{msg.content}</SelectableProse>
+        </View>
       </View>
     );
   }
@@ -455,7 +455,6 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
           text={msg.content}
           color={c.textPrimary}
           width={table ? contentW : undefined}
-          onLongPress={() => onSelect(toPlainText(msg.content))}
         />
       ) : null}
       {!streaming ? (
@@ -475,8 +474,7 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
       ) : null}
     </>
   );
-  // The reply is plain text across the full width; the long-press lives on the
-  // Markdown blocks so tables keep their horizontal scroll.
+  // The reply is plain, natively selectable text across the full width.
   return <View style={styles.reply}>{inner}</View>;
 }
 

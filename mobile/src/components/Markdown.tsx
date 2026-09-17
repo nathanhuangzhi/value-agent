@@ -5,7 +5,7 @@
  * No dependency; anything fancier falls through as plain text.
  */
 import { useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
 
 import { useColors, chatType, fontSize, spacing } from '@/theme/colors';
 
@@ -199,69 +199,115 @@ export function hasTable(md: string): boolean {
 }
 
 /**
+ * A run of prose (everything between tables) as ONE natively selectable
+ * text: on iOS a read-only multiline TextInput (UITextView), which gives
+ * the system long-press → selection handles → Copy, exactly like ChatGPT /
+ * Claude; on Android a selectable Text does the same. Styled spans
+ * (headings, bold, code) are nested Text children.
+ */
+export function SelectableProse({ style, children }: { style: TextStyle; children: ReactNode }) {
+  if (Platform.OS === 'ios') {
+    return (
+      <TextInput
+        multiline
+        editable={false}
+        scrollEnabled={false}
+        textAlignVertical="top"
+        style={[style, styles.prose]}
+      >
+        {children}
+      </TextInput>
+    );
+  }
+  return <Text selectable style={style}>{children}</Text>;
+}
+
+/**
  * `width` is the content width available to the block (the bubble's inner
  * width). Pass it whenever it is known — tables size their columns from it
  * and scroll sideways when they don't fit.
  *
- * `onLongPress` is attached to every block EXCEPT tables, so a long-press
- * on the prose opens the select/copy sheet while a table's horizontal
- * ScrollView keeps its gesture to itself (a Pressable over it steals the pan).
+ * Prose blocks are grouped into runs and rendered as SelectableProse, so a
+ * selection can span paragraphs; tables sit between runs as their own
+ * (horizontally scrollable) views.
  */
-export function Markdown({ text, color, width, onLongPress }: { text: string; color: string; width?: number; onLongPress?: () => void }) {
+export function Markdown({ text, color, width }: { text: string; color: string; width?: number }) {
   const c = useColors();
   const body: TextStyle = { color, fontSize: chatType.size, lineHeight: chatType.lineHeight };
   const blocks = parse(text);
-  const wrap = (key: number, node: ReactNode) =>
-    onLongPress ? <Pressable key={key} onLongPress={onLongPress}>{node}</Pressable> : node;
+
+  type Prose = Exclude<Block, { kind: 'table' }>;
+  type TableBlock = Extract<Block, { kind: 'table' }>;
+  const runs: (Prose[] | TableBlock)[] = [];
+  for (const b of blocks) {
+    if (b.kind === 'table') { runs.push(b); continue; }
+    const last = runs[runs.length - 1];
+    if (Array.isArray(last)) last.push(b); else runs.push([b]);
+  }
+
+  const gap = <Text style={{ fontSize: 4, lineHeight: chatType.paragraphGap }}>{'\n'}</Text>;
+  const span = (b: Prose, key: number, first: boolean) => {
+    switch (b.kind) {
+      case 'h':
+        return (
+          <Text key={key}>
+            {first ? null : gap}
+            <Inline
+              text={b.text}
+              style={{
+                ...body,
+                fontWeight: '600',
+                fontSize: b.level === 1 ? chatType.h1 : b.level === 2 ? chatType.h2 : chatType.h3,
+                lineHeight: b.level === 1 ? 30 : chatType.lineHeight + 2,
+              }}
+            />
+            {'\n'}
+          </Text>
+        );
+      case 'li':
+        return (
+          <Text key={key}>
+            <Text style={body}>{`${b.marker}  `}</Text>
+            <Inline text={b.text} style={body} />
+            {'\n'}
+          </Text>
+        );
+      case 'code':
+        return (
+          <Text key={key}>
+            {first ? null : gap}
+            <Text style={{ ...body, fontFamily: 'Menlo', fontSize: chatType.code, lineHeight: 22, backgroundColor: c.surface }}>{b.text}</Text>
+            {'\n'}
+          </Text>
+        );
+      default:
+        return (
+          <Text key={key}>
+            {first ? null : gap}
+            <Inline text={b.text} style={body} />
+            {'\n'}
+          </Text>
+        );
+    }
+  };
+
   return (
     <View>
-      {blocks.map((b, i) => {
-        if (b.kind === 'table') return <Table key={i} rows={b.rows} body={body} width={width} />;
-        return wrap(i, renderBlock(b, i));
-      })}
+      {runs.map((r, i) =>
+        Array.isArray(r) ? (
+          <SelectableProse key={i} style={body}>
+            {r.map((b, j) => span(b, j, j === 0))}
+          </SelectableProse>
+        ) : (
+          <Table key={i} rows={r.rows} body={body} width={width} />
+        ),
+      )}
     </View>
   );
-
-  function renderBlock(b: Exclude<Block, { kind: 'table' }>, i: number) {
-        switch (b.kind) {
-          case 'h':
-            return (
-              <Inline
-                key={i}
-                text={b.text}
-                style={{
-                  ...body,
-                  fontWeight: '600',
-                  fontSize: b.level === 1 ? chatType.h1 : b.level === 2 ? chatType.h2 : chatType.h3,
-                  lineHeight: b.level === 1 ? 28 : chatType.lineHeight,
-                  marginTop: i ? spacing.md : 0,
-                  marginBottom: spacing.xs,
-                }}
-              />
-            );
-          case 'li':
-            return (
-              <View key={i} style={styles.li}>
-                <Text style={[body, styles.marker]}>{b.marker}</Text>
-                <View style={{ flex: 1 }}><Inline text={b.text} style={body} /></View>
-              </View>
-            );
-          case 'code':
-            return (
-              <ScrollView key={i} horizontal style={[styles.code, { backgroundColor: c.surface, borderColor: c.border }]}>
-                <Text style={{ color, fontFamily: 'Menlo', fontSize: chatType.code, lineHeight: 20 }}>{b.text}</Text>
-              </ScrollView>
-            );
-          default:
-            return <Inline key={i} text={b.text} style={{ ...body, marginBottom: chatType.paragraphGap }} />;
-        }
-  }
 }
 
 const styles = StyleSheet.create({
-  li: { flexDirection: 'row', gap: spacing.sm, marginBottom: 4, paddingLeft: 4 },
-  marker: { minWidth: 18 },
-  code: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, padding: spacing.sm, marginVertical: spacing.sm },
+  prose: { padding: 0, paddingTop: 0, margin: 0, backgroundColor: 'transparent' },
   tableWrap: { marginVertical: spacing.sm, alignSelf: 'stretch' },
   table: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, overflow: 'hidden' },
   tr: { flexDirection: 'row' },

@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { aiApi, type ChatMessage, type ConversationSummary, type ModelKey, type StreamEvent } from '@/api/ai';
 import { useReplyStream } from '@/hooks/useReplyStream';
 import { formatDate } from '@/utils/format';
-import { Markdown, hasTable, toPlainText } from '@/components/Markdown';
+import { Markdown, SelectableProse, hasTable, toPlainText } from '@/components/Markdown';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useColors, chatType, fontSize, radii, spacing } from '@/theme/colors';
 
@@ -179,9 +179,9 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
           // ChatGPT / Claude layout: only the user's own messages sit in a bubble.
           return (
             <View key={i} style={styles.userRow}>
-              <Pressable onLongPress={() => setSelectText(m.content)} style={[styles.userBubble, { backgroundColor: c.chatBubble }]}>
-                <Text style={[styles.userText, { color: c.textPrimary }]}>{m.content}</Text>
-              </Pressable>
+              <View style={[styles.userBubble, { backgroundColor: c.chatBubble }]}>
+                <SelectableProse style={{ ...styles.userText, color: c.textPrimary }}>{m.content}</SelectableProse>
+              </View>
             </View>
           );
         }
@@ -192,7 +192,6 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
               text={m.content}
               color={c.textPrimary}
               width={table ? contentW : undefined}
-              onLongPress={() => setSelectText(toPlainText(m.content))}
             />
             <View style={styles.footer}>
               <Pressable onPress={() => setSelectText(toPlainText(m.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
@@ -207,8 +206,7 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
             </View>
           </>
         );
-        // The reply is plain text across the full width; the long-press lives on the
-        // Markdown blocks so tables keep their horizontal scroll.
+        // The reply is plain, natively selectable text across the full width.
         return <View key={i} style={styles.reply}>{inner}</View>;
       })}
       {streaming ? (
