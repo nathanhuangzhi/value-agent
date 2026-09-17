@@ -20,8 +20,10 @@ from app.core.prompt_manager import load_prompt
 from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS, build_deepseek_client
 
 MODELS = {"flash": "deepseek-v4-flash", "pro": "deepseek-v4-pro"}
-_HISTORY_TURNS = 20      # prior user+assistant messages sent to the model
-_MAX_TOOL_ROUNDS = 5
+_HISTORY_TURNS = 20      # prior user+assistant messages sent to the model …
+_HISTORY_CHARS = 60_000  # … capped by size, newest first (long replies pile up fast)
+_MAX_TOOL_ROUNDS = 8     # tool-calling rounds before the model is told to answer
+_MAX_CONTINUES = 2       # automatic "continue" when a reply hits the output limit
 
 
 def resolve_model(name: str | None, fallback: str) -> str:
@@ -40,9 +42,15 @@ def _cost(model: str, prompt_tokens: int, completion_tokens: int) -> float | Non
 def _build_messages(conv: dict, user_text: str, attached: dict[str, str]) -> list[dict]:
     config, system = load_prompt("ai_chat", today=date.today().isoformat())
     msgs: list[dict] = [{"role": "system", "content": system}]
-    history = [m for m in conv["messages"] if m["role"] in ("user", "assistant")]
-    for m in history[-_HISTORY_TURNS:]:
-        msgs.append({"role": m["role"], "content": m["content"]})
+    history = [m for m in conv["messages"] if m["role"] in ("user", "assistant")][-_HISTORY_TURNS:]
+    kept: list[dict] = []
+    size = 0
+    for m in reversed(history):
+        size += len(m["content"])
+        if size > _HISTORY_CHARS and len(kept) >= 2:
+            break
+        kept.append({"role": m["role"], "content": m["content"]})
+    msgs.extend(reversed(kept))
     if attached:
         msgs.append({"role": "system",
                      "content": "Company data attached for this message:\n\n"
@@ -73,16 +81,27 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
     try:
         messages = _build_messages(conv, user_text, attached)
         client = build_deepseek_client(read_timeout_s=180, max_retries=1)
-        for _round in range(_MAX_TOOL_ROUNDS + 1):
+        tool_rounds = 0
+        continues = 0
+        while True:
+            # Out of tool rounds: one last call without tools so a reply always ends
+            # in an answer instead of a dangling "let me check…".
+            forced_answer = tool_rounds >= _MAX_TOOL_ROUNDS
+            if forced_answer:
+                messages.append({"role": "system",
+                                 "content": "The tool budget for this reply is used up. Answer now from what "
+                                            "you have gathered, and say plainly what you could not verify."})
             stream = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 tools=TOOLS,
+                tool_choice="none" if forced_answer else "auto",
                 temperature=0.3,
                 stream=True,
                 stream_options={"include_usage": True},
             )
             tool_calls: dict[int, dict] = {}
+            round_parts: list[str] = []
             finish = None
             for chunk in stream:
                 if chunk.usage:
@@ -93,6 +112,7 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                 choice = chunk.choices[0]
                 delta = choice.delta
                 if delta and delta.content:
+                    round_parts.append(delta.content)
                     answer_parts.append(delta.content)
                     yield {"type": "delta", "text": delta.content}
                 if delta and delta.tool_calls:
@@ -108,13 +128,25 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                 if choice.finish_reason:
                     finish = choice.finish_reason
 
-            if finish != "tool_calls" or not tool_calls:
+            if finish == "length" and continues < _MAX_CONTINUES:
+                # Output limit hit mid-answer: ask for the rest, seamlessly.
+                continues += 1
+                messages.append({"role": "assistant", "content": "".join(round_parts)})
+                messages.append({"role": "user", "content": "Continue exactly where you stopped — no recap, no repetition."})
+                yield {"type": "status", "text": "Continuing…"}
+                continue
+
+            if finish != "tool_calls" or not tool_calls or forced_answer:
                 break
 
             # Model wants data: run each call, feed results back, loop.
+            tool_rounds += 1
+            if round_parts and not "".join(round_parts).endswith("\n"):
+                answer_parts.append("\n\n")          # keep its "let me check…" apart from the answer
+                yield {"type": "delta", "text": "\n\n"}
             assistant_msg = {
                 "role": "assistant",
-                "content": "".join(answer_parts) or None,
+                "content": "".join(round_parts) or None,
                 "tool_calls": [
                     {"id": tc["id"], "type": "function",
                      "function": {"name": tc["name"], "arguments": tc["arguments"] or "{}"}}
