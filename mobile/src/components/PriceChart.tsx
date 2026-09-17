@@ -88,16 +88,6 @@ export function PriceChart({ data }: { data: PricePoint[] }) {
     return downsample(recent, TARGET_POINTS);
   }, [data]);
 
-  if (series.length < 2) {
-    return (
-      <View style={[styles.empty, { backgroundColor: c.surface, borderColor: c.border }]}>
-        <Text style={{ color: c.textMuted, fontSize: fontSize.sm }}>
-          (no chart data)
-        </Text>
-      </View>
-    );
-  }
-
   const closes = series.map((p) => p.close);
   const min = Math.min(...closes);
   const max = Math.max(...closes);
@@ -150,6 +140,17 @@ export function PriceChart({ data }: { data: PricePoint[] }) {
     }
     return ticks;
   }, [series, points]);
+
+  // Hooks above are unconditional; only now may we bail out on thin data.
+  if (series.length < 2) {
+    return (
+      <View style={[styles.empty, { backgroundColor: c.surface, borderColor: c.border }]}>
+        <Text style={{ color: c.textMuted, fontSize: fontSize.sm }}>
+          (no chart data)
+        </Text>
+      </View>
+    );
+  }
 
   // Touch handling — map touch X to a series index.
   function pickIndex(e: GestureResponderEvent): number {

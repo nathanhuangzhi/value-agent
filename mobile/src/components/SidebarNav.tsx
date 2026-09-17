@@ -124,7 +124,7 @@ export function SidebarNav() {
             },
           ]}
         >
-          <Text style={[styles.digestEyebrow, { color: c.brand }]}>TODAY'S BATCH</Text>
+          <Text style={[styles.digestEyebrow, { color: c.brand }]}>{"TODAY'S BATCH"}</Text>
           <Text style={[styles.digestHeadline, { color: c.textPrimary }]} numberOfLines={1}>
             {todayDigest.industries.join(', ') || 'Mixed'}
           </Text>

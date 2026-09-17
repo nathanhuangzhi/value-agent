@@ -3,13 +3,14 @@
  *
  *   ┌ ☰  Title of chat            [Flash|Pro]  ＋ ┐   custom header
  *   │  …messages (inverted list, streaming)…      │
- *   │  ┌ status / delta bubble ─────────────────┐ │
  *   └ [ Ask about any company…            ➤ ] ────┘   composer
  *
  * The ☰ slides in a left panel with past conversations (server-side, so
  * they follow the user across devices). Mention a ticker or company
  * name and the server attaches its data; the model can also look
- * companies up itself. Model (flash / pro) is chosen per message.
+ * companies up itself. Conversation state lives in useConversation
+ * (shared with the company-page chat); this screen owns the drawer,
+ * the inverted list and the header.
  */
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,149 +25,57 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  aiApi,
-  type ChatMessage,
-  type Conversation,
-  type ConversationSummary,
-  type ModelKey,
-  type StreamEvent,
-} from '@/api/ai';
-import { Markdown, SelectableProse, hasTable, toPlainText } from '@/components/Markdown';
+import { aiApi, type ChatMessage, type ConversationSummary } from '@/api/ai';
+import { Composer } from '@/components/chat/Composer';
+import { MessageRow } from '@/components/chat/MessageRow';
+import { ModelToggle } from '@/components/chat/ModelToggle';
 import { ScrollToBottomButton } from '@/components/ScrollToBottomButton';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
-import { useReplyStream } from '@/hooks/useReplyStream';
-import { useColors, chatType, fontSize, radii, spacing } from '@/theme/colors';
+import { LAST_CONV_KEY, useConversation } from '@/hooks/useConversation';
+import { useModelPref } from '@/hooks/useModelPref';
+import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 import { formatDate } from '@/utils/format';
 
-const MODEL_KEY = 'ai_model_v1';
-const LAST_CONV_KEY = 'ai_last_conversation_v1';
-
-type Streaming = { status: string | null; text: string; companies: string[] };
 type Row = ChatMessage & { _streaming?: boolean };
 
 export default function AiScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-
-  const [model, setModel] = useState<ModelKey>('flash');
+  const [model, pickModel] = useModelPref();
   const [conversations, setConversations] = useState<ConversationSummary[] | null>(null);
-  const [current, setCurrent] = useState<Conversation | null>(null);
-  const [loadingConv, setLoadingConv] = useState(false);
   const [input, setInput] = useState('');
-  const [streaming, setStreaming] = useState<Streaming | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const reply = useReplyStream();
 
-  // ---- persistence of small prefs ----
-  useEffect(() => {
-    AsyncStorage.getItem(MODEL_KEY).then((m) => {
-      if (m === 'flash' || m === 'pro') setModel(m);
-    }).catch(() => {});
-  }, []);
-  const pickModel = (m: ModelKey) => {
-    setModel(m);
-    AsyncStorage.setItem(MODEL_KEY, m).catch(() => {});
-  };
-
-  // ---- conversations ----
   const refreshList = useCallback(async () => {
     try {
       setConversations(await aiApi.listConversations());
-      setError(null);
-    } catch (e) {
-      setError(String((e as Error).message ?? e));
+    } catch {
+      // the drawer shows "Loading…" until a list arrives
     }
   }, []);
+  const chat = useConversation({ onChanged: refreshList });
+  const openRef = useRef(chat.open);
+  openRef.current = chat.open;
 
-  // Events of a streamed reply, whether freshly sent or re-attached.
-  const streamHandlers = (convId: string) => ({
-    onEvent: (ev: StreamEvent) => {
-      switch (ev.type) {
-        case 'companies':
-          setStreaming((s) => s && { ...s, companies: ev.tickers, status: `Reading ${ev.tickers.join(', ')}…` });
-          break;
-        case 'status':
-          setStreaming((s) => s && { ...s, status: ev.text });
-          break;
-        case 'delta':
-          setStreaming((s) => s && { ...s, status: null, text: s.text + ev.text });
-          break;
-        case 'done':
-          setCurrent((prev) =>
-            prev && prev.id === convId
-              ? {
-                  ...prev,
-                  title: ev.conversation.title,
-                  model: ev.conversation.model,
-                  messages: [...prev.messages, ev.message],
-                }
-              : prev,
-          );
-          setStreaming(null);
-          refreshList();
-          break;
-        case 'error':
-          setError(ev.text);
-          setStreaming(null);
-          break;
-      }
-    },
-    // The server no longer has the live reply buffered: the stored
-    // conversation holds it in full if it finished.
-    onGone: (cid: string) => {
-      aiApi.getConversation(cid)
-        .then((conv) => { setCurrent((prev) => (prev && prev.id === cid ? conv : prev)); refreshList(); })
-        .catch((e) => setError(String((e as Error).message ?? e)))
-        .finally(() => setStreaming(null));
-    },
-  });
-
-  const openConversation = useCallback(async (id: string) => {
-    setLoadingConv(true);
-    try {
-      const conv = await aiApi.getConversation(id);
-      reply.stop();
-      setStreaming(null);
-      setCurrent(conv);
-      AsyncStorage.setItem(LAST_CONV_KEY, id).catch(() => {});
-      setError(null);
-      if (conv.pending) {   // a reply is still being written server-side — watch it
-        setStreaming({ status: 'Thinking…', text: '', companies: [] });
-        reply.follow({ convId: conv.id, ...streamHandlers(conv.id) });
-      }
-    } catch (e) {
-      setError(String((e as Error).message ?? e));
-    } finally {
-      setLoadingConv(false);
-    }
-  }, []);
-
+  // Reopen the last conversation on launch.
   useEffect(() => {
     (async () => {
       await refreshList();
       try {
         const last = await AsyncStorage.getItem(LAST_CONV_KEY);
-        if (last) await openConversation(last);
+        if (last) await openRef.current(last);
       } catch {
         // ignore
       }
     })();
-  }, [refreshList, openConversation]);
+  }, [refreshList]);
 
-  const newChat = () => {
-    reply.stop();
-    setStreaming(null);
-    setCurrent(null);
-    AsyncStorage.removeItem(LAST_CONV_KEY).catch(() => {});
-  };
+  const newChat = () => chat.reset(true);
 
   const deleteConversation = (conv: ConversationSummary) =>
     Alert.alert(`Delete "${conv.title}"?`, undefined, [
@@ -177,58 +86,20 @@ export default function AiScreen() {
         onPress: async () => {
           try {
             await aiApi.deleteConversation(conv.id);
-            if (current?.id === conv.id) newChat();
+            if (chat.convId === conv.id) newChat();
             await refreshList();
           } catch (e) {
-            setError(String((e as Error).message ?? e));
+            chat.setError(String((e as Error).message ?? e));
           }
         },
       },
     ]);
 
-  // ---- sending ----
   const send = async () => {
     const text = input.trim();
-    if (!text || streaming) return;
+    if (!text) return;
     setInput('');
-    setError(null);
-
-    let conv = current;
-    if (!conv) {
-      try {
-        conv = await aiApi.createConversation(model);
-        setCurrent(conv);
-        AsyncStorage.setItem(LAST_CONV_KEY, conv.id).catch(() => {});
-      } catch (e) {
-        setError(String((e as Error).message ?? e));
-        setInput(text);
-        return;
-      }
-    }
-    const convId = conv.id;
-
-    // Optimistic user turn + an empty streaming bubble.
-    setCurrent((prev) =>
-      prev && prev.id === convId
-        ? { ...prev, messages: [...prev.messages, { role: 'user', content: text }] }
-        : prev,
-    );
-    setStreaming({ status: 'Thinking…', text: '', companies: [] });
-    reply.send({ convId, text, model, ...streamHandlers(convId) });
-  };
-
-  const stop = () => {
-    reply.stop();
-    // Keep what arrived so far as a local turn. The server finishes the
-    // generation on its own and stores the full reply — reopening the
-    // chat from the drawer shows that version.
-    const partial = streaming?.text ?? '';
-    setStreaming(null);
-    if (partial) {
-      setCurrent((prev) =>
-        prev ? { ...prev, messages: [...prev.messages, { role: 'assistant', content: partial + '\n\n_(stopped)_' }] } : prev,
-      );
-    }
+    if (!(await chat.send(text, model))) setInput(text);
   };
 
   // ---- drawer ----
@@ -256,13 +127,10 @@ export default function AiScreen() {
 
   // ---- list data (inverted) ----
   const data = useMemo(() => {
-    const msgs = current?.messages ?? [];
-    const rows: Row[] = [...msgs];
-    if (streaming) rows.push({ role: 'assistant', content: streaming.text, _streaming: true });
+    const rows: Row[] = [...chat.messages];
+    if (chat.streaming) rows.push({ role: 'assistant', content: chat.streaming.text, _streaming: true });
     return rows.reverse();
-  }, [current, streaming]);
-
-  const title = current?.title ?? 'New chat';
+  }, [chat.messages, chat.streaming]);
 
   return (
     <KeyboardAvoidingView
@@ -274,104 +142,76 @@ export default function AiScreen() {
         <Pressable onPress={() => toggleDrawer(true)} hitSlop={10} style={styles.iconBtn}>
           <Ionicons name="menu" size={24} color={c.textPrimary} />
         </Pressable>
-        <Text style={[styles.title, { color: c.textPrimary }]} numberOfLines={1}>{title}</Text>
-        <View style={[styles.segment, { borderColor: c.border, backgroundColor: c.surface }]}>
-          {(['flash', 'pro'] as ModelKey[]).map((m) => (
-            <Pressable
-              key={m}
-              onPress={() => pickModel(m)}
-              style={[styles.segmentBtn, model === m && { backgroundColor: c.brand }]}
-            >
-              <Text style={[styles.segmentLabel, { color: model === m ? '#fff' : c.textMuted }]}>
-                {m === 'flash' ? 'Flash' : 'Pro'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <Text style={[styles.title, { color: c.textPrimary }]} numberOfLines={1}>{chat.title ?? 'New chat'}</Text>
+        <ModelToggle value={model} onChange={pickModel} />
         <Pressable onPress={newChat} hitSlop={10} style={styles.iconBtn}>
           <Ionicons name="create-outline" size={24} color={c.textPrimary} />
         </Pressable>
       </View>
 
       {/* Messages */}
-      {loadingConv && !current ? (
+      {chat.loading && !chat.convId ? (
         <View style={styles.center}><ActivityIndicator color={c.brand} /></View>
       ) : (
         <View style={{ flex: 1 }}>
-        <FlatList
-          ref={listRef}
-          inverted
-          onLayout={(e) => setListW(e.nativeEvent.layout.width)}
-          onScroll={(e) => {
-            const away = e.nativeEvent.contentOffset.y > 160;
-            setAwayFromBottom((prev) => (prev === away ? prev : away));
-          }}
-          scrollEventThrottle={48}
-          data={data}
-          keyExtractor={(_, i) => String(i)}
-          contentContainerStyle={styles.messages}
-          keyboardDismissMode="interactive"
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
-            <Bubble
-              msg={item}
-              streaming={item._streaming ? streaming : null}
-              onSelect={setSelectText}
-              contentW={contentW}
-            />
-          )}
-          ListEmptyComponent={
-            <View style={[styles.empty, { transform: [{ scaleY: -1 }] }]}>
-              <Ionicons name="sparkles-outline" size={28} color={c.brand} />
-              <Text style={[styles.emptyTitle, { color: c.textPrimary }]}>Ask about any company</Text>
-              <Text style={[styles.emptyHint, { color: c.textMuted }]}>
-                Mention a ticker or name — e.g. “Is QDEL’s debt manageable?” or “Compare Inogen and
-                Bioventus on FCF” — and the reply uses the archive’s SEC data, ratios and filings.
-              </Text>
-            </View>
-          }
-        />
-        <ScrollToBottomButton
-          visible={awayFromBottom}
-          onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
-        />
+          <FlatList
+            ref={listRef}
+            inverted
+            onLayout={(e) => setListW(e.nativeEvent.layout.width)}
+            onScroll={(e) => {
+              const away = e.nativeEvent.contentOffset.y > 160;
+              setAwayFromBottom((prev) => (prev === away ? prev : away));
+            }}
+            scrollEventThrottle={48}
+            data={data}
+            keyExtractor={(_, i) => String(i)}
+            contentContainerStyle={styles.messages}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <MessageRow
+                msg={item}
+                streaming={item._streaming ? chat.streaming : null}
+                onSelect={setSelectText}
+                contentW={contentW}
+              />
+            )}
+            ListEmptyComponent={
+              <View style={[styles.empty, { transform: [{ scaleY: -1 }] }]}>
+                <Ionicons name="sparkles-outline" size={28} color={c.brand} />
+                <Text style={[styles.emptyTitle, { color: c.textPrimary }]}>Ask about any company</Text>
+                <Text style={[styles.emptyHint, { color: c.textMuted }]}>
+                  Mention a ticker or name — e.g. “Is QDEL’s debt manageable?” or “Compare Inogen and
+                  Bioventus on FCF” — and the reply uses the archive’s SEC data, ratios and filings.
+                </Text>
+              </View>
+            }
+          />
+          <ScrollToBottomButton
+            visible={awayFromBottom}
+            onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+          />
         </View>
       )}
 
-      {error ? (
-        <Pressable onPress={() => setError(null)} style={[styles.errorBar, { backgroundColor: c.statusErrorBg }]}>
-          <Text style={[styles.errorText, { color: c.negative }]} numberOfLines={3}>{error}</Text>
+      {chat.error ? (
+        <Pressable onPress={() => chat.setError(null)} style={[styles.errorBar, { backgroundColor: c.statusErrorBg }]}>
+          <Text style={[styles.errorText, { color: c.negative }]} numberOfLines={3}>{chat.error}</Text>
         </Pressable>
       ) : null}
 
       <SelectTextSheet text={selectText} visible={selectText !== null} onClose={() => setSelectText(null)} />
 
-      {/* Composer */}
-      <View style={[styles.composer, { borderTopColor: c.border, backgroundColor: c.background, paddingBottom: spacing.sm }]}>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder={`Ask ${model === 'pro' ? 'Pro' : 'Flash'} about any company…`}
-          placeholderTextColor={c.textMuted}
-          multiline
-          style={[styles.input, { color: c.textPrimary, backgroundColor: c.surface, borderColor: c.border }]}
-          editable={!streaming}
-        />
-        {streaming ? (
-          <Pressable onPress={stop} style={[styles.sendBtn, { backgroundColor: c.negative }]} hitSlop={6}>
-            <Ionicons name="stop" size={18} color="#fff" />
-          </Pressable>
-        ) : (
-          <Pressable
-            onPress={send}
-            disabled={!input.trim()}
-            style={[styles.sendBtn, { backgroundColor: input.trim() ? c.brand : c.border }]}
-            hitSlop={6}
-          >
-            <Ionicons name="arrow-up" size={18} color="#fff" />
-          </Pressable>
-        )}
-      </View>
+      <Composer
+        value={input}
+        onChange={setInput}
+        placeholder={`Ask ${model === 'pro' ? 'Pro' : 'Flash'} about any company…`}
+        streaming={chat.streaming !== null}
+        canSend={input.trim().length > 0}
+        onSend={send}
+        onStop={chat.stop}
+        style={[styles.composer, { borderTopColor: c.border, backgroundColor: c.background, paddingBottom: spacing.sm }]}
+      />
 
       {/* Drawer */}
       {drawerOpen ? (
@@ -400,10 +240,10 @@ export default function AiScreen() {
                 </Text>
               }
               renderItem={({ item }) => {
-                const active = item.id === current?.id;
+                const active = item.id === chat.convId;
                 return (
                   <Pressable
-                    onPress={() => { toggleDrawer(false); openConversation(item.id); }}
+                    onPress={() => { toggleDrawer(false); chat.open(item.id); }}
                     onLongPress={() => deleteConversation(item)}
                     style={({ pressed }) => [
                       styles.convRow,
@@ -428,56 +268,6 @@ export default function AiScreen() {
   );
 }
 
-function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; streaming: Streaming | null; onSelect: (text: string) => void; contentW?: number }) {
-  const c = useColors();
-  const usage = msg.usage;
-  if (msg.role === 'user') {
-    // ChatGPT / Claude layout: only the user's own messages sit in a bubble.
-    return (
-      <View style={styles.userRow}>
-        <View style={[styles.userBubble, { backgroundColor: c.chatBubble }]}>
-          <SelectableProse style={{ ...styles.userText, color: c.textPrimary }}>{msg.content}</SelectableProse>
-        </View>
-      </View>
-    );
-  }
-  const table = hasTable(msg.content);
-  const inner = (
-    <>
-      {streaming?.status ? (
-        <View style={styles.statusRow}>
-          <ActivityIndicator size="small" color={c.textMuted} />
-          <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
-        </View>
-      ) : null}
-      {msg.content ? (
-        <Markdown
-          text={msg.content}
-          color={c.textPrimary}
-          width={table ? contentW : undefined}
-        />
-      ) : null}
-      {!streaming ? (
-        <View style={styles.footer}>
-          <Pressable onPress={() => onSelect(toPlainText(msg.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
-            <Ionicons name="copy-outline" size={15} color={c.textMuted} />
-            <Text style={[styles.meta, { color: c.textMuted }]}>Select</Text>
-          </Pressable>
-          <Text style={[styles.meta, { color: c.textMuted, flexShrink: 1 }]}>
-            {[
-              msg.companies?.length ? `data: ${msg.companies.join(', ')}` : null,
-              msg.model ? (msg.model.includes('pro') ? 'Pro' : 'Flash') : null,
-              usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
-            ].filter(Boolean).join(' · ')}
-          </Text>
-        </View>
-      ) : null}
-    </>
-  );
-  // The reply is plain, natively selectable text across the full width.
-  return <View style={styles.reply}>{inner}</View>;
-}
-
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
@@ -489,45 +279,14 @@ const styles = StyleSheet.create({
   },
   iconBtn: { padding: 4 },
   title: { flex: 1, fontSize: fontSize.md, fontWeight: '700' },
-  segment: { flexDirection: 'row', borderWidth: StyleSheet.hairlineWidth, borderRadius: radii.pill, padding: 2 },
-  segmentBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill },
-  segmentLabel: { fontSize: fontSize.xs, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   messages: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flexGrow: 1 },
-  userRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.md, marginBottom: spacing.lg },
-  userBubble: { maxWidth: '80%', borderRadius: 20, paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 2 },
-  userText: { fontSize: chatType.size, lineHeight: chatType.lineHeight - 2 },
-  reply: { marginBottom: spacing.lg },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
-  status: { fontSize: fontSize.sm, fontStyle: 'italic' },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },
-  meta: { fontSize: fontSize.xs - 1, letterSpacing: 0.3 },
-  selectBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2 },
   empty: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontSize: fontSize.lg, fontWeight: '700' },
   emptyHint: { fontSize: fontSize.sm, lineHeight: 20, textAlign: 'center' },
   errorBar: { marginHorizontal: spacing.md, marginBottom: spacing.xs, padding: spacing.sm, borderRadius: radii.md },
   errorText: { fontSize: fontSize.sm },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  input: {
-    flex: 1,
-    minHeight: 40,
-    maxHeight: 140,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 20,
-    paddingHorizontal: spacing.md,
-    paddingTop: 10,
-    paddingBottom: 10,
-    fontSize: fontSize.md,
-  },
-  sendBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  composer: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth },
   drawer: {
     position: 'absolute',
     top: 0,

@@ -1,14 +1,8 @@
 /**
- * Ticker detail screen rendered as a horizontal carousel: previous,
- * current, next tickers in the industry are mounted side-by-side so a
- * left/right swipe slides between them in one continuous motion — the
- * next page is already in memory when the user starts swiping (Tinder /
- * Stories pattern).
- *
- * Only the 3 pages adjacent to the current index are mounted. Heavy
- * children inside each page (charts + historical table) are still
- * deferred via InteractionManager so the JS thread isn't blocked
- * during the slide.
+ * Ticker detail screen: header, KPI grid, charts, the historical table
+ * (with a sticky period header while it's on screen) and the inline AI
+ * chat. Heavy children are deferred via InteractionManager so the page
+ * appears before the charts and table are built.
  */
 import {
   useCallback,
@@ -21,28 +15,24 @@ import {
   ActivityIndicator,
   Animated,
   InteractionManager,
-  PanResponder,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 
 import {
-  prefetchTickerDetail,
-  useIndustryDetail,
   useTickerDetail,
   usePriceHistory,
 } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
 import { ScrollToBottomButton } from '@/components/ScrollToBottomButton';
 import { TickerChat } from '@/components/TickerChat';
-import { SHOW_LLM_ANALYSIS, TICKER_SWIPE_NAV } from '@/config';
+import { SHOW_LLM_ANALYSIS } from '@/config';
 import {
   HISTORICAL_TABLE_HEADER_HEIGHT,
   HistoricalTable,
@@ -57,7 +47,7 @@ import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useLastViewed } from '@/hooks/useLastViewed';
 import { useSaved } from '@/hooks/useSaved';
 import { useColors, fontSize, spacing, radii } from '@/theme/colors';
-import { formatDate, formatMoney, slugify } from '@/utils/format';
+import { formatDate, formatMoney } from '@/utils/format';
 
 function pickLatestSourceDate(sources: { published_date?: string | null }[] | undefined): string | null {
   if (!sources || sources.length === 0) return null;
@@ -133,6 +123,8 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
     if (!isCenter && showStickyOverlay) setShowStickyOverlay(false);
   }, [isCenter, showStickyOverlay]);
 
+  const [showNative, setShowNative] = useState(false);
+
   async function refreshAll() {
     await Promise.all([ticker.refresh(), priceHistory.refresh()]);
   }
@@ -144,8 +136,6 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
       </View>
     );
   }
-
-  const [showNative, setShowNative] = useState(false);
 
   if (!ticker.data) {
     return (
@@ -376,194 +366,31 @@ function SaveButton({ symbol }: { symbol: string }) {
   );
 }
 
-// Memoize: the carousel re-renders frequently as containerX animates;
-// re-rendering a sibling page that hasn't changed is wasteful.
-const TickerPage = TickerPageContent;
-
 // ===========================================================================
-// TickerScreen — carousel container.
+// TickerScreen — one company page. (A swipe-between-siblings carousel used
+// to live here; it competed with the historical table's horizontal scroll
+// and was removed on 2026-09-17 — `git show 4ac597dd:mobile/app/ticker/[symbol].tsx`.)
 // ===========================================================================
 export default function TickerScreen() {
-  const c = useColors();
   const navigation = useNavigation();
   const device = useDeviceClass();
   const { symbol: initialSymbol } = useLocalSearchParams<{ symbol: string }>();
-  const initialSym = (initialSymbol || '').toUpperCase();
+  const symbol = (initialSymbol || '').toUpperCase();
 
-  // Pull the industry's ticker list so we can compute neighbours. Fetch
-  // via the *first* ticker we have data for (the deep-link target);
-  // once we know its industry, the list arrives and we lock in.
-  const initialTicker = useTickerDetail(initialSym);
-  const industrySlug = initialTicker.data
-    ? slugify(initialTicker.data.industry)
-    : undefined;
-  const industryDetail = useIndustryDetail(industrySlug);
-  const tickerList = useMemo(
-    () => industryDetail.data?.tickers.map((t) => t.ticker) ?? [],
-    [industryDetail.data],
-  );
-
-  // Centre index walks through the industry list as the user swipes.
-  // Default to the index of the initial URL ticker once the list arrives,
-  // or -1 if not found (single-ticker mode).
-  const [centerIndex, setCenterIndex] = useState(-1);
-  useEffect(() => {
-    if (centerIndex !== -1 || tickerList.length === 0) return;
-    const idx = tickerList.indexOf(initialSym);
-    if (idx >= 0) setCenterIndex(idx);
-  }, [tickerList, initialSym, centerIndex]);
-
-  const centerSymbol = centerIndex >= 0 ? tickerList[centerIndex] : initialSym;
-
-  // Remember the currently-centred ticker as the company viewed last, so its
-  // industry screen highlights it on return. Tracks swipes between siblings.
+  // Remember the company viewed last, so its industry screen highlights it on return.
   const { setLastCompany } = useLastViewed();
   useEffect(() => {
-    if (centerSymbol) setLastCompany(centerSymbol);
-  }, [centerSymbol, setLastCompany]);
+    if (symbol) setLastCompany(symbol);
+  }, [symbol, setLastCompany]);
 
-  // Nav title tracks the currently-centred ticker. Skip on iPad-landscape
-  // (the SplitLayout renders without a Stack header).
+  // Nav title. Skip on iPad-landscape (the SplitLayout renders without a Stack header).
   useEffect(() => {
     if (device !== 'tablet-landscape') {
-      navigation.setOptions({ title: centerSymbol });
+      navigation.setOptions({ title: symbol });
     }
-  }, [centerSymbol, navigation, device]);
+  }, [symbol, navigation, device]);
 
-  // Prefetch the symbols around the centre so they're cache-warm when the
-  // user swipes into them.
-  useEffect(() => {
-    if (centerIndex < 0) return;
-    [centerIndex - 1, centerIndex + 1].forEach((i) => {
-      if (i >= 0 && i < tickerList.length) prefetchTickerDetail(tickerList[i]);
-    });
-  }, [centerIndex, tickerList]);
-
-  // Carousel translateX. Resting value = -centerIndex * screenWidth so
-  // the centre page sits at screen x = 0. During pan we superimpose the
-  // gesture dx as an Animated offset.
-  const { width: screenWidth } = useWindowDimensions();
-  const containerX = useRef(new Animated.Value(0)).current;
-  // Sync resting position to centerIndex changes. Using setValue
-  // (not animate) because the swipe-completion handler has already
-  // animated to this position before swapping centerIndex.
-  useEffect(() => {
-    if (centerIndex < 0) return;
-    containerX.setValue(-centerIndex * screenWidth);
-  }, [centerIndex, screenWidth, containerX]);
-
-  const centerIndexRef = useRef(centerIndex);
-  centerIndexRef.current = centerIndex;
-  const tickerListLengthRef = useRef(tickerList.length);
-  tickerListLengthRef.current = tickerList.length;
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) =>
-          Math.abs(g.dx) > Math.abs(g.dy) * 2 && Math.abs(g.dx) > 10,
-        onPanResponderGrant: () => {
-          const base = -centerIndexRef.current * screenWidth;
-          containerX.setOffset(base);
-          containerX.setValue(0);
-        },
-        onPanResponderMove: (_, g) => {
-          containerX.setValue(g.dx);
-        },
-        onPanResponderRelease: (_, g) => {
-          containerX.flattenOffset();
-          const SWIPE_DISTANCE = 80;
-          const SWIPE_VELOCITY = 0.35;
-          const left = g.dx < -SWIPE_DISTANCE || g.vx < -SWIPE_VELOCITY;
-          const right = g.dx > SWIPE_DISTANCE || g.vx > SWIPE_VELOCITY;
-          const idx = centerIndexRef.current;
-          const len = tickerListLengthRef.current;
-          // Left swipe → next (higher index); right swipe → previous.
-          let targetIdx = idx;
-          if (left && idx < len - 1) targetIdx = idx + 1;
-          else if (right && idx > 0) targetIdx = idx - 1;
-
-          if (targetIdx !== idx) {
-            Animated.timing(containerX, {
-              toValue: -targetIdx * screenWidth,
-              duration: 200,
-              useNativeDriver: true,
-            }).start(() => {
-              // containerX is already at -targetIdx * screenWidth, which
-              // is the resting position for the new centre. Updating
-              // centerIndex does NOT cause a visual jump because the
-              // useEffect above setValue's the same value we just
-              // animated to.
-              setCenterIndex(targetIdx);
-            });
-          } else {
-            Animated.spring(containerX, {
-              toValue: -idx * screenWidth,
-              useNativeDriver: true,
-              bounciness: 6,
-            }).start();
-          }
-        },
-        onPanResponderTerminate: () => {
-          containerX.flattenOffset();
-          Animated.spring(containerX, {
-            toValue: -centerIndexRef.current * screenWidth,
-            useNativeDriver: true,
-            bounciness: 6,
-          }).start();
-        },
-      }),
-    [screenWidth, containerX],
-  );
-
-  if (initialTicker.error && !initialTicker.data) {
-    return (
-      <View style={[styles.center, { backgroundColor: c.background }]}>
-        <Text style={{ color: c.negative }}>{initialTicker.error}</Text>
-      </View>
-    );
-  }
-
-  // Once we know the industry's ticker list, render the carousel.
-  // While the list is still loading, render the single page so the
-  // user isn't waiting on an industry round-trip to see anything.
-  if (tickerList.length === 0 || centerIndex < 0) {
-    return (
-      <View style={{ flex: 1, backgroundColor: c.background }}>
-        <TickerPage symbol={initialSym} isCenter />
-      </View>
-    );
-  }
-
-  return (
-    <View
-      style={{ flex: 1, backgroundColor: c.background }}
-      {...(TICKER_SWIPE_NAV ? panResponder.panHandlers : {})}
-    >
-      <Animated.View
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          width: tickerList.length * screenWidth,
-          transform: [{ translateX: containerX }],
-        }}
-      >
-        {tickerList.map((sym, i) => {
-          // Only mount the centre and its immediate neighbours; everything
-          // else stays as a fixed-width spacer so the layout coordinates
-          // stay correct.
-          const distance = Math.abs(i - centerIndex);
-          return (
-            <View key={sym} style={{ width: screenWidth }}>
-              {distance <= 1 ? (
-                <TickerPage symbol={sym} isCenter={i === centerIndex} />
-              ) : null}
-            </View>
-          );
-        })}
-      </Animated.View>
-    </View>
-  );
+  return <TickerPageContent symbol={symbol} isCenter />;
 }
 
 const styles = StyleSheet.create({

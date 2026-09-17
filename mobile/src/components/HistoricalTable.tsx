@@ -415,6 +415,10 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     return m;
   }, [priceHistory]);
 
+  const onContentSizeChange = useCallback(() => {
+    scrollRef.current?.scrollToEnd({ animated: false });
+  }, []);
+
   if (columns.length === 0) {
     return (
       <Text style={{ color: c.textMuted, fontSize: fontSize.sm }}>
@@ -556,9 +560,6 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     });
   }
 
-  const onContentSizeChange = useCallback(() => {
-    scrollRef.current?.scrollToEnd({ animated: false });
-  }, []);
 
   // ====== Per-cell resolvers ======
 

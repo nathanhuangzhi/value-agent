@@ -126,7 +126,8 @@ Most per-ticker flags accept no value = "all analyzed tickers". `--dry-run`/`--p
 - Scripts run via `python -m scripts.<name>` (not `python scripts/<name>.py`).
 - Shared helpers live in `app/tools/`: paths, JSON I/O, LLM router, etc. Scripts orchestrate; they should not contain reusable logic.
 - Logging: `from app.log import get_logger; log = get_logger(__name__)`. Never `except Exception: pass` — at minimum `log.warning(..., exc_info=True)`. Scripts may still `print` progress lines.
-- CI gates on `ruff`, `mypy app scripts` and a coverage floor; keep all three green locally before pushing.
+- CI gates on `ruff`, `mypy app scripts` and a coverage floor; for `mobile/`: `npx tsc --noEmit`, `npx eslint .`, `npx jest`. Keep them green locally before pushing.
+- Mobile chat: `useConversation` (state + send/stop/open/reset, reconnecting stream via `useReplyStream`) and the `components/chat/*` pieces (`MessageRow`, `Composer`, `ModelToggle`) are shared by the AI tab and the company-page chat — change chat behaviour there, not in the screens.
 - Pure functions get unit tests in `tests/`. Network/LLM-dependent code stays untested at the unit level — verify those via the smoke-test paths (`--probe`, `--dry-run`, `--limit`).
 
 ## Key modules (non-obvious entry points)

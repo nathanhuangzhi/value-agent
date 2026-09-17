@@ -77,15 +77,6 @@ export function MiniLineChart({ title, data, color, format }: Props) {
     return downsample(valid.filter((p) => p.date >= cutoffISO), TARGET_POINTS);
   }, [data]);
 
-  if (series.length < 2) {
-    return (
-      <View style={[styles.empty, { backgroundColor: c.surface, borderColor: c.border }]}>
-        <Text style={[styles.title, { color: c.textMuted }]}>{title}</Text>
-        <Text style={{ color: c.textMuted, fontSize: fontSize.xs }}>(no data)</Text>
-      </View>
-    );
-  }
-
   const values = series.map((p) => p.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -135,15 +126,24 @@ export function MiniLineChart({ title, data, color, format }: Props) {
   const tickStep = tickStepForSpan(spanYears);
 
   // Touch handling — mirror PriceChart so the interaction feels the same.
-  function pickIndex(e: GestureResponderEvent): number {
-    if (chartW <= 0) return 0;
+  const onLayout = useCallback((e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width), []);
+  const onTouch = useCallback((e: GestureResponderEvent) => {
+    if (chartW <= 0) return;
     const x = e.nativeEvent.locationX - PADDING.left;
     const ratio = Math.max(0, Math.min(1, x / chartW));
-    return Math.round(ratio * (series.length - 1));
-  }
-  const onLayout = useCallback((e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width), []);
-  const onTouch = useCallback((e: GestureResponderEvent) => setActiveIdx(pickIndex(e)), [chartW, series.length]);
+    setActiveIdx(Math.round(ratio * (series.length - 1)));
+  }, [chartW, series.length]);
   const onEnd = useCallback(() => setActiveIdx(null), []);
+
+  // Hooks above are unconditional; only now may we bail out on thin data.
+  if (series.length < 2) {
+    return (
+      <View style={[styles.empty, { backgroundColor: c.surface, borderColor: c.border }]}>
+        <Text style={[styles.title, { color: c.textMuted }]}>{title}</Text>
+        <Text style={{ color: c.textMuted, fontSize: fontSize.xs }}>(no data)</Text>
+      </View>
+    );
+  }
 
   const tipIdx = activeIdx ?? series.length - 1;
   const tip = series[tipIdx];

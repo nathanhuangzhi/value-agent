@@ -76,7 +76,7 @@ jobs:
         run: pytest -q --cov=app --cov-fail-under=65
 
   mobile-typecheck:
-    name: mobile tsc
+    name: mobile tsc + eslint + jest
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -97,3 +97,9 @@ jobs:
 
       - name: TypeScript check
         run: npx tsc --noEmit
+
+      - name: Lint (eslint)
+        run: npx eslint .
+
+      - name: Unit tests (jest)
+        run: npx jest --ci
