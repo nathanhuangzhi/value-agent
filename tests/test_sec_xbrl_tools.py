@@ -5,20 +5,17 @@ not covered here (per the project convention for network code).
 
 from __future__ import annotations
 
-import pytest
-
 from app.tools.sec_xbrl_tools import (
     _fiscal_year_from_end,
-    is_annual_period,
-    is_quarterly_period,
-    is_instant_at_fy_end,
-    is_instant_any,
+    detect_mna_jumps,
     extract_period_values,
     extract_quarterly_cash_flow,
     extract_quarterly_values,
-    detect_mna_jumps,
+    is_annual_period,
+    is_instant_any,
+    is_instant_at_fy_end,
+    is_quarterly_period,
 )
-
 
 # ===== _fiscal_year_from_end =====
 

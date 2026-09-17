@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from datetime import date
 
-import pytest
-
 from app.tools.validation import (
     ALL_RULES,
     rule_annual_revenue_present,
@@ -27,7 +25,6 @@ from app.tools.validation import (
     validate_ticker,
     worst_severity,
 )
-
 
 TODAY = date(2026, 5, 11)
 

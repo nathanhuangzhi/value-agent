@@ -169,7 +169,7 @@ def main():
     is_resume = todays_idx is not None
 
     if args.watchlist_only:
-        cycle = entry_cycle(log[todays_idx]) if is_resume else current_cycle(log)
+        cycle = entry_cycle(log[todays_idx]) if todays_idx is not None else current_cycle(log)
         cycle_start = cycle_start_date(log, cycle) or today
         wl_rows, unknown = watchlist_rows()
         todo = [r for r in wl_rows if not is_done_in_cycle(latest.get(r["ticker"]), cycle_start)]

@@ -1,4 +1,10 @@
-from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_periods, to_usd_statements
+from app.tools.fx import (
+    currency_meta,
+    reporting_currency,
+    source_currencies,
+    to_usd_periods,
+    to_usd_statements,
+)
 
 FX = {"CNY": {"per_usd": 7.0, "as_of": "2026-09-14"}}
 
@@ -61,7 +67,7 @@ def test_per_source_conversion_scales_each_cell_by_its_own_currency():
 
 
 def test_infer_ads_ratio_from_overlapping_share_counts():
-    from app.tools.report.sec_adapter import infer_ads_ratio, _ads_normalized
+    from app.tools.report.sec_adapter import _ads_normalized, infer_ads_ratio
     sec = {"annual": {"diluted_shares": {2024: {"val": 5.6e9}, 2025: {"val": 5.93e9}},
                       "diluted_eps": {2025: {"val": 19.0}}},
            "quarterly": {}}
@@ -268,7 +274,7 @@ def test_composite_sums_components_when_no_total_is_tagged():
 
 def test_fractional_ads_ratio_and_group_pick():
     from app.tools.report.sec_adapter import infer_ads_ratio
-    from app.tools.sec_xbrl_tools import _group_pick, _extract_all_annual
+    from app.tools.sec_xbrl_tools import _extract_all_annual, _group_pick
     sec = {"annual": {"diluted_shares": {2023: {"val": 113e6}, 2024: {"val": 108e6}}}, "quarterly": {}}
     yf = {"annual": {"diluted_shares": {"2023": {"val": 563e6}, "2024": {"val": 539e6}}}}
     assert infer_ads_ratio(sec, yf) == 0.2                       # VIPS: 1 ADS = 0.2 ordinary

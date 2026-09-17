@@ -87,7 +87,7 @@ def post_message(conv_id: str, body: NewMessage):
     try:
         job = jobs.start(conv, body.content.strip(), model)
     except RuntimeError as e:
-        raise HTTPException(409, detail=str(e))
+        raise HTTPException(409, detail=str(e)) from e
     return _sse(jobs.follow(job, 0))
 
 

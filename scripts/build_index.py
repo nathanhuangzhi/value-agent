@@ -23,6 +23,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from app.tools.json_io import load_latest_by_ticker
 from app.tools.paths import (
@@ -349,7 +350,7 @@ def main():
     for r in rows:
         by_industry[r["industry"]].append(r)
 
-    industries_summary = []
+    industries_summary: list[dict[str, Any]] = []
     for industry_name, ticker_rows in sorted(by_industry.items()):
         ticker_rows_sorted = sorted(ticker_rows, key=lambda r: r["ticker"])
         slug = _slug(industry_name)

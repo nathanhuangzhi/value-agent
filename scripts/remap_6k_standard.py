@@ -29,7 +29,7 @@ load_dotenv(ENV_FILE)
 STANDARD_VERSION = 3
 
 
-def _lines(items: list[dict]) -> str:
+def _lines(items: list[dict] | None) -> str:
     out = []
     for r in items or []:
         v = r.get("value")

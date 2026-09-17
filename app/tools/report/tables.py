@@ -3,6 +3,9 @@ table, plus the column-extraction helper."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 from app.tools.report.format import (
     AMBER,
     MUTED,
@@ -183,7 +186,7 @@ def _empty_col(extra_keys):
         "rd_r", "sm_r", "ga_r", "sga_r", "other_r",
         "static_pe", "static_ps", "pb",
     )
-    col = {"label": "", "sources": {}}
+    col: dict[str, object] = {"label": "", "sources": {}}
     for k in metric_keys:
         col[k] = None
     for k in (extra_keys or []):
@@ -270,7 +273,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
     pct_str = lambda v: _fmt(v * 100, suffix="%") if v is not None else "—"
     ratio_str = lambda v: _fmt(v, suffix="x") if v is not None else "—"
 
-    rows = [
+    rows: list[tuple[str, str] | tuple[str, str, Callable[[Any], str]]] = [
         ("group", "Income Statement ($M)"),
         ("Revenue", "rev", money_m),
         ("Gross Profit", "gp", money_m),
@@ -357,7 +360,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
 
     body = []
     for row in rows:
-        if row[0] == "group":
+        if len(row) == 2:
             body.append(
                 f"<tr><td colspan='{n_cols + 1}' style='padding:9px 10px 4px;"
                 f"font-size:11px;color:{NAVY};font-family:Helvetica,Arial,sans-serif;"

@@ -3,6 +3,8 @@ reconstruction. No I/O, no matplotlib, no HTML. Drop-in unit-testable."""
 
 from __future__ import annotations
 
+from typing import Any
+
 from app.tools.report.format import _pick_first
 
 
@@ -102,7 +104,7 @@ def _top_asset_keys(bs_annual, bs_quarterly, top_n=None):
     first-encountered key per category."""
     sorted_q = sorted([p for p in (bs_quarterly or []) if p.get("period")], key=lambda p: p["period"], reverse=True)
     sorted_a = sorted([p for p in (bs_annual or []) if p.get("period")], key=lambda p: p["period"], reverse=True)
-    latest_items = {}
+    latest_items: dict[str, Any] = {}
     for p in sorted_q + sorted_a:
         items = p.get("items") or {}
         if any(items.get(k) is not None for k in _ASSET_CANDIDATE_KEYS):

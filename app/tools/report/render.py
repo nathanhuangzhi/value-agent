@@ -9,10 +9,9 @@ import re
 
 from markdown_it import MarkdownIt
 
+from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
 from app.tools.paths import COMPANIES_SEC, COMPANIES_YFINANCE_DIR
 from app.tools.report.charts import _chart_valuation_monthly
-from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
-from app.tools.sec_6k import load_all_stores, sixk_as_source_row
 from app.tools.report.format import (
     AMBER,
     MUTED,
@@ -37,11 +36,12 @@ from app.tools.report.ratios import (
 from app.tools.report.sec_adapter import (
     load_sec_by_ticker,
     load_sharded_by_ticker,
+    overlay_source_row,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
-    overlay_source_row,
 )
 from app.tools.report.tables import _render_combined_data_table
+from app.tools.sec_6k import load_all_stores, sixk_as_source_row
 
 _SEC_DATA: dict | None = None
 _YF_DATA: dict | None = None

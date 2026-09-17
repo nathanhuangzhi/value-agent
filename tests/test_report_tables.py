@@ -15,13 +15,13 @@ import re
 import pytest
 
 from app.tools.report.tables import (
+    _TABLE_ANNUAL_COLS,
+    _TABLE_QUARTERLY_COLS,
     _collect_table_columns,
     _empty_col,
     _pick_first_with_source,
     _render_combined_data_table,
     _slice_and_pad,
-    _TABLE_ANNUAL_COLS,
-    _TABLE_QUARTERLY_COLS,
 )
 
 
@@ -298,8 +298,6 @@ def test_render_combined_table_pads_to_fixed_column_count():
     html = _render_combined_data_table([inc], [bs], [cf], [], [], [])
     # The header row has _TABLE_ANNUAL_COLS + _TABLE_QUARTERLY_COLS + 1 column
     # (the metric label column).
-    header_match = re.search(r"<tr>(.*?)</tr>", html, re.S)
-    n_th = header_match.group(1).count("<th") if header_match else 0
     # First row in the rendered output is the superheader (ANNUAL / QUARTERLY).
     # Count THs in any row to find the labels row.
     rows = re.findall(r"<tr>(.*?)</tr>", html, re.S)

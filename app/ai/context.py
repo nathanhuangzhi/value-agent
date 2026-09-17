@@ -17,6 +17,7 @@ import re
 from fastapi import HTTPException
 
 from app.api.routes import _load_analyzed, _load_universe, ticker_detail
+from app.log import get_logger
 
 # ---------------------------------------------------------------------------
 # Detection
@@ -296,6 +297,8 @@ def company_block(ticker: str, *, max_chars: int = 14000) -> str:
 # ---------------------------------------------------------------------------
 # Tools
 # ---------------------------------------------------------------------------
+
+log = get_logger(__name__)
 
 TOOLS = [
     {
@@ -676,8 +679,9 @@ def tool_search_annual_report(ticker: str, keyword: str, fiscal_year: str | None
 def _calls_store(ticker: str, *, fetch_latest: bool = True):
     """Cached transcripts; when the newest ended quarter isn't on file yet, try to fetch it
     (one Alpha Vantage request — the free key allows 25 a day)."""
-    from app.tools.earnings_calls import load_store, quarters_to_check, save_store, fetch_transcript
     from datetime import date, datetime, timezone
+
+    from app.tools.earnings_calls import fetch_transcript, load_store, quarters_to_check, save_store
     t = ticker.upper()
     store = load_store(t)
     if fetch_latest:
@@ -691,8 +695,8 @@ def _calls_store(ticker: str, *, fetch_latest: bool = True):
                 else:
                     store["checked"][q] = date.today().isoformat()
                 save_store(store)
-            except Exception:
-                pass                              # no key, rate-limited or offline: serve what's cached
+            except Exception as e:                # no key, rate-limited or offline: serve what's cached
+                log.warning("earnings-call fetch skipped for %s %s: %s", t, q, e)
     return store
 
 
@@ -804,7 +808,7 @@ def tool_get_yfinance_raw(ticker: str, statement: str, period_end: str | None) -
         return f"ERROR: no yfinance raw statements cached for {ticker.upper()}"
     frame = (raw.get("frames") or {}).get(statement)
     if frame is None:
-        return f"ERROR: statement must be one of annual_income, annual_balance, annual_cashflow, quarterly_income, quarterly_balance, quarterly_cashflow"
+        return "ERROR: statement must be one of annual_income, annual_balance, annual_cashflow, quarterly_income, quarterly_balance, quarterly_cashflow"
     out = [f"## {ticker.upper()} yfinance raw · {statement} · currency {raw.get('financial_currency')} · fetched {str(raw.get('fetched_at'))[:10]}"]
     if period_end:
         for label, series in frame.items():

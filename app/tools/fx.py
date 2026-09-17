@@ -18,8 +18,11 @@ from __future__ import annotations
 import copy
 from datetime import date
 
+from app.log import get_logger
 from app.tools.json_io import atomic_write_json
 from app.tools.paths import FX_RATES
+
+log = get_logger(__name__)
 
 # Items that are counts, not money — never scaled.
 NON_MONETARY_ITEMS = {"Diluted Average Shares", "Basic Average Shares"}
@@ -50,6 +53,7 @@ def fetch_fx(currencies: list[str]) -> dict:
             if px and px > 0:
                 rates[ccy] = {"per_usd": float(px), "as_of": today}
         except Exception:
+            log.warning("FX rate for %s not fetched", ccy, exc_info=True)
             continue
     atomic_write_json(FX_RATES, rates)
     return rates

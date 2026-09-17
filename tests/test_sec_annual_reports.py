@@ -1,4 +1,4 @@
-from app.tools.sec_annual_reports import build_toc, find_section, section_text, search_text
+from app.tools.sec_annual_reports import build_toc, find_section, search_text, section_text
 
 DOC = "\n".join([
     "TABLE OF CONTENTS",

@@ -22,7 +22,8 @@ def test_follow_survives_disconnect_and_replays(monkeypatch):
     job = jobs.start({"id": "c1"}, "hi", "m")
 
     first = jobs.follow(job, 0)
-    got = [next(first), next(first)]        # read two frames, then "drop the socket"
+    next(first)
+    next(first)                             # read two frames, then "drop the socket"
     first.close()
     assert jobs.is_pending("c1")
 

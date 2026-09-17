@@ -15,10 +15,9 @@ network. Tighten if you ever expose write endpoints.
 import logging
 import os
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from dotenv import load_dotenv
 
 from app.ai.routes import router as ai_router
 from app.api.routes import router as api_router

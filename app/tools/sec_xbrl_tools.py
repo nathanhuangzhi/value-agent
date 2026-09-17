@@ -30,13 +30,14 @@ import json
 import time
 from collections.abc import Sequence
 from datetime import date
+from pathlib import Path
 
 import requests
 
+from app.tools.edgar import user_agent
 from app.tools.paths import DATA_DIR
 
 _BASE_URL = "https://data.sec.gov/api/xbrl/companyfacts"
-_USER_AGENT = "Value Agent Research nathanhz2013@gmail.com"
 _REQUEST_TIMEOUT_S = 20
 _MIN_INTERVAL_S = 0.12  # ~8 req/sec, well within SEC's 10 req/sec limit
 
@@ -91,7 +92,7 @@ def fetch_companyfacts(cik: int | str, *, save_raw: bool = True) -> dict | None:
 
     padded = str(int(cik)).zfill(10)
     url = f"{_BASE_URL}/CIK{padded}.json"
-    resp = requests.get(url, headers={"User-Agent": _USER_AGENT}, timeout=_REQUEST_TIMEOUT_S)
+    resp = requests.get(url, headers={"User-Agent": user_agent()}, timeout=_REQUEST_TIMEOUT_S)
     if resp.status_code == 404:
         return None
     resp.raise_for_status()

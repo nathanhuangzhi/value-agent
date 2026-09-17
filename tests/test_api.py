@@ -4,7 +4,6 @@ endpoints read fixtures instead of the real `data/` directory."""
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -378,7 +377,7 @@ def test_search_index_covers_universe_and_analyzed(client):
     assert r.status_code == 200
     body = r.json()
     assert body["fields"] == ["ticker", "name", "industry", "market_cap", "analyzed"]
-    rows = {row[0]: dict(zip(body["fields"], row)) for row in body["rows"]}
+    rows = {row[0]: dict(zip(body["fields"], row, strict=True)) for row in body["rows"]}
     # union of universe + analyzed (AAPL is analyzed-only, NVDA universe-only), sorted
     assert [row[0] for row in body["rows"]] == ["AAPL", "INGN", "NVDA", "QDEL"]
     assert body["count"] == 4 and body["analyzed_count"] == 3

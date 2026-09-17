@@ -6,7 +6,7 @@ the response against a Pydantic schema, and retries on validation failure.
 
 import json
 import time
-from typing import Literal
+from typing import Any, Literal
 
 import httpx
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
@@ -80,7 +80,7 @@ def classify_company(
     last_validation_error: str | None = None
 
     for attempt in range(_MAX_VALIDATION_RETRIES + 1):
-        messages = [{"role": "user", "content": prompt}]
+        messages: list[Any] = [{"role": "user", "content": prompt}]
         if last_validation_error:
             # Feed the prior failure back so the model can self-correct.
             messages.append({

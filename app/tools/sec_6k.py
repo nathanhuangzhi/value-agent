@@ -31,11 +31,15 @@ import requests
 from pydantic import BaseModel, ValidationError
 
 from app.core.prompt_manager import load_prompt
+from app.log import get_logger
+from app.tools.edgar import user_agent
 from app.tools.json_io import atomic_write_json, read_json_array
 from app.tools.paths import DATA_DIR
 
+log = get_logger(__name__)
+
 SIXK_DIR = DATA_DIR / "sec_6k"
-_USER_AGENT = "value-agent research (nathanhz2013@gmail.com)"
+
 _MIN_INTERVAL_S = 0.15
 _last_request = 0.0
 
@@ -60,7 +64,7 @@ def _get(url: str, *, timeout: int = 30) -> requests.Response:
     if wait > 0:
         time.sleep(wait)
     _last_request = time.monotonic()
-    r = requests.get(url, headers={"User-Agent": _USER_AGENT}, timeout=timeout)
+    r = requests.get(url, headers={"User-Agent": user_agent()}, timeout=timeout)
     r.raise_for_status()
     return r
 
@@ -76,12 +80,14 @@ def list_filings(cik: int | str, *, forms: tuple[str, ...] = ("6-K",), since: st
         try:
             pages.append(_get(f"https://data.sec.gov/submissions/{extra['name']}").json())
         except Exception:
+            log.warning("EDGAR submissions page %s unreadable for CIK %s", extra.get("name"), cik, exc_info=True)
             continue
     out = []
     for page in pages:
         for acc, filed, form, doc, rep in zip(page["accessionNumber"], page["filingDate"],
                                              page["form"], page["primaryDocument"],
-                                             page.get("reportDate") or [None] * len(page["form"])):
+                                             page.get("reportDate") or [None] * len(page["form"]),
+                                             strict=True):
             if form not in forms:
                 continue
             if since and filed < since:
@@ -227,7 +233,7 @@ def extract_with_llm(text: str, *, ticker: str, company: str, filed: str, access
     messages = [{"role": "user", "content": prompt}]
     usage: dict = {}
     last_err = None
-    for attempt in range(2):
+    for _attempt in range(2):
         try:
             resp = client.chat.completions.create(
                 model=model, messages=messages,
@@ -284,6 +290,7 @@ def load_all_stores() -> dict[str, dict]:
             d = json.loads(p.read_text())
             out[d["ticker"]] = d
         except Exception:
+            log.warning("skipping unreadable 6-K store %s", p, exc_info=True)
             continue
     return out
 
@@ -307,11 +314,11 @@ _STD_TO_METRIC = {
 }
 
 
-def _norm(label: str) -> str:
+def _norm(label: str | None) -> str:
     return re.sub(r"[^a-z ]+", " ", (label or "").lower())
 
 
-def derive_asset_lines(balance_sheet: list[dict]) -> dict[str, float]:
+def derive_asset_lines(balance_sheet: list[dict] | None) -> dict[str, float]:
     """Asset-class totals from a release's balance-sheet line items, by label
     (the extraction prompt didn't map these originally, and companies use
     their own wording). Non-current lines are those after 'total current
@@ -376,13 +383,13 @@ def sixk_as_source_row(store: dict | None) -> dict | None:
                 std[k] = v
         cf_ok = ex.get("cash_flow_period_type") == "quarter"
         for std_key, metric in _STD_TO_METRIC.items():
-            v = std.get(std_key)
-            if v is None:
+            val = std.get(std_key)
+            if val is None:
                 continue
             if metric in ("operating_cf", "capex") and not cf_ok:
                 continue
             quarterly.setdefault(metric, {})[ex["period_end"]] = {
-                "val": v, "end": ex["period_end"], "source": "6k", "filed": f.get("filed")}
+                "val": val, "end": ex["period_end"], "source": "6k", "filed": f.get("filed")}
     if not quarterly:
         return None
     return {"ticker": store["ticker"], "source": "6k",

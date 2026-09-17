@@ -35,10 +35,10 @@ from fastapi import HTTPException
 
 from app.api.routes import (
     _load_analyzed,
+    batch_detail,
     digest_latest,
     digests_recent,
     industry_detail,
-    batch_detail,
     list_industries,
     search_index,
     ticker_detail,

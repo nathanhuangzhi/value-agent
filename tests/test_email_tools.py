@@ -2,12 +2,10 @@
 exercised (per the project convention for network-bound code)."""
 from __future__ import annotations
 
-import pytest
-
 from app.tools.email_tools import (
     _linkify_tickers,
-    status_badge,
     build_summary_digest_html,
+    status_badge,
 )
 
 

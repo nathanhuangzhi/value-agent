@@ -23,7 +23,7 @@ import json
 import os
 import re
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import requests
@@ -63,6 +63,14 @@ def api_keys() -> list[str]:
     return ks
 
 
+def _redact(text: str) -> str:
+    """Alpha Vantage echoes the key back in its notices; keep it out of logs."""
+    for k in os.environ.get("ALPHAVANTAGE_API_KEY", "").split(","):
+        if k.strip():
+            text = text.replace(k.strip(), "***")
+    return text
+
+
 def daily_budget(per_key: int = 15) -> int:
     try:
         return per_key * len(api_keys())
@@ -87,7 +95,10 @@ def save_store(store: dict) -> None:
 
 
 def quarter_end(q: str) -> date:
-    y, n = _QUARTER_RE.match(q).groups()
+    m_ = _QUARTER_RE.match(q)
+    if not m_:
+        raise ValueError(f"bad quarter label {q!r}")
+    y, n = m_.groups()
     m = int(n) * 3
     return date(int(y), m, [31, 30, 30, 31][int(n) - 1])
 
@@ -130,9 +141,9 @@ def fetch_transcript(symbol: str, quarter: str) -> list[dict]:
             if "transcript" in d:
                 return [{"speaker": t.get("speaker"), "title": t.get("title"), "content": (t.get("content") or "").strip(),
                          "sentiment": t.get("sentiment")} for t in d["transcript"] if (t.get("content") or "").strip()]
-            msg = d.get("Information") or d.get("Note") or ""
+            msg = _redact(d.get("Information") or d.get("Note") or "")
             if not ("rate limit" in msg.lower() or "requests per" in msg.lower() or "premium" in msg.lower()):
-                raise RuntimeError(d.get("Error Message") or msg or str(d)[:200])
+                raise RuntimeError(_redact(d.get("Error Message") or msg or str(d)[:200]))
             if attempt == 0:
                 time.sleep(_THROTTLE_RETRY_S)
         _exhausted.add(key)

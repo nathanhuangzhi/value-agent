@@ -40,9 +40,8 @@ exclude = ["data*", "venv*", "tests*"]
 pythonpath = ["."]
 testpaths = ["tests"]
 # Coverage floor enforces that the test suite doesn't silently regress.
-# Raise gradually as more modules are covered; the CI command is:
-#   ./venv/bin/pytest --cov=app --cov-fail-under=70
-# Not in addopts (default) so plain `pytest -q` stays fast.
+# CI runs `pytest --cov=app --cov-fail-under=65` (see ci.yml); raise the floor
+# as modules gain tests. Not in addopts so plain `pytest -q` stays fast.
 
 [tool.ruff]
 target-version = "py310"
@@ -62,8 +61,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests can use bare asserts + magic numbers freely.
-"tests/**" = ["B011", "E712"]
+# Tests can use bare asserts + magic numbers freely, and keep compact
+# one-line helpers / inline lambdas for readability.
+"tests/**" = ["B011", "E712", "E701", "E731"]
 # format.py has aligned single-line `if a >= 1e9: return ...` ladders — the
 # vertical alignment is the point; reformatting hurts readability.
 "app/tools/report/format.py" = ["E701"]

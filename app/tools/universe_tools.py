@@ -1,8 +1,9 @@
 """Fetch the universe of US-listed tickers from SEC EDGAR."""
 
-import os
 
 import requests
+
+from app.tools.edgar import user_agent
 
 EDGAR_TICKERS_URL = "https://www.sec.gov/files/company_tickers_exchange.json"
 
@@ -12,9 +13,7 @@ _INCLUDED_EXCHANGES = {"NYSE", "Nasdaq"}
 
 
 def _user_agent() -> str:
-    # SEC requires a real contact in the User-Agent. Override via env if you'd rather not
-    # send the project default.
-    return os.getenv("SEC_USER_AGENT", "value-agent (nathanhz2013@gmail.com)")
+    return user_agent()
 
 
 def fetch_us_listed_tickers() -> list[dict]:

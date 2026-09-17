@@ -22,7 +22,6 @@ from __future__ import annotations
 import json
 import math
 from datetime import datetime, timezone
-
 from pathlib import Path
 
 import pandas as pd
@@ -193,12 +192,16 @@ def build_yfinance_row(ticker: str, frames: dict, currency: str | None,
                        fetched_at: str | None = None) -> dict:
     """Map the six statement frames onto the pipeline's metric keys."""
     annual: dict[str, dict] = {}
-    fy = lambda ts: str(_fiscal_year_from_end(ts))
+    def fy(ts):
+        return str(_fiscal_year_from_end(ts))
+
     annual.update(_extract(frames.get("annual_income"), _INCOME_LABELS, period_key=fy))
     annual.update(_extract(frames.get("annual_balance"), _BALANCE_LABELS, period_key=fy))
     annual.update(_extract(frames.get("annual_cashflow"), _CASHFLOW_LABELS, period_key=fy))
     quarterly: dict[str, dict] = {}
-    qk = lambda ts: ts.date().isoformat()
+    def qk(ts):
+        return ts.date().isoformat()
+
     quarterly.update(_extract(frames.get("quarterly_income"), _INCOME_LABELS, period_key=qk))
     quarterly.update(_extract(frames.get("quarterly_balance"), _BALANCE_LABELS, period_key=qk))
     quarterly.update(_extract(frames.get("quarterly_cashflow"), _CASHFLOW_LABELS, period_key=qk))

@@ -10,6 +10,7 @@ The design: a bold white "V" letterform on the brand-green square
 (#166534) with a subtle upward chart line accent below it.
 """
 from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
 
 BRAND_GREEN = (22, 101, 52)

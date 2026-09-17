@@ -8,11 +8,10 @@ asserts the status enum + payload that comes back.
 from __future__ import annotations
 
 import json
-from typing import Iterable
+from collections.abc import Iterable
 from unittest.mock import MagicMock
 
 import httpx
-import pytest
 from openai import APIError, APITimeoutError, RateLimitError
 
 from app.tools.classification_tools import classify_company

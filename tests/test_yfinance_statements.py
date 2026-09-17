@@ -6,10 +6,7 @@ no-network-tests convention).
 """
 from __future__ import annotations
 
-import math
-
 import pandas as pd
-import pytest
 
 from app.tools.yfinance_statements import (
     _extract,
@@ -17,7 +14,6 @@ from app.tools.yfinance_statements import (
     _isnan,
     _pick_first_row,
 )
-
 
 # ============ _isnan ============
 
@@ -30,7 +26,7 @@ def test_isnan_false_for_other_values():
     assert _isnan(1.5) is False
     assert _isnan(None) is False
     assert _isnan("nan") is False
-    assert _isnan(int(0)) is False
+    assert _isnan(0) is False
 
 
 # ============ _pick_first_row ============

@@ -6,12 +6,12 @@ renderer expects, and blends yfinance values into the gaps.
 from __future__ import annotations
 
 from app.tools.report.sec_adapter import (
-    SEC_TO_YFINANCE_INCOME,
-    SEC_TO_YFINANCE_CASHFLOW,
     SEC_TO_YFINANCE_BALANCE,
+    SEC_TO_YFINANCE_CASHFLOW,
+    SEC_TO_YFINANCE_INCOME,
+    load_sec_by_ticker,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
-    load_sec_by_ticker,
 )
 
 

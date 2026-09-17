@@ -91,6 +91,7 @@ def main():
                 use_raw = False         # stale → re-download (refreshes the raw file too)
         cached = load_raw_companyfacts(u["cik"]) if use_raw else None
         raw_fetched_at = None
+        facts: dict | None
         if cached is not None:
             facts, raw_fetched_at = cached
             n_reparsed += 1

@@ -97,6 +97,7 @@ python -m venv venv
 #   GET /api/digest/latest                     — most recent daily-scan batch
 
 ./venv/bin/pytest -q                              # run the test suite
+./venv/bin/ruff check app scripts tests && ./venv/bin/mypy app scripts   # what CI gates on (plus a 65% coverage floor)
 
 # --- Discovery funnel ---
 ./venv/bin/python -m scripts.build_company_db [--limit 50]        # Stage 1: company DB (NYSE+Nasdaq)
@@ -124,6 +125,8 @@ Most per-ticker flags accept no value = "all analyzed tickers". `--dry-run`/`--p
 - `pip install -e .` makes `app.*` and `scripts.*` importable without sys.path hacks.
 - Scripts run via `python -m scripts.<name>` (not `python scripts/<name>.py`).
 - Shared helpers live in `app/tools/`: paths, JSON I/O, LLM router, etc. Scripts orchestrate; they should not contain reusable logic.
+- Logging: `from app.log import get_logger; log = get_logger(__name__)`. Never `except Exception: pass` — at minimum `log.warning(..., exc_info=True)`. Scripts may still `print` progress lines.
+- CI gates on `ruff`, `mypy app scripts` and a coverage floor; keep all three green locally before pushing.
 - Pure functions get unit tests in `tests/`. Network/LLM-dependent code stays untested at the unit level — verify those via the smoke-test paths (`--probe`, `--dry-run`, `--limit`).
 
 ## Key modules (non-obvious entry points)
@@ -192,6 +195,9 @@ EMAIL_RECIPIENT=other@example.com  # optional; defaults to GMAIL_USER
 
 # --- Required if you want clickable ticker links in the digest body ---
 REPORT_BASE_URL=https://debian-mac-air.tail38ab8e.ts.net/reports  # base URL of the published archive
+
+# --- Identity for SEC EDGAR requests (their fair-access policy requires a contact) ---
+SEC_CONTACT_EMAIL=you@example.com   # or SEC_USER_AGENT="value-agent (you@example.com)"
 
 # --- Optional ---
 ALPHAVANTAGE_API_KEY=k1,k2  # earnings-call transcripts for the AI chat; free keys, 25 requests/day EACH — list several, comma-separated. Without it the stage is skipped

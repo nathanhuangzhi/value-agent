@@ -104,12 +104,14 @@ def main():
                 docs = filing_documents(u["cik"], f["accession"])
             except Exception as e:
                 entry["skipped"] = f"index error: {e}"
-                store["filings"].append(entry); continue
+                store["filings"].append(entry)
+                continue
             text = None
             for name in _exhibit_candidates(docs, f["primary_document"]):
                 try:
                     raw = fetch_document(u["cik"], f["accession"], name)
-                except Exception:
+                except Exception as e:
+                    print(f"  {t} {f['accession']} {name}: fetch failed ({e})")
                     continue
                 candidate = html_to_text(raw)
                 if looks_like_results_release(candidate):

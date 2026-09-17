@@ -23,8 +23,11 @@ import secrets
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.log import get_logger
 from app.tools.json_io import atomic_write_json, read_json_array
 from app.tools.paths import DATA_DIR
+
+log = get_logger(__name__)
 
 CHATS_DIR = DATA_DIR / "ai_chats"
 _TITLE_MAX = 48
@@ -83,6 +86,7 @@ def list_all() -> list[dict]:
         try:
             c = json.loads(p.read_text())
         except Exception:
+            log.warning("skipping unreadable conversation file %s", p, exc_info=True)
             continue
         out.append({
             "id": c.get("id") or p.stem,

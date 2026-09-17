@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import pytest
 
-from app.tools.report import render_company_report
 from app.tools.report import render as render_mod
+from app.tools.report import render_company_report
 from app.tools.report.render import _latest_source_date, _parse_source_date
 
 

@@ -69,7 +69,7 @@ def build_toc(text: str) -> list[dict]:
     with "(Continued)" as page headers) are taken from the first
     occurrence after the "Notes to consolidated financial statements"
     heading; a note runs until the next note's first occurrence."""
-    lines = [l.strip(" |") for l in text.split("\n")]
+    lines = [line.strip(" |") for line in text.split("\n")]
     n = len(lines)
 
     items: list[dict] = []

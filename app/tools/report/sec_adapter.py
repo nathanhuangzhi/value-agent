@@ -124,6 +124,8 @@ def _align_quarterly_keys(sec_section: dict, yf_section: dict) -> dict:
             continue
         best: tuple[str, int] | None = None
         for s, sd in sec_parsed:
+            if sd is None:
+                continue
             dist = abs((sd - yd).days)
             if dist <= _QUARTER_ALIGN_TOLERANCE_DAYS and (best is None or dist < best[1]):
                 best = (s, dist)
@@ -380,7 +382,7 @@ def _format_annual_period(pk, last_entry):
     return f"{pk}-12-31"
 
 
-def _normalize_annual_keys(d: dict) -> dict:
+def _normalize_annual_keys(d: dict | None) -> dict:
     """SEC keys annual years as int, yfinance as str. Normalize to str for
     consistent set-union behavior in `_merge_period_dicts`."""
     out: dict = {}
@@ -435,7 +437,8 @@ def infer_ads_ratio(sec_row: dict | None, yfinance_row: dict | None) -> float | 
     yf_sh = _normalize_annual_keys((yfinance_row or {}).get("annual")).get("diluted_shares") or {}
     ratios = []
     for k in set(sec_sh) & set(yf_sh):
-        a = (sec_sh[k] or {}).get("val"); b = (yf_sh[k] or {}).get("val")
+        a = (sec_sh[k] or {}).get("val")
+        b = (yf_sh[k] or {}).get("val")
         if a and b and a > 0 and b > 0:
             ratios.append(a / b)
     if not ratios:

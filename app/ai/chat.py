@@ -11,13 +11,17 @@ tool calls the model asks for → repeat → final answer.
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Iterator
 from datetime import date
 
 from app.ai import store
 from app.ai.context import TOOLS, company_block, detect_companies, run_tool
 from app.core.prompt_manager import load_prompt
+from app.log import get_logger
 from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS, build_deepseek_client, run_prompt
+
+log = get_logger(__name__)
 
 MODELS = {"flash": "deepseek-v4-flash", "pro": "deepseek-v4-pro"}
 _HISTORY_TURNS = 20      # prior user+assistant messages sent to the model …
@@ -205,7 +209,10 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                     "get_yfinance_raw": f"Reading {label}'s Yahoo {args.get('statement', '')}…",
                 }.get(tc["name"], f"Running {tc['name']}…")
                 yield {"type": "status", "text": status}
+                t0 = time.monotonic()
                 result = run_tool(tc["name"], args)
+                log.info("tool %s %s -> %s chars in %.1fs%s", tc["name"], json.dumps(args, ensure_ascii=False),
+                         len(result), time.monotonic() - t0, " (ERROR)" if result.startswith("ERROR") else "")
                 if tc["name"] in ("lookup_company", "get_6k_statement", "get_press_release",
                                   "get_xbrl_concept", "get_yfinance_raw", "get_annual_report_section",
                                   "search_annual_report", "get_earnings_call", "search_earnings_calls") and not result.startswith("ERROR"):
@@ -214,6 +221,7 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                         companies_used.append(t)
                 messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
     except Exception as e:  # DeepSeek / network failure: surface, keep the user turn
+        log.warning("reply failed for conversation %s", conv["id"], exc_info=True)
         yield {"type": "error", "text": f"{type(e).__name__}: {e}"}
         return
 
@@ -235,4 +243,4 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
     try:
         compact(conv)                        # after `done`, so the reader never waits on it
     except Exception:
-        pass
+        log.warning("compaction failed for conversation %s", conv["id"], exc_info=True)

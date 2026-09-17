@@ -125,7 +125,12 @@ def test_is_done_in_cycle_compares_against_cycle_start():
 
 
 def test_rows_without_industry_group_under_placeholder_and_are_hidden_from_display():
-    from app.tools.daily_selector import PLACEHOLDER_INDUSTRY, display_industries, group_by_industry, industry_of
+    from app.tools.daily_selector import (
+        PLACEHOLDER_INDUSTRY,
+        display_industries,
+        group_by_industry,
+        industry_of,
+    )
     rows = [{"ticker": "X", "industry": None}, {"ticker": "Y", "industry": ""}, {"ticker": "Z", "industry": "Uranium"}]
     grouped = group_by_industry(rows)
     assert set(grouped) == {PLACEHOLDER_INDUSTRY, "Uranium"}

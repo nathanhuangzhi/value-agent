@@ -28,22 +28,22 @@ from app.tools.paths import (
     COMPANIES_ANALYZED,
     COMPANIES_DIGEST,
     COMPANIES_JSONL,
-    FX_RATES,
     COMPANIES_SEC,
     COMPANIES_VALIDATION,
     COMPANIES_YFINANCE_DIR,
     DAILY_LOG,
+    FX_RATES,
 )
 from app.tools.report.format import latest_by_ticker
 from app.tools.report.ratios import compute_snapshot_ratios
-from app.tools.sec_6k import SIXK_DIR, load_all_stores, sixk_as_source_row
 from app.tools.report.sec_adapter import (
     load_sec_by_ticker,
     load_sharded_by_ticker,
+    overlay_source_row,
     sec_to_yfinance_annual,
     sec_to_yfinance_quarterly,
-    overlay_source_row,
 )
+from app.tools.sec_6k import SIXK_DIR, load_all_stores, sixk_as_source_row
 
 router = APIRouter(prefix="/api", tags=["mobile-api"])
 
@@ -477,7 +477,7 @@ def ticker_price_history(symbol: str):
 
 
 @router.get("/digests/recent.json")
-def digests_recent(limit: int = 10):
+def digests_recent(limit: int | None = 10):
     """List of recent daily batches (one per daily-scan entry).
 
     The latest batch carries the LLM-generated `summary_md` from

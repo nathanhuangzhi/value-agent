@@ -10,17 +10,17 @@ from __future__ import annotations
 import pytest
 
 from app.tools.report.ratios import (
-    _strict_ttm_sum,
-    _latest_value,
-    _latest_close,
-    _recomputed_mcap,
-    _top_asset_keys,
-    _prior_year_label,
-    _yoy_cell_style,
-    _other_opex_amount,
-    _ttm_dividend_per_share,
-    _latest_value_at_or_before,
     _compute_valuation_history_monthly,
+    _latest_close,
+    _latest_value,
+    _latest_value_at_or_before,
+    _other_opex_amount,
+    _prior_year_label,
+    _recomputed_mcap,
+    _strict_ttm_sum,
+    _top_asset_keys,
+    _ttm_dividend_per_share,
+    _yoy_cell_style,
 )
 
 
