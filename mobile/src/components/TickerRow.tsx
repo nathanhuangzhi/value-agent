@@ -101,22 +101,32 @@ export function TickerRow({
         {showChart ? (
           <PriceSparkline ticker={row.ticker} delay={chartDelay} />
         ) : (
-          <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatMoney(row.market_cap)}</Text>
+          <Kpi>{formatMoney(row.market_cap)}</Kpi>
         )}
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatRatio(row.ttm_pe)}</Text>
+        <Kpi>{formatRatio(row.ttm_pe)}</Kpi>
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatRatio(row.pb)}</Text>
+        <Kpi>{formatRatio(row.pb)}</Kpi>
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatMoney(row.latest_q_ni)}</Text>
+        <Kpi>{formatMoney(row.latest_q_ni)}</Kpi>
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Text style={[styles.kpi, { color: c.textPrimary }]}>{formatMoney(row.latest_q_ocf)}</Text>
+        <Kpi>{formatMoney(row.latest_q_ocf)}</Kpi>
       </View>
     </Pressable>
+  );
+}
+
+/** A numeric cell: always one line — the font shrinks (down to 70%) rather than wrapping. */
+function Kpi({ children }: { children: string }) {
+  const c = useColors();
+  return (
+    <Text style={[styles.kpi, { color: c.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+      {children}
+    </Text>
   );
 }
 
@@ -133,7 +143,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   left: { minWidth: 0 },
-  kpiCell: { alignItems: 'flex-end', paddingHorizontal: spacing.xs },
+  kpiCell: { alignItems: 'flex-end', paddingHorizontal: 2, minWidth: 0 },
   ticker: { fontSize: fontSize.md, fontWeight: '700' },
   name: { fontSize: fontSize.xs, marginTop: 2 },
   kpi: { fontSize: fontSize.sm, fontVariant: ['tabular-nums'] },
