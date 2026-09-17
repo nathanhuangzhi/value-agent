@@ -17,11 +17,13 @@ from datetime import date
 from app.ai import store
 from app.ai.context import TOOLS, company_block, detect_companies, run_tool
 from app.core.prompt_manager import load_prompt
-from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS, build_deepseek_client
+from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS, build_deepseek_client, run_prompt
 
 MODELS = {"flash": "deepseek-v4-flash", "pro": "deepseek-v4-pro"}
 _HISTORY_TURNS = 20      # prior user+assistant messages sent to the model …
 _HISTORY_CHARS = 60_000  # … capped by size, newest first (long replies pile up fast)
+_COMPACT_AT = 40_000     # un-summarised history above this many chars is folded into the memory …
+_COMPACT_KEEP = 6        # … except the most recent turns, which stay verbatim
 _MAX_TOOL_ROUNDS = 8     # tool-calling rounds before the model is told to answer
 _MAX_CONTINUES = 2       # automatic "continue" when a reply hits the output limit
 
@@ -42,7 +44,12 @@ def _cost(model: str, prompt_tokens: int, completion_tokens: int) -> float | Non
 def _build_messages(conv: dict, user_text: str, attached: dict[str, str]) -> list[dict]:
     config, system = load_prompt("ai_chat", today=date.today().isoformat())
     msgs: list[dict] = [{"role": "system", "content": system}]
-    history = [m for m in conv["messages"] if m["role"] in ("user", "assistant")][-_HISTORY_TURNS:]
+    # Older turns live in a rolling memory (see compact()); only what came after it is verbatim.
+    if conv.get("summary"):
+        msgs.append({"role": "system", "content": "Your memory of the earlier part of this conversation "
+                                                  "(figures and sources already established):\n\n" + conv["summary"]})
+    history = [m for m in conv["messages"][conv.get("summary_upto", 0):]
+               if m["role"] in ("user", "assistant")][-_HISTORY_TURNS:]
     kept: list[dict] = []
     size = 0
     for m in reversed(history):
@@ -57,6 +64,27 @@ def _build_messages(conv: dict, user_text: str, attached: dict[str, str]) -> lis
                                 + "\n\n---\n\n".join(attached.values())})
     msgs.append({"role": "user", "content": user_text})
     return msgs
+
+
+def compact(conv: dict) -> bool:
+    """Fold older turns into conv["summary"] once the verbatim history is
+    heavy — the assistant's equivalent of context compaction. Keeps the last
+    `_COMPACT_KEEP` messages verbatim; safe to call after every reply."""
+    upto = conv.get("summary_upto", 0)
+    msgs = conv["messages"]
+    pending = msgs[upto:]
+    if sum(len(m["content"]) for m in pending) <= _COMPACT_AT or len(pending) <= _COMPACT_KEEP:
+        return False
+    fold = pending[:-_COMPACT_KEEP]
+    turns = "\n\n".join(f"[{m['role']}]\n{m['content']}" for m in fold)
+    result = run_prompt("compact_chat", summary=conv.get("summary") or "(empty)", turns=turns)
+    if not result.text.strip():
+        return False
+    conv["summary"] = result.text.strip()
+    conv["summary_upto"] = upto + len(fold)
+    conv["compactions"] = conv.get("compactions", 0) + 1
+    store.save(conv)
+    return True
 
 
 def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
@@ -204,3 +232,7 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
     yield {"type": "done", "message": message, "conversation": {
         "id": conv["id"], "title": conv["title"], "model": conv["model"],
         "updated_at": conv["updated_at"]}}
+    try:
+        compact(conv)                        # after `done`, so the reader never waits on it
+    except Exception:
+        pass
