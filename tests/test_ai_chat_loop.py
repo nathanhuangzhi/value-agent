@@ -45,8 +45,12 @@ def conv(monkeypatch, tmp_path):
 
 
 def _run(monkeypatch, conv, turns, text="hi"):
+    """Drive the real DeepSeek provider (OpenAI-shape translation) over a scripted client."""
+    from app.ai.providers.deepseek import DeepSeekProvider
     client = FakeClient(turns)
-    monkeypatch.setattr(chat, "build_deepseek_client", lambda **kw: client)
+    provider = DeepSeekProvider()
+    provider._client = client
+    monkeypatch.setattr(chat, "provider_for", lambda model: provider)
     events = list(chat.stream_reply(conv, text, "m"))
     return client, events
 

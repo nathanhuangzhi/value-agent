@@ -9,6 +9,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import type { ChatMessage } from '@/api/ai';
 import { Markdown, SelectableProse, hasTable, toPlainText } from '@/components/Markdown';
 import { useColors, chatType, fontSize, spacing } from '@/theme/colors';
+import { modelLabel } from '@/utils/format';
 
 export type StreamingState = { status: string | null; text: string } | null;
 
@@ -34,7 +35,7 @@ export function MessageRow({ msg, streaming = null, onSelect, contentW, showSour
   const usage = msg.usage;
   const meta = [
     showSources && msg.companies?.length ? `data: ${msg.companies.join(', ')}` : null,
-    msg.model ? (msg.model.includes('pro') ? 'Pro' : 'Flash') : null,
+    modelLabel(msg.model) || null,
     usage?.estimated_cost_usd != null ? `$${usage.estimated_cost_usd.toFixed(4)}` : null,
   ].filter(Boolean).join(' · ');
   return (

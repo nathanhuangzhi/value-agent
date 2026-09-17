@@ -10,14 +10,16 @@
  * server-side job that outlives the connection: if the app is suspended
  * mid-reply, `resumeStream` picks the same reply up where it stopped.
  */
-import { ApiError, BASE_URL } from './client';
+import { APP_TOKEN_HEADER, ApiError, BASE_URL } from './client';
 
 const AI_URL = (
   process.env.EXPO_PUBLIC_AI_URL?.replace(/\/$/, '') ??
   BASE_URL.replace(/\/reports$/, '/ai')
 );
 
-export type ModelKey = 'flash' | 'pro';
+export type ModelKey = 'flash' | 'pro' | 'claude';
+
+export type ModelOption = { key: ModelKey; id: string; label: string; hint: string };
 
 export type ChatUsage = {
   prompt_tokens: number;
@@ -57,7 +59,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(url, {
       cache: 'no-store',
       ...init,
-      headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+      headers: { 'content-type': 'application/json', ...APP_TOKEN_HEADER, ...(init?.headers ?? {}) },
     });
   } catch (e) {
     throw new ApiError(0, `Network error reaching ${url}: ${e}`);
@@ -67,6 +69,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const aiApi = {
+  /** Models the server offers right now (Claude only when its key is configured). */
+  listModels: () => req<{ models: ModelOption[] }>('/models').then((r) => r.models),
   listConversations: () =>
     req<{ conversations: ConversationSummary[] }>('/conversations').then((r) => r.conversations),
   createConversation: (model: ModelKey) =>
@@ -123,6 +127,7 @@ function openStream(
     xhr.open(method, url);
     xhr.setRequestHeader('content-type', 'application/json');
     xhr.setRequestHeader('accept', 'text/event-stream');
+    for (const [k, v] of Object.entries(APP_TOKEN_HEADER)) xhr.setRequestHeader(k, v);
     xhr.onprogress = drain;
     xhr.onload = () => {
       drain();

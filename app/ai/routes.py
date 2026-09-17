@@ -17,14 +17,15 @@ box behind `tailscale serve --set-path /ai http://127.0.0.1:8000/ai`
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.ai import jobs, store
-from app.ai.chat import MODELS, resolve_model
+from app.ai.providers import MODELS, available, resolve_model
+from app.api.auth import require_app_token
 
-router = APIRouter(prefix="/ai", tags=["ai-chat"])
+router = APIRouter(prefix="/ai", tags=["ai-chat"], dependencies=[Depends(require_app_token)])
 
 
 class NewConversation(BaseModel):
@@ -38,10 +39,7 @@ class NewMessage(BaseModel):
 
 @router.get("/models")
 def models():
-    return {"models": [
-        {"key": "flash", "id": MODELS["flash"], "label": "Flash", "hint": "fast · cheap"},
-        {"key": "pro", "id": MODELS["pro"], "label": "Pro", "hint": "deeper · ~5x cost"},
-    ]}
+    return {"models": [{"key": m.key, "id": m.model_id, "label": m.label, "hint": m.hint} for m in available()]}
 
 
 @router.get("/conversations")

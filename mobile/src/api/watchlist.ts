@@ -4,7 +4,7 @@
  * source of truth for what the user sees; the server copy is what the
  * daily run reads to fetch data for saved companies.
  */
-import { ApiError, BASE_URL } from './client';
+import { APP_TOKEN_HEADER, ApiError, BASE_URL } from './client';
 
 const WATCHLIST_URL = (
   process.env.EXPO_PUBLIC_WATCHLIST_URL?.replace(/\/$/, '') ??
@@ -18,7 +18,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(url, {
       cache: 'no-store',
       ...init,
-      headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+      headers: { 'content-type': 'application/json', ...APP_TOKEN_HEADER, ...(init?.headers ?? {}) },
     });
   } catch (e) {
     throw new ApiError(0, `Network error reaching ${url}: ${e}`);

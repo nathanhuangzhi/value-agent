@@ -39,7 +39,7 @@ import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { LAST_CONV_KEY, useConversation } from '@/hooks/useConversation';
 import { useModelPref } from '@/hooks/useModelPref';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
-import { formatDate } from '@/utils/format';
+import { formatDate, modelLabel } from '@/utils/format';
 
 type Row = ChatMessage & { _streaming?: boolean };
 
@@ -47,7 +47,7 @@ export default function AiScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [model, pickModel] = useModelPref();
+  const [model, pickModel, modelOptions] = useModelPref();
   const [conversations, setConversations] = useState<ConversationSummary[] | null>(null);
   const [input, setInput] = useState('');
 
@@ -143,7 +143,7 @@ export default function AiScreen() {
           <Ionicons name="menu" size={24} color={c.textPrimary} />
         </Pressable>
         <Text style={[styles.title, { color: c.textPrimary }]} numberOfLines={1}>{chat.title ?? 'New chat'}</Text>
-        <ModelToggle value={model} onChange={pickModel} />
+        <ModelToggle value={model} onChange={pickModel} options={modelOptions} />
         <Pressable onPress={newChat} hitSlop={10} style={styles.iconBtn}>
           <Ionicons name="create-outline" size={24} color={c.textPrimary} />
         </Pressable>
@@ -205,7 +205,7 @@ export default function AiScreen() {
       <Composer
         value={input}
         onChange={setInput}
-        placeholder={`Ask ${model === 'pro' ? 'Pro' : 'Flash'} about any company…`}
+        placeholder={`Ask ${modelOptions.find((o) => o.key === model)?.label ?? 'AI'} about any company…`}
         streaming={chat.streaming !== null}
         canSend={input.trim().length > 0}
         onSend={send}
@@ -254,7 +254,7 @@ export default function AiScreen() {
                       {item.title}
                     </Text>
                     <Text style={[styles.convMeta, { color: c.textMuted }]}>
-                      {formatDate(item.updated_at)} · {item.message_count} msgs · {item.model?.includes('pro') ? 'Pro' : 'Flash'}
+                      {formatDate(item.updated_at)} · {item.message_count} msgs · {modelLabel(item.model)}
                     </Text>
                   </Pressable>
                 );

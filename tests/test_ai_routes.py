@@ -72,3 +72,13 @@ def test_validation(client):
     assert client.post(f"/ai/conversations/{conv['id']}/messages", json={"content": ""}).status_code == 422
     assert client.post("/ai/conversations/nope/messages", json={"content": "x"}).status_code == 404
     assert routes.models()["models"][0]["key"] == "flash"
+
+
+def test_app_token_gate(client, monkeypatch):
+    from app.settings import settings
+    monkeypatch.setattr(settings, "app_token", "s3cret")
+    assert client.get("/ai/models").status_code == 401
+    assert client.get("/ai/models", headers={"X-App-Token": "wrong"}).status_code == 401
+    assert client.get("/ai/models", headers={"X-App-Token": "s3cret"}).status_code == 200
+    assert client.get("/watchlist").status_code == 401
+    assert client.get("/api/industries.json").status_code != 401     # read-only data stays open

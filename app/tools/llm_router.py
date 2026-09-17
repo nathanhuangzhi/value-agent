@@ -29,6 +29,7 @@ _PRICING_USD_PER_M_TOKENS: dict[str, dict[str, float]] = {
     "deepseek-v4-flash": {"input": 0.30, "output": 1.20},   # approximation
     "deepseek-chat":     {"input": 0.27, "output": 1.10},   # confirmed for V3 chat
     "deepseek-reasoner": {"input": 0.55, "output": 2.20},   # confirmed for R1
+    "claude-opus-5":     {"input": 5.00, "output": 25.00},  # Anthropic list price (chat provider)
     # Gemini left out: no Gemini prompts currently in use.
 }
 

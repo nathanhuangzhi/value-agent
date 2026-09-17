@@ -26,14 +26,14 @@ import { SelectTextSheet } from '@/components/SelectTextSheet';
 import { useConversation } from '@/hooks/useConversation';
 import { useModelPref } from '@/hooks/useModelPref';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
-import { formatDate } from '@/utils/format';
+import { formatDate, modelLabel } from '@/utils/format';
 
 export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiveChange?: (active: boolean) => void }) {
   const c = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const prefix = `#${ticker} `;
-  const [model, pickModel] = useModelPref();
+  const [model, pickModel, modelOptions] = useModelPref();
   const chat = useConversation();
   const [input, setInput] = useState(prefix);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -83,7 +83,7 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
         <Pressable onPress={openHistory} hitSlop={10} style={styles.iconBtn} accessibilityLabel="Past conversations">
           <Ionicons name="time-outline" size={20} color={c.textMuted} />
         </Pressable>
-        <ModelToggle value={model} onChange={pickModel} />
+        <ModelToggle value={model} onChange={pickModel} options={modelOptions} />
       </View>
 
       {chat.messages.length === 0 && !chat.streaming ? (
@@ -155,7 +155,7 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
                   >
                     <Text style={[styles.convTitle, { color: mine ? c.textPrimary : c.textMuted }]} numberOfLines={2}>{item.title}</Text>
                     <Text style={[styles.convMeta, { color: c.textMuted }]}>
-                      {formatDate(item.updated_at)} · {item.message_count} msgs · {item.model?.includes('pro') ? 'Pro' : 'Flash'}{mine ? ` · #${ticker}` : ''}
+                      {formatDate(item.updated_at)} · {item.message_count} msgs · {modelLabel(item.model)}{mine ? ` · #${ticker}` : ''}
                     </Text>
                   </Pressable>
                 );

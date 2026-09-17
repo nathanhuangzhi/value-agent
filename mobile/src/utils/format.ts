@@ -54,3 +54,10 @@ export function slugify(s: string | null | undefined): string {
   const out = s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   return out || 'uncategorized';
 }
+
+/** Short label for a chat model id ("deepseek-v4-pro" → "Pro", "claude-…" → "Claude"). */
+export function modelLabel(id: string | null | undefined): string {
+  if (!id) return '';
+  if (id.startsWith('claude')) return 'Claude';
+  return id.includes('pro') ? 'Pro' : 'Flash';
+}

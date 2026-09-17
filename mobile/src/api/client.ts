@@ -76,3 +76,8 @@ export const api = {
 };
 
 export { ApiError, BASE_URL };
+
+/** Optional shared secret for /ai and /watchlist (server APP_TOKEN); empty = not sent. */
+export const APP_TOKEN_HEADER: Record<string, string> = process.env.EXPO_PUBLIC_APP_TOKEN
+  ? { 'X-App-Token': process.env.EXPO_PUBLIC_APP_TOKEN }
+  : {};

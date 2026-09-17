@@ -139,6 +139,8 @@ Most of `app/tools/` and `scripts/` maps obviously to a pipeline stage (see Arch
 - `app/tools/report/` — Value-Line HTML generator (package). Public API: `from app.tools.report import render_company_report`. `sec_adapter.py` blends SEC primary + yfinance fallback **per cell**, tagging provenance. `format.py` is the canonical home for color constants + shared formatters (`_format_money_compact`, `_status_badge`) — `email_tools` and `build_index` import from here.
 - `app/tools/sec_xbrl_tools.py` — SEC XBRL fetcher + period extractor. Holds `_fiscal_year_from_end` (52-week year heuristic) and `extract_quarterly_cash_flow` (YTD differencing). See Gotchas — both are easy to break.
 - `app/data/repo.py` — the read side of every state file (analyzed, universe, SEC rows via `SecStore`, yfinance shards, 6-K, FX, validation), mtime-cached, parameterised by a `DataPaths` so tests can point it at fixtures. API routes, the AI tools and bake scripts all read through it — never re-implement a loader.
+- `app/settings.py` — every environment variable and tunable (`settings.chat.max_tool_rounds`, …) read once; tests monkeypatch `settings`. Don't read `os.environ` elsewhere.
+- `app/ai/providers/` — the chat's model vendors behind one interface (`base.ChatProvider`: stream text deltas, end with a `Turn`). `deepseek.py` (OpenAI-compatible), `anthropic.py` (official SDK; native content blocks replayed inside a tool loop). `providers.CATALOGUE` is the model list the app offers (`/ai/models`); Claude appears only when `ANTHROPIC_API_KEY` is set. `chat.py` never talks to a vendor SDK directly.
 - `app/ai/tools/` — the AI chat's tools, one module per source (`company`, `filings`, `annual_reports`, `earnings_calls`, `raw_sources`). A tool is a function under `@tool(name, description=…, params=…, required=…, status=…)` (`registry.py`); the schema list, dispatch and status line all derive from the registry, so adding a tool is one definition in one place. `app/ai/context.py` keeps ticker/name detection and the compact `company_block`.
 - `app/tools/validation.py` — pure data-quality rules; each is `(sec_row, analyzed_row, today) -> list[Issue]`. `validate_ticker(...)` runs all 15 rules across 4 tiers (presence / sanity ranges / cross-period / cross-source).
 
@@ -201,6 +203,8 @@ REPORT_BASE_URL=https://debian-mac-air.tail38ab8e.ts.net/reports  # base URL of 
 SEC_CONTACT_EMAIL=you@example.com   # or SEC_USER_AGENT="value-agent (you@example.com)"
 
 # --- Optional ---
+ANTHROPIC_API_KEY=...       # offers "Claude" (claude-opus-5) in the chat's model toggle
+APP_TOKEN=...               # if set, /ai and /watchlist require X-App-Token (mobile: EXPO_PUBLIC_APP_TOKEN)
 ALPHAVANTAGE_API_KEY=k1,k2  # earnings-call transcripts for the AI chat; free keys, 25 requests/day EACH — list several, comma-separated. Without it the stage is skipped
 GEMINI_API_KEY=...          # only if you re-enable the dormant Gemini path in llm_router._call_gemini
 ```

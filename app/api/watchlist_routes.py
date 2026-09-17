@@ -9,9 +9,10 @@ Served by the same uvicorn as /ai, behind
 """
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from app.api.auth import require_app_token
 from app.tools.watchlist import (
     add_to_watchlist,
     load_watchlist,
@@ -19,7 +20,7 @@ from app.tools.watchlist import (
     watchlist_rows,
 )
 
-router = APIRouter(prefix="/watchlist", tags=["watchlist"])
+router = APIRouter(prefix="/watchlist", tags=["watchlist"], dependencies=[Depends(require_app_token)])
 
 
 class Tickers(BaseModel):

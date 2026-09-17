@@ -1,5 +1,5 @@
-"""The chat completion loop: build messages → stream from DeepSeek → run
-tool calls the model asks for → repeat → final answer.
+"""The chat completion loop: build messages → stream from the model's
+provider → run tool calls the model asks for → repeat → final answer.
 
 `stream_reply` is a generator of SSE-ready event dicts:
     {"type": "companies", "tickers": [...]}          data attached up front
@@ -17,26 +17,25 @@ from datetime import date
 
 from app.ai import store
 from app.ai.context import company_block, detect_companies
+from app.ai.providers import MODELS, provider_for, resolve_model
+from app.ai.providers.base import Turn
 from app.ai.tools import TOOLS, marks_company, run_tool, status_for
 from app.core.prompt_manager import load_prompt
 from app.log import get_logger
-from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS, build_deepseek_client, run_prompt
+from app.settings import settings
+from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS, run_prompt
 
 log = get_logger(__name__)
 
-MODELS = {"flash": "deepseek-v4-flash", "pro": "deepseek-v4-pro"}
-_HISTORY_TURNS = 20      # prior user+assistant messages sent to the model …
-_HISTORY_CHARS = 60_000  # … capped by size, newest first (long replies pile up fast)
-_COMPACT_AT = 40_000     # un-summarised history above this many chars is folded into the memory …
-_COMPACT_KEEP = 6        # … except the most recent turns, which stay verbatim
-_MAX_TOOL_ROUNDS = 8     # tool-calling rounds before the model is told to answer
-_MAX_CONTINUES = 2       # automatic "continue" when a reply hits the output limit
+# Tunables (see app.settings; module-level so tests can override them).
+_HISTORY_TURNS = settings.chat.history_turns
+_HISTORY_CHARS = settings.chat.history_chars
+_COMPACT_AT = settings.chat.compact_at
+_COMPACT_KEEP = settings.chat.compact_keep
+_MAX_TOOL_ROUNDS = settings.chat.max_tool_rounds
+_MAX_CONTINUES = settings.chat.max_continues
 
-
-def resolve_model(name: str | None, fallback: str) -> str:
-    if not name:
-        return fallback
-    return MODELS.get(name, name)
+__all__ = ["MODELS", "resolve_model", "stream_reply", "compact"]
 
 
 def _cost(model: str, prompt_tokens: int, completion_tokens: int) -> float | None:
@@ -113,7 +112,7 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
 
     try:
         messages = _build_messages(conv, user_text, attached)
-        client = build_deepseek_client(read_timeout_s=180, max_retries=1)
+        provider = provider_for(model)
         tool_rounds = 0
         continues = 0
         while True:
@@ -124,86 +123,48 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
                 messages.append({"role": "system",
                                  "content": "The tool budget for this reply is used up. Answer now from what "
                                             "you have gathered, and say plainly what you could not verify."})
-            stream = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                tools=TOOLS,
-                tool_choice="none" if forced_answer else "auto",
-                temperature=0.3,
-                stream=True,
-                stream_options={"include_usage": True},
-            )
-            tool_calls: dict[int, dict] = {}
-            round_parts: list[str] = []
-            finish = None
-            for chunk in stream:
-                if chunk.usage:
-                    total_prompt += chunk.usage.prompt_tokens or 0
-                    total_completion += chunk.usage.completion_tokens or 0
-                if not chunk.choices:
-                    continue
-                choice = chunk.choices[0]
-                delta = choice.delta
-                if delta and delta.content:
-                    round_parts.append(delta.content)
-                    answer_parts.append(delta.content)
-                    yield {"type": "delta", "text": delta.content}
-                if delta and delta.tool_calls:
-                    for tc in delta.tool_calls:
-                        slot = tool_calls.setdefault(tc.index, {"id": "", "name": "", "arguments": ""})
-                        if tc.id:
-                            slot["id"] = tc.id
-                        if tc.function:
-                            if tc.function.name:
-                                slot["name"] = tc.function.name
-                            if tc.function.arguments:
-                                slot["arguments"] += tc.function.arguments
-                if choice.finish_reason:
-                    finish = choice.finish_reason
+            turn: Turn | None = None
+            for item in provider.stream(model=model, messages=messages, tools=TOOLS, allow_tools=not forced_answer):
+                if isinstance(item, Turn):
+                    turn = item
+                    break
+                answer_parts.append(item)
+                yield {"type": "delta", "text": item}
+            assert turn is not None, "provider ended without a Turn"
+            total_prompt += turn.prompt_tokens
+            total_completion += turn.completion_tokens
 
-            if finish == "length" and continues < _MAX_CONTINUES:
+            if turn.finish == "length" and continues < _MAX_CONTINUES:
                 # Output limit hit mid-answer: ask for the rest, seamlessly.
                 continues += 1
-                messages.append({"role": "assistant", "content": "".join(round_parts)})
+                messages.append({"role": "assistant", "content": turn.text})
                 messages.append({"role": "user", "content": "Continue exactly where you stopped — no recap, no repetition."})
                 yield {"type": "status", "text": "Continuing…"}
                 continue
 
-            if finish != "tool_calls" or not tool_calls or forced_answer:
+            if turn.finish != "tool_calls" or forced_answer:
                 break
 
             # Model wants data: run each call, feed results back, loop.
             tool_rounds += 1
-            if round_parts and not "".join(round_parts).endswith("\n"):
+            if turn.text and not turn.text.endswith("\n"):
                 answer_parts.append("\n\n")          # keep its "let me check…" apart from the answer
                 yield {"type": "delta", "text": "\n\n"}
-            assistant_msg = {
-                "role": "assistant",
-                "content": "".join(round_parts) or None,
-                "tool_calls": [
-                    {"id": tc["id"], "type": "function",
-                     "function": {"name": tc["name"], "arguments": tc["arguments"] or "{}"}}
-                    for _, tc in sorted(tool_calls.items())
-                ],
-            }
-            messages.append(assistant_msg)
-            for _, tc in sorted(tool_calls.items()):
-                try:
-                    args = json.loads(tc["arguments"] or "{}")
-                except json.JSONDecodeError:
-                    args = {}
-                status = status_for(tc["name"], args)
-                yield {"type": "status", "text": status}
+            messages.append(turn.assistant_message)
+            results = []
+            for tc in turn.tool_calls:
+                yield {"type": "status", "text": status_for(tc.name, tc.arguments)}
                 t0 = time.monotonic()
-                result = run_tool(tc["name"], args)
-                log.info("tool %s %s -> %s chars in %.1fs%s", tc["name"], json.dumps(args, ensure_ascii=False),
+                result = run_tool(tc.name, tc.arguments)
+                log.info("tool %s %s -> %s chars in %.1fs%s", tc.name, json.dumps(tc.arguments, ensure_ascii=False),
                          len(result), time.monotonic() - t0, " (ERROR)" if result.startswith("ERROR") else "")
-                if marks_company(tc["name"]) and not result.startswith("ERROR"):
-                    t = (args.get("ticker") or "").upper()
+                if marks_company(tc.name) and not result.startswith("ERROR"):
+                    t = (tc.arguments.get("ticker") or "").upper()
                     if t and t not in companies_used:
                         companies_used.append(t)
-                messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
-    except Exception as e:  # DeepSeek / network failure: surface, keep the user turn
+                results.append((tc, result))
+            messages.extend(provider.tool_result_messages(results))
+    except Exception as e:  # provider / network failure: surface, keep the user turn
         log.warning("reply failed for conversation %s", conv["id"], exc_info=True)
         yield {"type": "error", "text": f"{type(e).__name__}: {e}"}
         return
