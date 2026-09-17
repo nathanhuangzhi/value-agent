@@ -77,8 +77,13 @@ def build_deepseek_client(*, read_timeout_s: int = 60, max_retries: int = 2):
         narrator uses 180s (Pro-tier models stream for 60-180s).
       max_retries: transport-level retries the SDK performs on its own.
     """
-    import httpx
+    # openai ≥ 3 is built on httpx2 (older releases on httpx); hand it the
+    # client class it expects so the explicit timeouts actually apply.
+    import importlib
+    import importlib.util
+
     from openai import OpenAI
+    httpx = importlib.import_module("httpx2" if importlib.util.find_spec("httpx2") else "httpx")
 
     key = os.getenv("DEEPSEEK_API_KEY")
     if not key:
