@@ -100,6 +100,8 @@ echo "================= $(date -Is) daily pipeline start ($(hostname)) =========
 STAGE="git pull"
 git pull -q --ff-only origin main
 echo "code at $(git log --oneline -1)"
+# New Python deps land with the pull (uv is a few seconds when nothing changed).
+"$HOME/.local/bin/uv" pip install -q --python "$REPO_DIR/venv/bin/python" -e "$REPO_DIR[dev]" || echo "dep sync failed — continuing with the existing venv"
 # The AI chat service runs from this checkout — bounce it so today's code is live.
 "$REPO_DIR/deploy/serve_ai.sh" restart || true
 
