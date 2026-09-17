@@ -450,7 +450,14 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
           <Text style={[styles.status, { color: c.textMuted }]}>{streaming.status}</Text>
         </View>
       ) : null}
-      {msg.content ? <Markdown text={msg.content} color={c.textPrimary} width={table ? contentW : undefined} /> : null}
+      {msg.content ? (
+        <Markdown
+          text={msg.content}
+          color={c.textPrimary}
+          width={table ? contentW : undefined}
+          onLongPress={() => onSelect(toPlainText(msg.content))}
+        />
+      ) : null}
       {!streaming ? (
         <View style={styles.footer}>
           <Pressable onPress={() => onSelect(toPlainText(msg.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
@@ -468,11 +475,9 @@ function Bubble({ msg, streaming, onSelect, contentW }: { msg: ChatMessage; stre
       ) : null}
     </>
   );
-  // The reply is plain text across the full width. A reply holding a table is a plain
-  // View so nothing sits between the table's horizontal ScrollView and the touch.
-  return table
-    ? <View style={styles.reply}>{inner}</View>
-    : <Pressable onLongPress={() => onSelect(toPlainText(msg.content))} style={styles.reply}>{inner}</Pressable>;
+  // The reply is plain text across the full width; the long-press lives on the
+  // Markdown blocks so tables keep their horizontal scroll.
+  return <View style={styles.reply}>{inner}</View>;
 }
 
 const styles = StyleSheet.create({

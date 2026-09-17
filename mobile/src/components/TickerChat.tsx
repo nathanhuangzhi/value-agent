@@ -188,7 +188,12 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
         const table = hasTable(m.content);
         const inner = (
           <>
-            <Markdown text={m.content} color={c.textPrimary} width={table ? contentW : undefined} />
+            <Markdown
+              text={m.content}
+              color={c.textPrimary}
+              width={table ? contentW : undefined}
+              onLongPress={() => setSelectText(toPlainText(m.content))}
+            />
             <View style={styles.footer}>
               <Pressable onPress={() => setSelectText(toPlainText(m.content))} hitSlop={8} style={styles.selectBtn} accessibilityLabel="Select text">
                 <Ionicons name="copy-outline" size={15} color={c.textMuted} />
@@ -202,11 +207,9 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
             </View>
           </>
         );
-        // The reply is plain text across the full width. A reply holding a table is a plain
-        // View so nothing sits between the table's horizontal ScrollView and the touch.
-        return table
-          ? <View key={i} style={styles.reply}>{inner}</View>
-          : <Pressable key={i} onLongPress={() => setSelectText(toPlainText(m.content))} style={styles.reply}>{inner}</Pressable>;
+        // The reply is plain text across the full width; the long-press lives on the
+        // Markdown blocks so tables keep their horizontal scroll.
+        return <View key={i} style={styles.reply}>{inner}</View>;
       })}
       {streaming ? (
         <View style={styles.reply}>

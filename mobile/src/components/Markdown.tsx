@@ -4,8 +4,8 @@
  * `code`, and pipe tables (rendered as a horizontally-scrollable grid).
  * No dependency; anything fancier falls through as plain text.
  */
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
 
 import { useColors, chatType, fontSize, spacing } from '@/theme/colors';
 
@@ -202,14 +202,27 @@ export function hasTable(md: string): boolean {
  * `width` is the content width available to the block (the bubble's inner
  * width). Pass it whenever it is known — tables size their columns from it
  * and scroll sideways when they don't fit.
+ *
+ * `onLongPress` is attached to every block EXCEPT tables, so a long-press
+ * on the prose opens the select/copy sheet while a table's horizontal
+ * ScrollView keeps its gesture to itself (a Pressable over it steals the pan).
  */
-export function Markdown({ text, color, width }: { text: string; color: string; width?: number }) {
+export function Markdown({ text, color, width, onLongPress }: { text: string; color: string; width?: number; onLongPress?: () => void }) {
   const c = useColors();
   const body: TextStyle = { color, fontSize: chatType.size, lineHeight: chatType.lineHeight };
   const blocks = parse(text);
+  const wrap = (key: number, node: ReactNode) =>
+    onLongPress ? <Pressable key={key} onLongPress={onLongPress}>{node}</Pressable> : node;
   return (
     <View>
       {blocks.map((b, i) => {
+        if (b.kind === 'table') return <Table key={i} rows={b.rows} body={body} width={width} />;
+        return wrap(i, renderBlock(b, i));
+      })}
+    </View>
+  );
+
+  function renderBlock(b: Exclude<Block, { kind: 'table' }>, i: number) {
         switch (b.kind) {
           case 'h':
             return (
@@ -239,14 +252,10 @@ export function Markdown({ text, color, width }: { text: string; color: string; 
                 <Text style={{ color, fontFamily: 'Menlo', fontSize: chatType.code, lineHeight: 20 }}>{b.text}</Text>
               </ScrollView>
             );
-          case 'table':
-            return <Table key={i} rows={b.rows} body={body} width={width} />;
           default:
             return <Inline key={i} text={b.text} style={{ ...body, marginBottom: chatType.paragraphGap }} />;
         }
-      })}
-    </View>
-  );
+  }
 }
 
 const styles = StyleSheet.create({
