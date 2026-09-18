@@ -29,8 +29,11 @@ export type TickerRow = {
   ttm_pocf: number | null;
   ps: number | null;
   pb: number | null;
+  p_fcf: number | null;
   latest_q_ni: number | null;
   latest_q_ocf: number | null;
+  /** Last four quarters' annualised P/E and P/FCF (null when unavailable). */
+  quarterly_multiples: { period: string; pqe: number | null; pqfcf: number | null }[];
   analyzed_date: string;
   status: ValidationStatus;
 };

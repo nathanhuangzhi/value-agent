@@ -283,3 +283,18 @@ def test_monthly_valuation_requires_at_least_one_quarterly_eligible():
     rows = _compute_valuation_history_monthly(inc_q, bs_q, inc_a, bs_a, price_history)
     assert len(rows) == 1
     assert rows[0]["date"] == "2026-01-01"
+
+
+def test_quarterly_multiples_are_annualised_and_signed():
+    from app.tools.report.ratios import quarterly_multiples
+    inc = [{"period": p, "items": {"Net Income": ni, "Diluted Average Shares": 100}}
+           for p, ni in [("2025-09-30", 10), ("2025-12-31", 20), ("2026-03-31", -5), ("2026-06-30", 25)]]
+    cf = [{"period": p, "items": {"Free Cash Flow": f}} for p, f in [("2025-12-31", 40), ("2026-03-31", 0), ("2026-06-30", 50)]]
+    ph = [{"date": "2025-09-15", "close": 8}, {"date": "2025-12-15", "close": 10}, {"date": "2026-03-15", "close": 12}, {"date": "2026-06-15", "close": 20}]
+    out = quarterly_multiples(inc, cf, ph)
+    assert [o["period"] for o in out] == ["2025-09-30", "2025-12-31", "2026-03-31", "2026-06-30"]
+    assert out[0]["pqe"] == 800 / 40 and out[0]["pqfcf"] is None          # no cash-flow period
+    assert out[1]["pqe"] == 1000 / 80 and out[1]["pqfcf"] == 1000 / 160
+    assert out[2]["pqe"] == 1200 / -20 and out[2]["pqfcf"] is None        # negative NI → negative; zero FCF → None
+    assert out[3]["pqe"] == 2000 / 100
+    assert quarterly_multiples(inc, cf, []) [0]["pqe"] is None            # no price → None

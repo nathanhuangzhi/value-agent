@@ -352,6 +352,52 @@ def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_his
     }
 
 
+def _close_at_or_before(price_history, period_end: str):
+    """Last monthly close on or before the quarter's end month."""
+    month = (period_end or "")[:7]
+    best = None
+    for p in price_history or []:
+        d = (p.get("date") or "")[:7]
+        if d and d <= month and p.get("close") is not None:
+            best = p["close"]
+    return best
+
+
+def _annualised(mcap, quarterly_den):
+    if mcap is None or quarterly_den is None or quarterly_den == 0:
+        return None
+    return mcap / (quarterly_den * 4)
+
+
+def quarterly_multiples(inc_quarterly, cf_quarterly, price_history, *, n: int = 4) -> list[dict]:
+    """Per-quarter valuation multiples for the last `n` quarters, ANNUALISED so
+    they sit on the same scale as the TTM figures:
+
+        pqe   = mcap at quarter end / (quarterly net income × 4)
+        pqfcf = mcap at quarter end / (quarterly free cash flow × 4)
+
+    mcap at quarter end = last monthly close on or before the quarter's end
+    month × that quarter's diluted shares (latest known shares if the
+    quarter lacks them). A negative quarter yields a negative multiple —
+    the app draws it as a red bar. None when price, shares or the
+    denominator is missing/zero."""
+    ni_keys = ["Net Income", "Net Income Common Stockholders"]
+    sh_keys = ["Diluted Average Shares", "Basic Average Shares"]
+    cf_by_period = {p.get("period"): p for p in cf_quarterly or []}
+    out = []
+    for q in (inc_quarterly or [])[-n:]:
+        period = q.get("period") or ""
+        items = q.get("items") or {}
+        shares = _pick_first(items, sh_keys) or _latest_value(inc_quarterly, sh_keys)
+        price = _close_at_or_before(price_history, period)
+        mcap = price * shares if (price is not None and shares) else None
+        ni = _pick_first(items, ni_keys)
+        fcf = _pick_first((cf_by_period.get(period) or {}).get("items") or {}, ["Free Cash Flow"])
+
+        out.append({"period": period, "pqe": _annualised(mcap, ni), "pqfcf": _annualised(mcap, fcf)})
+    return out
+
+
 def _latest_value_at_or_before(sorted_periods, month_yyyy_mm, value_keys):
     """Most recent period in `sorted_periods` (already sorted ascending by
     period) whose period_end YYYY-MM is at or before `month_yyyy_mm` and that

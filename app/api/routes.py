@@ -24,7 +24,7 @@ from app.data import repo
 from app.data.repo import DataPaths
 from app.tools.daily_selector import display_industries
 from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
-from app.tools.report.ratios import compute_snapshot_ratios
+from app.tools.report.ratios import compute_snapshot_ratios, quarterly_multiples
 from app.tools.report.sec_adapter import sec_to_yfinance_annual, sec_to_yfinance_quarterly
 from app.tools.sec_store import SecStore
 
@@ -112,7 +112,7 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
             "pb": None, "ps": None, "p_fcf": None, "ttm_pocf": None,
             "debt_asset": None, "gross_margin": None, "op_margin": None,
             "net_margin": None, "roe": None, "roa": None, "dividend_rate": None,
-            "latest_q_ni": None, "latest_q_ocf": None,
+            "latest_q_ni": None, "latest_q_ocf": None, "quarterly_multiples": [],
         }
     q = _blended_quarterly(sec_row, yf_row)
     a = _blended_annual(sec_row, yf_row)
@@ -140,6 +140,8 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
         q["cash_flow"], anchor,
         ["Cash Flow From Continuing Operating Activities", "Operating Cash Flow"],
     )
+    # Last four quarters' annualised P/E and P/FCF — the industry rows draw them as bars.
+    out["quarterly_multiples"] = quarterly_multiples(inc, q["cash_flow"], ph)
     return out
 
 
@@ -208,8 +210,10 @@ def _ticker_summary(analyzed_row: dict, validation_row: dict | None,
         "ttm_pocf": ratios.get("ttm_pocf"),
         "ps": ratios.get("ps"),
         "pb": ratios.get("pb"),
+        "p_fcf": ratios.get("p_fcf"),
         "latest_q_ni": ratios.get("latest_q_ni"),
         "latest_q_ocf": ratios.get("latest_q_ocf"),
+        "quarterly_multiples": ratios.get("quarterly_multiples") or [],
         "analyzed_date": analyzed_row.get("analyzed_date") or "",
         "status": (validation_row or {}).get("status") or "ok",
     }

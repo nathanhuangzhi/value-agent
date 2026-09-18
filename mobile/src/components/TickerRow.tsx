@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 
 import type { TickerRow as TickerRowData } from '@/api/types';
+import { MiniBars } from './MiniBars';
 import { PriceSparkline } from './PriceSparkline';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 import { formatMoney, formatRatio } from '@/utils/format';
@@ -31,7 +32,7 @@ export function TickerRowHeader({ showChart = false }: { showChart?: boolean }) 
       <View style={[styles.left, { flex: COL_FLEX.identity }]}>
         <Text style={[styles.headerLabel, { color: c.textMuted }]}>Ticker</Text>
       </View>
-      {([firstCol, 'P/E', 'P/B', 'Q NI', 'Q OCF'] as const).map((label) => (
+      {([firstCol, 'P/QE', 'P/QFCF', 'TTM P/E', 'TTM P/FCF'] as const).map((label) => (
         <View key={label} style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
           <Text style={[styles.headerLabel, { color: c.textMuted }]}>{label}</Text>
         </View>
@@ -104,20 +105,28 @@ export function TickerRow({
           <Kpi>{formatMoney(row.market_cap)}</Kpi>
         )}
       </View>
+      {/* Last four quarters, annualised: price / quarterly earnings and price / quarterly FCF. */}
+      <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
+        <MiniBars values={lastFour(row.quarterly_multiples, 'pqe')} />
+      </View>
+      <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
+        <MiniBars values={lastFour(row.quarterly_multiples, 'pqfcf')} />
+      </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
         <Kpi>{formatRatio(row.ttm_pe)}</Kpi>
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Kpi>{formatRatio(row.pb)}</Kpi>
-      </View>
-      <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Kpi>{formatMoney(row.latest_q_ni)}</Kpi>
-      </View>
-      <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Kpi>{formatMoney(row.latest_q_ocf)}</Kpi>
+        <Kpi>{formatRatio(row.p_fcf)}</Kpi>
       </View>
     </Pressable>
   );
+}
+
+/** Always four slots, oldest → newest, padded with nulls when fewer quarters exist. */
+function lastFour(series: TickerRowData['quarterly_multiples'] | undefined, key: 'pqe' | 'pqfcf'): (number | null)[] {
+  const vals = (series ?? []).slice(-4).map((q) => q[key] ?? null);
+  while (vals.length < 4) vals.unshift(null);
+  return vals;
 }
 
 /** A numeric cell: always one line — the font shrinks (down to 70%) rather than wrapping. */
