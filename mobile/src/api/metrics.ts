@@ -14,6 +14,7 @@ export type ChartData = { id?: number; title: string; period?: 'quarterly' | 'an
 export type ChartSpec = { title: string; period?: 'quarterly' | 'annual'; last_n?: number; series: { expr: string; label: string; kind?: 'line' | 'bar'; axis?: 'left' | 'right'; format?: MetricFormat }[] };
 export type Chart = { id: number; title: string; spec: ChartSpec; position: number; created_at: string; updated_at: string };
 export type CustomTableRow = { id: number | string; name: string; format: MetricFormat; annual: Record<string, number | null>; quarterly: Record<string, number | null> };
+export type Series = { id: number; ticker: string; name: string; label: string; unit: 'number' | 'money' | 'pct' | 'ratio'; currency: string | null; grid: 'quarterly' | 'annual'; points: { period: string; value: number | null; source: string }[]; source_hint: string | null; last_source: string | null };
 export type Aliases = {
   metrics: { alias: string; item: string; kind: string }[];
   derived: Record<string, string>;
@@ -54,6 +55,8 @@ export const metricsApi = {
     req<PreviewResult>('/me/metrics/preview', { method: 'POST', body: JSON.stringify({ expr, ticker }) }),
   forTicker: (ticker: string) => req<{ ticker: string; metrics: Evaluated[]; charts: ChartData[]; rows: CustomTableRow[] }>(`/me/tickers/${encodeURIComponent(ticker)}/custom.json`),
   charts: () => req<{ charts: Chart[] }>('/me/charts').then((r) => r.charts),
+  series: () => req<{ series: Series[] }>('/me/series').then((r) => r.series),
+  removeSeries: (id: number) => req<{ deleted: number }>(`/me/series/${id}`, { method: 'DELETE' }),
   removeChart: (id: number) => req<{ deleted: number }>(`/me/charts/${id}`, { method: 'DELETE' }),
   chartData: (id: number, ticker: string) => req<ChartData>(`/me/charts/${id}/data?ticker=${encodeURIComponent(ticker)}`),
 };

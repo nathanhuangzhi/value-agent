@@ -131,7 +131,11 @@ def connect() -> Iterator[sqlite3.Connection]:
             if _path not in _initialised:
                 _init(cx)
                 _initialised.add(_path)
-        cx.execute("BEGIN")
+        # IMMEDIATE takes the write lock up front so a transaction that later
+        # writes can't fail with "database is locked" when it upgrades from a
+        # read (the busy timeout only applies at lock acquisition). WAL keeps
+        # plain readers from blocking meanwhile.
+        cx.execute("BEGIN IMMEDIATE")
         try:
             yield cx
             cx.execute("COMMIT")

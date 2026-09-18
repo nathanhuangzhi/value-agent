@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from app.api.auth import require_app_token
 from app.auth.deps import current_user
-from app.metrics import charts, service
+from app.metrics import charts, series, service
 from app.metrics.expr import ALIASES, DERIVED, FUNCTIONS, SUFFIXES, ExprError
 
 router = APIRouter(prefix="/me", tags=["metrics"], dependencies=[Depends(require_app_token)])
@@ -100,6 +100,18 @@ class ChartIn(BaseModel):
 class ChartPatch(BaseModel):
     spec: dict | None = None
     position: int | None = Field(default=None, ge=0)
+
+
+@router.get("/series")
+def list_series(ticker: str | None = None, user: dict = Depends(current_user)):
+    return {"series": series.list_series(user["id"], ticker)}
+
+
+@router.delete("/series/{series_id}")
+def delete_series(series_id: int, user: dict = Depends(current_user)):
+    if not series.delete_series(user["id"], series_id):
+        raise HTTPException(404, detail="series not found")
+    return {"deleted": series_id}
 
 
 @router.get("/charts")

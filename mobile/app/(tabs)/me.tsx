@@ -8,7 +8,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 
 import { useRouter } from 'expo-router';
 
-import { metricsApi, type Chart, type Metric } from '@/api/metrics';
+import { metricsApi, type Chart, type Metric, type Series } from '@/api/metrics';
 import { SignIn } from '@/components/SignIn';
 import { useAuth } from '@/hooks/useAuth';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
@@ -20,20 +20,23 @@ export default function MeScreen() {
   const router = useRouter();
   const [metrics, setMetrics] = useState<Metric[] | null>(null);
   const [charts, setCharts] = useState<Chart[]>([]);
+  const [series, setSeries] = useState<Series[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [m, ch] = await Promise.all([metricsApi.list(), metricsApi.charts()]);
+      const [m, ch, sr] = await Promise.all([metricsApi.list(), metricsApi.charts(), metricsApi.series()]);
       setMetrics(m);
       setCharts(ch);
+      setSeries(sr);
       setError(null);
     } catch (e) {
+      setMetrics([]);
       setError(String((e as Error).message ?? e));
     }
   }, []);
   useEffect(() => {
-    if (user) refresh(); else { setMetrics(null); setCharts([]); }
+    if (user) refresh(); else { setMetrics(null); setCharts([]); setSeries([]); }
   }, [user, refresh]);
 
   const confirm = (title: string, run: () => Promise<unknown>) =>
@@ -65,16 +68,32 @@ export default function MeScreen() {
           <Pressable onPress={() => router.push('/ai')} style={[styles.designCard, { backgroundColor: c.surface, borderColor: c.border }]}>
             <Ionicons name="sparkles-outline" size={22} color={c.brand} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.metricName, { color: c.textPrimary }]}>Design them in the AI chat</Text>
+              <Text style={[styles.metricName, { color: c.textPrimary }]}>Everything the AI has saved for you</Text>
               <Text style={[styles.hint, { color: c.textMuted }]}>
-                Say what you want to track — “track FCF margin”, “plot revenue and net cash per share for VIPS over 3 years” — the assistant writes the formula, shows you real numbers, saves it, and every company page keeps it updated as new filings arrive.
+                Metrics (formulas over any company&apos;s statements), extracted series (numbers the AI pulled from filings, e.g. GMV) and charts. Ask for them in the AI chat — “track FCF margin”, “add GMV for VIPS”, “plot revenue vs net cash per share”. They show on company pages and update as new filings arrive. Tap here to open the chat.
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
           </Pressable>
 
           {error ? <Text style={[styles.err, { color: c.negative }]}>{error}</Text> : null}
-          {metrics === null ? <ActivityIndicator color={c.brand} /> : null}
+          {metrics === null && !error ? <ActivityIndicator color={c.brand} /> : null}
+          {series.map((sr) => {
+            const latest = [...sr.points].reverse().find((p) => p.value != null);
+            return (
+              <Pressable key={`s${sr.id}`} onLongPress={() => confirm(`${sr.ticker} ${sr.label}`, () => metricsApi.removeSeries(sr.id))}
+                style={[styles.metricRow, { backgroundColor: c.surface, borderColor: c.border }]}>
+                <Ionicons name="pulse-outline" size={18} color={c.textMuted} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.metricName, { color: c.textPrimary }]}>{sr.ticker} · {sr.label}</Text>
+                  <Text style={[styles.mono, styles.metricExpr, { color: c.textMuted }]} numberOfLines={2}>
+                    ${sr.name} · {sr.points.length} {sr.grid === 'annual' ? 'years' : 'quarters'}{latest ? ` · latest ${latest.period}` : ''}{sr.source_hint ? ' · auto-updates from new filings' : ''}
+                  </Text>
+                </View>
+                <Text style={[styles.fmt, { color: c.textMuted }]}>{sr.unit}{sr.currency ? ` ${sr.currency}` : ''}</Text>
+              </Pressable>
+            );
+          })}
           {metrics?.map((m) => (
             <Pressable key={`m${m.id}`} onLongPress={() => confirm(m.name, () => metricsApi.remove(m.id))}
               style={[styles.metricRow, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -99,7 +118,7 @@ export default function MeScreen() {
               <Text style={[styles.fmt, { color: c.textMuted }]}>{ch.spec.period === 'annual' ? 'FY' : 'Q'}·{ch.spec.last_n ?? 12}</Text>
             </Pressable>
           ))}
-          {metrics && (metrics.length || charts.length) ? <Text style={[styles.meta, { color: c.textMuted }]}>Long-press to delete. Ask the AI to change one.</Text> : null}
+          {metrics && (metrics.length || charts.length || series.length) ? <Text style={[styles.meta, { color: c.textMuted }]}>Long-press to delete. Ask the AI to change one.</Text> : null}
         </>
       ) : (
         <SignIn intro="Your saved companies, AI conversations and custom metrics are kept with your account. Sign in with your email — no password." />

@@ -113,6 +113,9 @@ def verify_code(email: str, code: str) -> tuple[str, dict]:
     return token, dict(user)
 
 
+LAST_SEEN_EVERY = timedelta(minutes=10)
+
+
 def user_for_token(token: str | None) -> dict | None:
     if not token:
         return None
@@ -123,7 +126,10 @@ def user_for_token(token: str | None) -> dict | None:
             (token, _iso(now))).fetchone()
         if row is None:
             return None
-        cx.execute("UPDATE users SET last_seen = ? WHERE id = ?", (_iso(now), row["id"]))
+        # last_seen is a coarse signal; touching it on every request just contends for the write lock.
+        seen = row["last_seen"]
+        if not seen or datetime.fromisoformat(seen) + LAST_SEEN_EVERY < now:
+            cx.execute("UPDATE users SET last_seen = ? WHERE id = ?", (_iso(now), row["id"]))
         return dict(row)
 
 
