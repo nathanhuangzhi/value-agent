@@ -176,11 +176,14 @@ export default function SavedScreen() {
       }
       renderSectionHeader={({ section }) => (
         <View style={{ backgroundColor: c.background }}>
-          <View style={styles.eyebrowWrap}>
-            <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
-              {section.title}
-            </Text>
-          </View>
+          {/* The list chips already name the list; only search results get an eyebrow. */}
+          {searching ? (
+            <View style={styles.eyebrowWrap}>
+              <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>
+                {section.title}
+              </Text>
+            </View>
+          ) : null}
           {!searching && savedCompanies.some((s) => s.analyzed) ? (
             <TickerRowHeader showChart />
           ) : null}
