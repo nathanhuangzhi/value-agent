@@ -6,7 +6,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { formatMetric, metricsApi, type Evaluated } from '@/api/metrics';
+import { formatMetric, metricsApi, type ChartData, type Evaluated } from '@/api/metrics';
+import { CustomChart } from '@/components/CustomChart';
 import { useAuth } from '@/hooks/useAuth';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
@@ -14,20 +15,24 @@ export function MyMetrics({ ticker }: { ticker: string }) {
   const c = useColors();
   const { user } = useAuth();
   const [rows, setRows] = useState<Evaluated[] | null>(null);
+  const [charts, setCharts] = useState<ChartData[]>([]);
   const [open, setOpen] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) { setRows(null); return; }
+    if (!user) { setRows(null); setCharts([]); return; }
     let cancelled = false;
-    metricsApi.forTicker(ticker).then((r) => { if (!cancelled) setRows(r.metrics); }).catch(() => { if (!cancelled) setRows([]); });
+    metricsApi.forTicker(ticker)
+      .then((r) => { if (!cancelled) { setRows(r.metrics); setCharts(r.charts ?? []); } })
+      .catch(() => { if (!cancelled) setRows([]); });
     return () => { cancelled = true; };
   }, [ticker, user]);
 
-  if (!user || (rows !== null && rows.length === 0)) return null;
+  if (!user || (rows !== null && rows.length === 0 && charts.length === 0)) return null;
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>MY METRICS</Text>
-      {rows === null ? <ActivityIndicator color={c.brand} style={{ marginTop: spacing.md }} /> : (
+      {rows === null ? <ActivityIndicator color={c.brand} style={{ marginTop: spacing.md }} /> : null}
+      {rows && rows.length ? <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand }]}>MY METRICS</Text> : null}
+      {rows && rows.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
           {rows.map((m) => {
             const expanded = open === m.id;
@@ -54,7 +59,9 @@ export function MyMetrics({ ticker }: { ticker: string }) {
             );
           })}
         </ScrollView>
-      )}
+      ) : null}
+      {charts.length ? <Text style={[styles.eyebrow, { color: c.brand, borderBottomColor: c.brand, marginTop: spacing.md }]}>MY CHARTS</Text> : null}
+      {charts.map((ch) => <CustomChart key={ch.id} ticker={ticker} data={ch} />)}
     </View>
   );
 }

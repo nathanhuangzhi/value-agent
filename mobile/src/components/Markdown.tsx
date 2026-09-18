@@ -7,6 +7,8 @@
 import { useState, type ReactNode } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, View, type TextStyle } from 'react-native';
 
+import { CustomChart } from '@/components/CustomChart';
+import { MetricTile } from '@/components/MetricTile';
 import { useColors, chatType, fontSize, spacing } from '@/theme/colors';
 
 type Block =
@@ -14,7 +16,11 @@ type Block =
   | { kind: 'p'; text: string }
   | { kind: 'li'; ordered: boolean; marker: string; text: string }
   | { kind: 'table'; rows: string[][] }
-  | { kind: 'code'; text: string };
+  | { kind: 'code'; text: string }
+  /** `{{chart:12:VIPS}}` / `{{metric:3:VIPS}}` — a saved chart or metric the reply embeds. */
+  | { kind: 'embed'; what: 'chart' | 'metric'; id: number; ticker: string };
+
+const EMBED_RE = /^\s*\{\{(chart|metric):(\d+):([A-Za-z.\-]{1,10})\}\}\s*$/;
 
 function parse(md: string): Block[] {
   const lines = md.replace(/\r/g, '').split('\n');
@@ -43,6 +49,12 @@ function parse(md: string): Block[] {
     }
     if (line.startsWith('```')) {
       flushPara(); flushTable(); code = [];
+      continue;
+    }
+    const em = EMBED_RE.exec(line);
+    if (em) {
+      flushPara(); flushTable();
+      blocks.push({ kind: 'embed', what: em[1] as 'chart' | 'metric', id: parseInt(em[2], 10), ticker: em[3].toUpperCase() });
       continue;
     }
     if (/^\s*\|.*\|\s*$/.test(line)) {
@@ -86,6 +98,7 @@ export function toPlainText(md: string): string {
         for (const row of b.rows) out.push(row.map(strip).join('  ·  '));
         out.push('');
         break;
+      case 'embed': out.push(`[${b.what} #${b.id} · ${b.ticker}]`, ''); break;
     }
   }
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
@@ -236,11 +249,12 @@ export function Markdown({ text, color, width }: { text: string; color: string; 
   const body: TextStyle = { color, fontSize: chatType.size, lineHeight: chatType.lineHeight };
   const blocks = parse(text);
 
-  type Prose = Exclude<Block, { kind: 'table' }>;
+  type Prose = Exclude<Block, { kind: 'table' | 'embed' }>;
   type TableBlock = Extract<Block, { kind: 'table' }>;
-  const runs: (Prose[] | TableBlock)[] = [];
+  type EmbedBlock = Extract<Block, { kind: 'embed' }>;
+  const runs: (Prose[] | TableBlock | EmbedBlock)[] = [];
   for (const b of blocks) {
-    if (b.kind === 'table') { runs.push(b); continue; }
+    if (b.kind === 'table' || b.kind === 'embed') { runs.push(b); continue; }
     const last = runs[runs.length - 1];
     if (Array.isArray(last)) last.push(b); else runs.push([b]);
   }
@@ -298,6 +312,10 @@ export function Markdown({ text, color, width }: { text: string; color: string; 
           <SelectableProse key={i} style={body}>
             {r.map((b, j) => span(b, j, j === 0))}
           </SelectableProse>
+        ) : r.kind === 'embed' ? (
+          r.what === 'chart'
+            ? <CustomChart key={i} chartId={r.id} ticker={r.ticker} />
+            : <MetricTile key={i} metricId={r.id} ticker={r.ticker} />
         ) : (
           <Table key={i} rows={r.rows} body={body} width={width} />
         ),
