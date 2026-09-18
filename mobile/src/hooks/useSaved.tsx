@@ -41,6 +41,12 @@ type Saved = {
 
 const SavedContext = createContext<Saved | null>(null);
 
+/** One entry per list id (a stale cache plus a server copy must never show a list twice). */
+function dedupe(lists: Watchlist[]): Watchlist[] {
+  const seen = new Set<number>();
+  return lists.filter((l) => (seen.has(l.id) ? false : (seen.add(l.id), true)));
+}
+
 function persist(lists: Watchlist[]) {
   AsyncStorage.setItem(KEY, JSON.stringify(lists)).catch(() => {});
 }
@@ -65,7 +71,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
           const tickers = legacy ? (JSON.parse(legacy) as string[]) : [];
           parsed = [{ id: LOCAL_ID, name: 'Saved', position: 0, tickers }];
         }
-        if (!cancelled) setLists(parsed);
+        if (!cancelled) setLists(dedupe(parsed));
       } catch {
         if (!cancelled) setLists([{ id: LOCAL_ID, name: 'Saved', position: 0, tickers: [] }]);
       } finally {
@@ -78,7 +84,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!signedIn) return;
     try {
-      const server = await watchlistApi.lists();
+      const server = dedupe(await watchlistApi.lists());
       setLists(server);
       persist(server);
     } catch {
@@ -97,8 +103,8 @@ export function SavedProvider({ children }: { children: ReactNode }) {
           await watchlistApi.add(server[0].id, local.tickers);
           server = await watchlistApi.lists();
         }
-        setLists(server);
-        persist(server);
+        setLists(dedupe(server));
+        persist(dedupe(server));
       } catch {
         // offline — the next change retries
       }
@@ -106,7 +112,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
   }, [signedIn, ready]);
 
   const update = useCallback((fn: (prev: Watchlist[]) => Watchlist[]) => {
-    setLists((prev) => { const next = fn(prev); persist(next); return next; });
+    setLists((prev) => { const next = dedupe(fn(prev)); persist(next); return next; });
   }, []);
 
   const add = useCallback((symbol: string, listId?: number) => {

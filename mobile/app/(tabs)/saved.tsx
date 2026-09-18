@@ -15,7 +15,8 @@
  * their data. Long-press any saved row to remove it.
  */
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -90,7 +91,8 @@ function useSavedKpiRows(saved: SearchCompany[]): Map<string, TickerRowData> {
 export default function SavedScreen() {
   const c = useColors();
   const index = useSearchIndex();
-  const { lists, ready, isSaved, add, remove } = useSaved();
+  const { lists, ready, isSaved, add, remove, refresh } = useSaved();
+  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
   const { user } = useAuth();
   const [activeId, setActiveId] = useState<number | null>(null);
   const activeList = lists.find((l) => l.id === activeId) ?? lists[0] ?? null;
