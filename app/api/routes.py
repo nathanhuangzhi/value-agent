@@ -443,28 +443,27 @@ def digests_recent(limit: int | None = 10):
 def digest_latest():
     """The most recent daily batch with the LLM-generated summary text.
 
-    Reads from the persisted digest file written by `scripts/daily_digest.py`
-    (Stage 6). When that file doesn't exist yet (e.g. someone's running the
-    API before the first daily_digest run), falls back to composing from
-    the daily-scan log + analyzed.json, omitting `summary_md`."""
+    The summary comes from the persisted digest file written by
+    `scripts/daily_digest.py`; the ticker rows are always rebuilt from the
+    current statements (same code as every other row), so a ratio added or
+    fixed after the day's run shows here too instead of a stale snapshot.
+    Without a persisted digest, composes from the daily-scan log alone."""
     persisted = _read_json(_paths.digest, None)
-    if persisted:
-        return {
-            "date": persisted.get("date") or "",
-            "industries": display_industries(persisted.get("industries") or []),
-            "ticker_count": persisted.get("ticker_count") or len(persisted.get("tickers") or []),
-            "summary_md": persisted.get("summary_md") or "",
-            "tickers": persisted.get("tickers") or [],
-            "generated_at": persisted.get("generated_at"),
-        }
-
-    # Fallback: compose from the daily-scan log so the endpoint stays
-    # useful even before the first `daily_digest` run.
     entries = _read_json(_paths.daily_log, [])
-    if not entries:
+    latest = sorted(entries, key=lambda e: e.get("date", ""))[-1] if entries else None
+    if persisted:
+        entry = latest if latest and latest.get("date") == persisted.get("date") else {
+            "date": persisted.get("date") or "",
+            "industries": persisted.get("industries") or [],
+            "tickers": [t.get("ticker") for t in persisted.get("tickers") or [] if t.get("ticker")],
+        }
+        payload = _batch_payload(entry)
+        payload["summary_md"] = persisted.get("summary_md") or ""
+        payload["generated_at"] = persisted.get("generated_at")
+        return payload
+    if not latest:
         raise HTTPException(404, detail="No daily-scan log entries and no persisted digest")
-    entry = sorted(entries, key=lambda e: e.get("date", ""))[-1]
-    return _batch_payload(entry)
+    return _batch_payload(latest)
 
 
 def _batch_payload(entry: dict) -> dict:
