@@ -21,8 +21,9 @@ export function MiniBars({ values, width = 40 }: { values: (number | null)[]; wi
   return (
     <View style={[styles.wrap, { width, height: H }]} accessibilityLabel={values.map((v) => (v == null ? '—' : v.toFixed(0))).join(', ')}>
       {values.map((v, i) => {
+        const left = i * (w + gap);
         if (v == null) {
-          return <View key={i} style={[styles.bar, { width: w, height: 2, bottom: negH, backgroundColor: c.border }]} />;
+          return <View key={i} style={[styles.bar, { left, width: w, height: 2, bottom: negH, backgroundColor: c.border }]} />;
         }
         const h = Math.max(2, (abs[i] / max) * (v >= 0 ? posH : negH));
         return (
@@ -30,8 +31,8 @@ export function MiniBars({ values, width = 40 }: { values: (number | null)[]; wi
             key={i}
             style={[
               styles.bar,
-              { width: w, height: h, backgroundColor: v >= 0 ? c.brand : c.negative },
-              v >= 0 ? { bottom: negH } : { top: posH },
+              { left, width: w, height: h, backgroundColor: v >= 0 ? c.brand : c.negative },
+              v >= 0 ? { bottom: negH } : { top: posH },     // grow up from / hang below the baseline
             ]}
           />
         );
@@ -42,7 +43,7 @@ export function MiniBars({ values, width = 40 }: { values: (number | null)[]; wi
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative' },
-  bar: { position: 'relative', borderRadius: 1.5 },
+  wrap: { position: 'relative' },
+  bar: { position: 'absolute', borderRadius: 1.5 },
   baseline: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth },
 });
