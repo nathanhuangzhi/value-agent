@@ -51,7 +51,10 @@ def test_booleans():
 
 
 def test_format_guess():
-    assert guess_format(parse("fcf / revenue")) == "ratio"
+    assert guess_format(parse("fcf / revenue")) == "pct"
+    assert guess_format(parse("mcap / net_income.ttm")) == "ratio"
+    assert guess_format(parse("(cash + sti - total_debt) / shares")) == "number"
+    assert guess_format(parse("fcf / 4")) == "ratio"
     assert guess_format(parse("revenue.yoy")) == "pct"
     assert guess_format(parse("avg(fcf, 4)")) == "money"
     assert guess_format(parse("cash + sti - total_debt")) == "money"

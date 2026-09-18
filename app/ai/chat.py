@@ -155,7 +155,7 @@ def stream_reply(conv: dict, user_text: str, model: str) -> Iterator[dict]:
             for tc in turn.tool_calls:
                 yield {"type": "status", "text": status_for(tc.name, tc.arguments)}
                 t0 = time.monotonic()
-                result = run_tool(tc.name, tc.arguments)
+                result = run_tool(tc.name, tc.arguments, user_id=conv.get("user_id"))
                 log.info("tool %s %s -> %s chars in %.1fs%s", tc.name, json.dumps(tc.arguments, ensure_ascii=False),
                          len(result), time.monotonic() - t0, " (ERROR)" if result.startswith("ERROR") else "")
                 if marks_company(tc.name) and not result.startswith("ERROR"):

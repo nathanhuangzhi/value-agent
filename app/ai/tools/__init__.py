@@ -4,6 +4,7 @@ from app.ai.tools import (  # noqa: F401  (registration)
     company,
     earnings_calls,
     filings,
+    personal,
     raw_sources,
 )
 from app.ai.tools.registry import REGISTRY, marks_company, run_tool, schemas, status_for

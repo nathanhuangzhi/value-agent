@@ -387,6 +387,14 @@ def guess_format(node: Node) -> str:
     if is_boolean(node):
         return "bool"
     if node.kind == "binary" and node.value == "/":
+        left, right = references(node.args[0]), references(node.args[1])
+        kinds = {ALIASES[r][1] for r in left | right}
+        if "shares" in right:
+            return "number"                       # per-share amounts
+        if "market" in kinds:
+            return "ratio"                        # a multiple: mcap / earnings, price / book …
+        if left and right:
+            return "pct"                          # margin / return: fcf / revenue, net_income / equity
         return "ratio"
     if node.kind == "suffix" and node.value == "yoy":
         return "pct"

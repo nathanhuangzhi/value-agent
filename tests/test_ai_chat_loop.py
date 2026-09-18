@@ -67,7 +67,7 @@ def test_plain_answer_is_streamed_and_stored(monkeypatch, conv):
 
 
 def test_tool_round_runs_tool_and_feeds_result_back(monkeypatch, conv):
-    monkeypatch.setattr(chat, "run_tool", lambda name, args: f"RESULT({name}:{args['ticker']})")
+    monkeypatch.setattr(chat, "run_tool", lambda name, args, user_id=None: f"RESULT({name}:{args['ticker']})")
     turns = [
         [_chunk("Let me look. ", tool_calls=[_tc(0, "c1", "lookup_company", '{"ticker": "qdel"}')]),
          _chunk(finish="tool_calls")],
@@ -86,7 +86,7 @@ def test_tool_round_runs_tool_and_feeds_result_back(monkeypatch, conv):
 
 def test_tool_budget_forces_a_final_answer(monkeypatch, conv):
     monkeypatch.setattr(chat, "_MAX_TOOL_ROUNDS", 2)
-    monkeypatch.setattr(chat, "run_tool", lambda name, args: "x")
+    monkeypatch.setattr(chat, "run_tool", lambda name, args, user_id=None: "x")
     wants_tool = [_chunk(tool_calls=[_tc(0, "c", "list_filings", '{"ticker":"A"}')]), _chunk(finish="tool_calls")]
     turns = [wants_tool, wants_tool, [_chunk("Best I can say.", finish="stop")]]
     client, ev = _run(monkeypatch, conv, turns)

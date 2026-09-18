@@ -24,7 +24,7 @@ def client(monkeypatch):
 
 def test_metric_crud_and_evaluation(client):
     r = client.post("/me/metrics", json={"name": "FCF margin", "expr": "fcf / revenue"})
-    assert r.status_code == 200 and r.json()["format"] == "ratio"
+    assert r.status_code == 200 and r.json()["format"] == "pct"
     mid = r.json()["id"]
     assert client.post("/me/metrics", json={"name": "bad", "expr": "equity.ttm"}).status_code == 422
     assert [m["name"] for m in client.get("/me/metrics").json()["metrics"]] == ["FCF margin"]

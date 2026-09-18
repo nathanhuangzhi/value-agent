@@ -32,6 +32,7 @@ class Tool:
     status: StatusSpec
     fn: Callable[..., str]
     marks_company: bool = True     # a successful call counts its ticker among the reply's sources
+    needs_user: bool = False       # receives user_id= (the signed-in account) — personal state
 
     @property
     def schema(self) -> dict:
@@ -45,9 +46,9 @@ REGISTRY: dict[str, Tool] = {}
 
 
 def tool(name: str, *, description: str, params: dict[str, Any], required: list[str] | None = None,
-         status: StatusSpec, marks_company: bool = True):
+         status: StatusSpec, marks_company: bool = True, needs_user: bool = False):
     def register(fn: Callable[..., str]) -> Callable[..., str]:
-        REGISTRY[name] = Tool(name, description, params, list(required or []), status, fn, marks_company)
+        REGISTRY[name] = Tool(name, description, params, list(required or []), status, fn, marks_company, needs_user)
         return fn
     return register
 
@@ -76,7 +77,7 @@ class _Defaults(dict):
         return ""
 
 
-def run_tool(name: str, args: dict) -> str:
+def run_tool(name: str, args: dict, *, user_id: int | None = None) -> str:
     """Execute a tool call; always returns a string for the tool message."""
     t = REGISTRY.get(name)
     if t is None:
@@ -87,6 +88,10 @@ def run_tool(name: str, args: dict) -> str:
         if v is None and k in t.required and spec.get("type") == "string":
             v = ""
         kwargs[k] = v
+    if t.needs_user:
+        if user_id is None:
+            return "ERROR: this needs a signed-in user"
+        kwargs["user_id"] = user_id
     return t.fn(**kwargs)
 
 
