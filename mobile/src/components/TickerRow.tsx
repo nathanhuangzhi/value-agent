@@ -32,7 +32,7 @@ export function TickerRowHeader({ showChart = false }: { showChart?: boolean }) 
       <View style={[styles.left, { flex: COL_FLEX.identity }]}>
         <Text style={[styles.headerLabel, { color: c.textMuted }]}>Ticker</Text>
       </View>
-      {([firstCol, 'P/QE', 'P/QFCF', 'TTM P/E', 'TTM P/FCF'] as const).map((label) => (
+      {([firstCol, 'P/QE', 'P/QFCF', 'TTM P/E', 'Mcap'] as const).map((label) => (
         <View key={label} style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
           <Text style={[styles.headerLabel, { color: c.textMuted }]}>{label}</Text>
         </View>
@@ -116,7 +116,7 @@ export function TickerRow({
         <Kpi>{formatRatio(row.ttm_pe)}</Kpi>
       </View>
       <View style={[styles.kpiCell, { flex: COL_FLEX.kpi }]}>
-        <Kpi>{formatRatio(row.p_fcf)}</Kpi>
+        <Kpi>{formatMoney(row.market_cap)}</Kpi>
       </View>
     </Pressable>
   );
