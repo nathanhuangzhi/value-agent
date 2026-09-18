@@ -8,8 +8,8 @@ def test_updater_appends_points_from_new_filings(monkeypatch):
     uid = ensure_user("u@x.io")["id"]
     s = series.save_series(uid, ticker="VIPS", name="gmv", label="GMV", unit="money", currency="CNY", grid="quarterly",
                            points=[{"period": "2026-03-31", "value": 56.9e9}], source_hint="6-K Highlights: total GMV", last_source="2026-05-20")
-    monkeypatch.setattr(updater, "_new_filings", lambda s: [
-        {"kind": "6-K results release", "filed": "2026-08-25", "period": "2026-06-30", "text": "Total GMV was RMB 50.6 billion."}])
+    filing = {"kind": "6-K results release", "filed": "2026-08-25", "period": "2026-06-30", "text": "Total GMV was RMB 50.6 billion."}
+    monkeypatch.setattr(updater, "_new_filings", lambda s: [filing] if (s.get("last_source") or "") < filing["filed"] else [])
     monkeypatch.setattr(updater.repo, "universe", lambda: {"VIPS": {"name": "Vipshop"}})
     calls = []
 
@@ -24,7 +24,7 @@ def test_updater_appends_points_from_new_filings(monkeypatch):
     after = series.get_series(uid, s["id"])
     assert [p["value"] for p in after["points"]] == [56.9e9, 50.6e9] and after["last_source"] == "2026-08-25"
     # nothing newer → no call
-    assert updater.update_series(after, client) == (0, 0.0) or len(calls) == 1
+    assert updater.update_series(after, client) == (0, 0.0) and len(calls) == 1
     # a series without a hint is skipped
     s2 = series.save_series(uid, ticker="VIPS", name="stores", label="Stores", unit="number", grid="annual", points=[])
     assert updater.update_series(s2, client) == (0, 0.0)
