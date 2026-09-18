@@ -196,6 +196,9 @@ def main():
         # Earnings-call transcripts (Alpha Vantage, free key: 25 requests/day)
         # for the watchlist — new quarters only, budgeted, no LLM.
         _run_stage("fetch_earnings_calls", ["-m", "scripts.fetch_earnings_calls"])
+        # Users' extracted series (GMV, segment figures…) pick up the new
+        # filings (DeepSeek Flash, budgeted; skipped when no series exist).
+        _run_stage("update_series", ["-m", "scripts.update_series"])
 
     # ---- 3. Validate ----
     if not args.skip_validate:

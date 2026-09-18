@@ -82,7 +82,7 @@ def delete_metric(metric_id: int, user: dict = Depends(current_user)):
 
 @router.post("/metrics/preview")
 def preview(body: Preview, user: dict = Depends(current_user)):
-    return service.evaluate_expr(body.expr, body.ticker, grid="annual" if body.grid == "annual" else "quarterly")
+    return service.evaluate_expr(body.expr, body.ticker, grid="annual" if body.grid == "annual" else "quarterly", user_id=user["id"])
 
 
 @router.get("/tickers/{ticker}/custom.json")

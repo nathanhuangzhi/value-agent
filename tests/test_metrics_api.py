@@ -14,7 +14,7 @@ def client(monkeypatch):
     from app.auth import service as auth
     sent = {}
     monkeypatch.setattr(auth, "_send_code", lambda email, code: sent.__setitem__(email, code))
-    monkeypatch.setattr(service, "build_context", lambda ticker, grid="quarterly", last_n=None: CTX if ticker.upper() == "VIPS" else None)
+    monkeypatch.setattr(service, "build_context", lambda ticker, grid="quarterly", last_n=None, user_id=None: CTX if ticker.upper() == "VIPS" else None)
     c = TestClient(app)
     c.post("/auth/code", json={"email": "m@x.io"})
     token = c.post("/auth/verify", json={"email": "m@x.io", "code": sent["m@x.io"]}).json()["token"]

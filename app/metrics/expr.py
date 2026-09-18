@@ -93,7 +93,7 @@ class ExprError(ValueError):
 
 # ---- tokenizer ---------------------------------------------------------------------
 
-_TOKEN = re.compile(r"\s*(?:(\d+\.?\d*(?:[eE][+-]?\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|(<=|>=|==|!=|[<>+\-*/().,]))")
+_TOKEN = re.compile(r"\s*(?:(\d+\.?\d*(?:[eE][+-]?\d+)?)|(\$[A-Za-z_][A-Za-z0-9_]*)|([A-Za-z_][A-Za-z0-9_]*)|(<=|>=|==|!=|[<>+\-*/().,]))")
 
 
 def tokenize(src: str) -> list[tuple[str, str]]:
@@ -108,9 +108,11 @@ def tokenize(src: str) -> list[tuple[str, str]]:
         m = _TOKEN.match(src, pos)
         if not m or m.end() == pos:
             raise ExprError(f"unexpected character {src[pos]!r} at position {pos}")
-        num, name, op = m.groups()
+        num, uref, name, op = m.groups()
         if num is not None:
             out.append(("num", num))
+        elif uref is not None:
+            out.append(("uref", uref[1:].lower()))
         elif name is not None:
             out.append(("kw" if name in ("and", "or", "not") else "name", name))
         else:
@@ -187,6 +189,9 @@ class _Parser:
         if k == "num":
             self.i += 1
             return Node("num", float(v))
+        if k == "uref":
+            self.i += 1
+            return Node("uref", v)               # the user's own series for the company ($gmv)
         if k == "op" and v == "(":
             self.i += 1
             node = self.expr(0)
@@ -227,6 +232,8 @@ def validate(src: str) -> Node:
     def kind_of(n: Node) -> str:
         if n.kind == "ref":
             return ALIASES[n.value][1]
+        if n.kind == "uref":
+            return "flow"                           # user series: suffixes all allowed
         if n.kind == "suffix":
             inner = kind_of(n.args[0])
             if n.value == "ttm" and inner in ("stock", "market"):
@@ -245,9 +252,21 @@ def validate(src: str) -> Node:
 def references(node: Node) -> set[str]:
     if node.kind == "ref":
         return {node.value}
+    if node.kind == "uref":
+        return set()
     out: set[str] = set()
     for a in node.args:
         out |= references(a)
+    return out
+
+
+def user_refs(node: Node) -> set[str]:
+    """The $names an expression needs."""
+    if node.kind == "uref":
+        return {node.value}
+    out: set[str] = set()
+    for a in node.args:
+        out |= user_refs(a)
     return out
 
 
@@ -270,6 +289,8 @@ class Context:
     values: dict[str, Series]                   # alias → series on `periods`
     annual_periods: list[str] = field(default_factory=list)
     annual_values: dict[str, Series] = field(default_factory=dict)
+    user_values: dict[str, Series] = field(default_factory=dict)          # $name → series on `periods`
+    user_annual: dict[str, Series] = field(default_factory=dict)          # $name → series on annual_periods
 
 
 def _lift(f: Callable[..., float | None]) -> Callable[..., Series]:
@@ -309,11 +330,11 @@ def _lag(series: Series, n: int) -> Series:
     return [None] * min(n, len(series)) + series[: max(0, len(series) - n)]
 
 
-def _fy_on_grid(ctx: Context, alias: str) -> Series:
+def _fy_on_grid(ctx: Context, alias: str, *, user: bool = False) -> Series:
     """The latest completed fiscal-year value at each grid period."""
     if ctx.grid == "annual":
-        return ctx.values.get(alias) or [None] * len(ctx.periods)
-    ann = ctx.annual_values.get(alias) or []
+        return (ctx.user_values if user else ctx.values).get(alias) or [None] * len(ctx.periods)
+    ann = (ctx.user_annual if user else ctx.annual_values).get(alias) or []
     out: Series = []
     for p in ctx.periods:
         best = None
@@ -332,12 +353,14 @@ def evaluate(node: Node, ctx: Context) -> Series:
         return [node.value] * n
     if node.kind == "ref":
         return ctx.values.get(node.value) or [None] * n
+    if node.kind == "uref":
+        return ctx.user_values.get(node.value) or [None] * n
     if node.kind == "suffix":
         inner = node.args[0]
         if node.value == "fy":
-            if inner.kind != "ref":
+            if inner.kind not in ("ref", "uref"):
                 raise ExprError(".fy applies to a metric name, e.g. revenue.fy")
-            return _fy_on_grid(ctx, inner.value)
+            return _fy_on_grid(ctx, inner.value, user=inner.kind == "uref")
         s = evaluate(inner, ctx)
         if node.value == "q":
             return s
@@ -405,4 +428,4 @@ def guess_format(node: Node) -> str:
 
 
 __all__ = ["ALIASES", "DERIVED", "Context", "ExprError", "Node", "evaluate", "guess_format", "is_boolean",
-           "parse", "references", "validate"]
+           "parse", "references", "user_refs", "validate"]

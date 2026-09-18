@@ -6,13 +6,15 @@ from __future__ import annotations
 import json
 
 from app.ai.tools.registry import tool
-from app.metrics import charts, service
+from app.metrics import charts, series, service
 from app.metrics.expr import ALIASES, DERIVED, ExprError
 
+SERIES_HELP = (" The user's own extracted series are referenced as $name (e.g. $gmv, $shanshan_op_income) and take the "
+               "same suffixes; they exist per company — save them with save_series.")
 VOCAB = ("Metric names: " + ", ".join(ALIASES) + ". Shorthands: " + ", ".join(f"{k} = {v}" for k, v in DERIVED.items())
          + ". Suffixes: .q (single quarter, default) .ttm (trailing four quarters, flows only) .fy (latest fiscal year) "
            ".yoy (change vs a year ago) .abs. Functions: abs(x) max(a,b) min(a,b) avg(x,n) sum(x,n) lag(x,n). "
-           "Operators + - * / ( ) < <= > >= == != and or not. Blank when an input is missing or ÷0.")
+           "Operators + - * / ( ) < <= > >= == != and or not. Blank when an input is missing or ÷0." + SERIES_HELP)
 
 
 def _fmt(v, fmt: str) -> str:
@@ -50,7 +52,7 @@ def metric_vocabulary() -> str:
     required=["expr", "ticker"], status="Evaluating {expr} on {ticker}…", marks_company=False, needs_user=True,
 )
 def preview_metric(expr: str, ticker: str, grid: str | None, user_id: int) -> str:
-    r = service.evaluate_expr(expr, ticker, grid="annual" if grid == "annual" else "quarterly")
+    r = service.evaluate_expr(expr, ticker, grid="annual" if grid == "annual" else "quarterly", user_id=user_id)
     if "error" in r:
         return f"ERROR: {r['error']}"
     fmt = r["format"]
@@ -163,3 +165,79 @@ def arrange(metric_ids: list[int] | None, chart_ids: list[int] | None, user_id: 
     for i, cid in enumerate(chart_ids or []):
         charts.update_chart(user_id, cid, position=i)
     return "Order saved."
+
+
+@tool(
+    "save_series",
+    description="Store a number series you extracted from filings for ONE company — an operating metric the "
+                "standard statements don't carry (GMV, a segment's operating income, active users, store "
+                "count…). It becomes $name in expressions and charts and is listed under My metrics for that "
+                "company; the daily pipeline extends it from new filings using extraction_hint. points: "
+                "[{period, value, source}] with period = quarter-end date (quarterly) or fiscal year (annual). "
+                "unit: number | money | pct | ratio; give currency for money in the reporting currency (CNY…). "
+                "Saving again with the same name replaces the points.",
+    params={"ticker": {"type": "string"}, "name": {"type": "string", "description": "short id, e.g. gmv"},
+            "label": {"type": "string"}, "unit": {"type": "string"}, "currency": {"type": "string"},
+            "grid": {"type": "string", "enum": ["quarterly", "annual"]},
+            "points": {"type": "array", "items": {"type": "object"}},
+            "source_hint": {"type": "string", "description": "how to find the next value, e.g. '6-K press release Highlights: total GMV of RMB x billion' or '20-F note 24 segment table: Shan Shan Outlets income from operations'"},
+            "last_source": {"type": "string", "description": "date of the newest filing used (YYYY-MM-DD)"}},
+    required=["ticker", "name", "label", "unit", "grid", "points"],
+    status="Saving series ${name} for {ticker}…", marks_company=False, needs_user=True,
+)
+def save_series(ticker: str, name: str, label: str, unit: str, currency: str | None, grid: str | None,
+                points: list | None, source_hint: str | None, last_source: str | None, user_id: int) -> str:
+    try:
+        s = series.save_series(user_id, ticker=ticker, name=name, label=label, unit=unit, grid=grid or "quarterly",
+                               points=list(points or []), currency=currency, source_hint=source_hint, last_source=last_source)
+    except series.SeriesError as e:
+        return f"ERROR: {e}"
+    n = len(s["points"])
+    latest = next((p for p in reversed(s["points"]) if p["value"] is not None), None)
+    return (f"Saved series ${s['name']} “{s['label']}” for {s['ticker']}: {n} points"
+            f"{', latest ' + latest['period'] + ' = ' + str(latest['value']) if latest else ''}. "
+            f"Use ${s['name']} in expressions/charts; it's listed under My metrics on {s['ticker']}'s page.")
+
+
+@tool(
+    "list_my_series",
+    description="The user's extracted series (per company): id, $name, label, unit, grid, point count, latest.",
+    params={"ticker": {"type": "string"}}, required=[],
+    status="Listing your series…", marks_company=False, needs_user=True,
+)
+def list_my_series(ticker: str | None, user_id: int) -> str:
+    ss = series.list_series(user_id, ticker or None)
+    if not ss:
+        return "No extracted series yet."
+    lines = []
+    for s in ss:
+        latest = next((p for p in reversed(s["points"]) if p["value"] is not None), None)
+        lines.append(f"#{s['id']} {s['ticker']} ${s['name']} “{s['label']}” [{s['unit']}{' ' + s['currency'] if s['currency'] else ''}, {s['grid']}] "
+                     f"{len(s['points'])} points" + (f", latest {latest['period']} = {latest['value']}" if latest else "")
+                     + (f" — hint: {s['source_hint']}" if s["source_hint"] else ""))
+    return "\n".join(lines)
+
+
+@tool(
+    "add_series_points",
+    description="Append or correct points of an existing extracted series (by series_id).",
+    params={"series_id": {"type": "integer"}, "points": {"type": "array", "items": {"type": "object"}},
+            "last_source": {"type": "string"}},
+    required=["series_id", "points"], status="Updating series…", marks_company=False, needs_user=True,
+)
+def add_series_points(series_id: int, points: list | None, last_source: str | None, user_id: int) -> str:
+    try:
+        s = series.add_points(user_id, series_id, list(points or []), last_source=last_source)
+    except series.SeriesError as e:
+        return f"ERROR: {e}"
+    return f"Series #{series_id} now has {len(s['points'])} points." if s else f"ERROR: series #{series_id} not found"
+
+
+@tool(
+    "delete_series",
+    description="Delete one of the user's extracted series by id.",
+    params={"series_id": {"type": "integer"}}, required=["series_id"],
+    status="Deleting series…", marks_company=False, needs_user=True,
+)
+def delete_series(series_id: int, user_id: int) -> str:
+    return f"Deleted series #{series_id}" if series.delete_series(user_id, series_id) else f"ERROR: series #{series_id} not found"

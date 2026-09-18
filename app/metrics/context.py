@@ -6,6 +6,7 @@ from __future__ import annotations
 from app.api.routes import _blended_annual, _blended_quarterly, _gap_fill_row
 from app.data import repo
 from app.metrics.expr import ALIASES, Context
+from app.metrics.series import values_for
 from app.tools.report.ratios import _close_at_or_before
 
 _STATEMENT_OF = {"flow": None, "stock": "balance_sheet", "per_share": "income_statement", "market": None}
@@ -41,7 +42,35 @@ def _fill_values(stmts: dict, periods: list[str], price_history: list[dict]) -> 
     return values
 
 
-def build_context(ticker: str, *, grid: str = "quarterly", last_n: int | None = None) -> Context | None:
+def _align(points: dict[str, float | None], periods: list[str], *, annual: bool) -> list[float | None]:
+    """A user series onto grid periods: annual by fiscal-year label, quarterly by
+    the quarter's year-month (a point dated 2026-06-30 matches the grid's 2026-06 quarter)."""
+    if annual:
+        return [points.get(p) for p in periods]
+    by_month = {k[:7]: v for k, v in points.items()}
+    return [by_month.get(p[:7]) for p in periods]
+
+
+def _user_series(user_id: int | None, ticker: str, q_periods: list[str], a_periods: list[str]) -> tuple[dict, dict]:
+    if user_id is None:
+        return {}, {}
+    q_vals: dict[str, list[float | None]] = {}
+    a_vals: dict[str, list[float | None]] = {}
+    for name, s in values_for(user_id, ticker).items():
+        if s["grid"] == "annual":
+            a_vals[name] = _align(s["points"], a_periods, annual=True)
+            q_vals[name] = [None] * len(q_periods)          # annual-only series: use $name.fy on a quarterly grid
+        else:
+            q_vals[name] = _align(s["points"], q_periods, annual=False)
+            # annual view of a quarterly series: the four quarters of each fiscal year, when complete
+            a_vals[name] = []
+            for fy in a_periods:
+                qs = [v for k, v in s["points"].items() if k[:4] == fy]
+                a_vals[name].append(sum(qs) if len(qs) == 4 and all(v is not None for v in qs) else None)
+    return q_vals, a_vals
+
+
+def build_context(ticker: str, *, grid: str = "quarterly", last_n: int | None = None, user_id: int | None = None) -> Context | None:
     """None when the company has no statements on file."""
     t = ticker.upper()
     analyzed = repo.analyzed().get(t)
@@ -55,10 +84,15 @@ def build_context(ticker: str, *, grid: str = "quarterly", last_n: int | None = 
     q = _blended_quarterly(sec_row, yf_row, last_n=40)     # charts may look back ten years; TTM needs history
     a = _blended_annual(sec_row, yf_row)
     q_periods, a_periods = _periods(q), _periods(a)
+    uq, ua = _user_series(user_id, t, q_periods, a_periods)
     if grid == "annual":
         periods = a_periods[-last_n:] if last_n else a_periods
+        cut = len(a_periods) - len(periods)
         return Context(periods=periods, grid="annual", values=_fill_values(a, periods, ph),
-                       annual_periods=periods, annual_values=_fill_values(a, periods, ph))
+                       annual_periods=periods, annual_values=_fill_values(a, periods, ph),
+                       user_values={k: v[cut:] for k, v in ua.items()}, user_annual={k: v[cut:] for k, v in ua.items()})
     periods = q_periods[-last_n:] if last_n else q_periods
+    cut = len(q_periods) - len(periods)
     return Context(periods=periods, grid="quarterly", values=_fill_values(q, periods, ph),
-                   annual_periods=a_periods, annual_values=_fill_values(a, a_periods, ph))
+                   annual_periods=a_periods, annual_values=_fill_values(a, a_periods, ph),
+                   user_values={k: v[cut:] for k, v in uq.items()}, user_annual=ua)

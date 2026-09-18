@@ -115,9 +115,9 @@ def delete_chart(user_id: int, chart_id: int) -> bool:
         return cx.execute("DELETE FROM charts WHERE user_id = ? AND id = ?", (user_id, chart_id)).rowcount > 0
 
 
-def render_spec(spec: ChartSpec, ticker: str) -> dict:
+def render_spec(spec: ChartSpec, ticker: str, user_id: int | None = None) -> dict:
     """{title, period, periods, series:[{label, kind, axis, format, values}]} or {error}."""
-    ctx = build_context(ticker, grid=spec.period, last_n=spec.last_n)
+    ctx = build_context(ticker, grid=spec.period, last_n=spec.last_n, user_id=user_id)
     if ctx is None:
         return {"title": spec.title, "error": f"no statements on file for {ticker.upper()}"}
     out = []
@@ -135,11 +135,11 @@ def render(user_id: int, chart_id: int, ticker: str) -> dict | None:
     chart = get_chart(user_id, chart_id)
     if not chart:
         return None
-    return {"id": chart_id, **render_spec(ChartSpec.model_validate(chart["spec"]), ticker)}
+    return {"id": chart_id, **render_spec(ChartSpec.model_validate(chart["spec"]), ticker, user_id)}
 
 
 def render_all(user_id: int, ticker: str) -> list[dict]:
-    return [{"id": ch["id"], "position": ch["position"], **render_spec(ChartSpec.model_validate(ch["spec"]), ticker)}
+    return [{"id": ch["id"], "position": ch["position"], **render_spec(ChartSpec.model_validate(ch["spec"]), ticker, user_id)}
             for ch in list_charts(user_id)]
 
 

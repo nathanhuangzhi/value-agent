@@ -81,3 +81,14 @@ def test_annual_grid():
                   values={"revenue": [300, 380, 430], "net_income": [30, 40, 50]})
     assert ev("net_income.ttm / revenue", ctx)[2] == pytest.approx(50 / 430)   # .ttm == the annual value
     assert ev("revenue.yoy", ctx)[1] == pytest.approx(80 / 300)
+
+
+def test_user_series_references():
+    from app.metrics.expr import user_refs
+    n = validate("revenue / $gmv")
+    assert user_refs(n) == {"gmv"} and references(n) == {"revenue"}
+    ctx = Context(periods=["2026-03-31", "2026-06-30"], grid="quarterly", values={"revenue": [100, 120]},
+                  user_values={"gmv": [400, 480]})
+    assert evaluate(n, ctx) == [0.25, 0.25]
+    assert evaluate(validate("$missing + 1"), ctx) == [None, None]
+    assert evaluate(validate("$gmv.ttm"), ctx) == [None, None]          # allowed, just needs four quarters

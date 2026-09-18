@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from app.db import connect
 from app.metrics.context import build_context
 from app.metrics.expr import ExprError, evaluate, guess_format, validate
+from app.metrics.series import list_series
 
 FORMATS = ("number", "ratio", "pct", "money", "bool")
 MAX_METRICS = 50
@@ -73,13 +74,13 @@ def delete_metric(user_id: int, metric_id: int) -> bool:
 
 # ---- evaluation ----------------------------------------------------------------
 
-def evaluate_expr(expr: str, ticker: str, *, grid: str = "quarterly", last_n: int = 8) -> dict:
+def evaluate_expr(expr: str, ticker: str, *, grid: str = "quarterly", last_n: int = 8, user_id: int | None = None) -> dict:
     """{series:[{period, value}], latest, format} or {error}."""
     try:
         node = validate(expr)
     except ExprError as e:
         return {"error": str(e)}
-    ctx = build_context(ticker, grid=grid)
+    ctx = build_context(ticker, grid=grid, user_id=user_id)
     if ctx is None:
         return {"error": f"no statements on file for {ticker.upper()}"}
     try:
@@ -94,10 +95,19 @@ def evaluate_expr(expr: str, ticker: str, *, grid: str = "quarterly", last_n: in
 def evaluate_user_metrics(user_id: int, ticker: str, *, last_n: int = 8) -> list[dict]:
     """Every metric of the user against one company (one context build, N evaluations)."""
     metrics = list_metrics(user_id)
-    if not metrics:
+    own = list_series(user_id, ticker)
+    if not metrics and not own:
         return []
-    ctx = build_context(ticker)
+    ctx = build_context(ticker, user_id=user_id)
     out = []
+    # The company's extracted series show as metrics of their own (latest point + history).
+    for s in own:
+        pts = s["points"][-last_n:]
+        fmt = "money" if s["unit"] == "money" else s["unit"]
+        out.append({"id": f"s{s['id']}", "name": s["label"], "expr": f"${s['name']}", "format": fmt, "position": -1,
+                    "currency": s["currency"], "grid": s["grid"],
+                    "series": [{"period": p["period"], "value": p["value"]} for p in pts],
+                    "latest": next((p["value"] for p in reversed(pts) if p["value"] is not None), None), "error": None})
     for m in metrics:
         entry = {**m, "series": [], "latest": None, "error": None}
         if ctx is None:
@@ -121,7 +131,7 @@ def latest_for_tickers(user_id: int, metric_id: int, tickers: list[str]) -> dict
     node = validate(m["expr"])
     out: dict[str, float | None] = {}
     for t in tickers:
-        ctx = build_context(t)
+        ctx = build_context(t, user_id=user_id)
         if ctx is None:
             out[t] = None
             continue

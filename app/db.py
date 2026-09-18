@@ -66,6 +66,22 @@ CREATE TABLE IF NOT EXISTS charts (
     updated_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS charts_user ON charts(user_id, position);
+CREATE TABLE IF NOT EXISTS series (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ticker      TEXT NOT NULL,
+    name        TEXT NOT NULL,              -- referenced in expressions as $name (lower-case, [a-z0-9_])
+    label       TEXT NOT NULL,
+    unit        TEXT NOT NULL DEFAULT 'number',   -- number | money | pct | ratio   (money = reporting currency)
+    currency    TEXT,                        -- for money units: CNY, USD, …
+    grid        TEXT NOT NULL DEFAULT 'quarterly',
+    points      TEXT NOT NULL DEFAULT '[]',  -- [{period, value, source}]
+    source_hint TEXT,                        -- where the assistant found it / how to find the next one
+    last_source TEXT,                        -- newest filing date already folded in
+    created_at  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL,
+    UNIQUE (user_id, ticker, name)
+);
 CREATE TABLE IF NOT EXISTS prefs (
     user_id     INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     row_metric_id INTEGER
