@@ -416,8 +416,8 @@ def guess_format(node: Node) -> str:
             return "number"                       # per-share amounts
         if "market" in kinds:
             return "ratio"                        # a multiple: mcap / earnings, price / book …
-        if left and right:
-            return "pct"                          # margin / return: fcf / revenue, net_income / equity
+        if (left or user_refs(node.args[0])) and (right or user_refs(node.args[1])):
+            return "pct"                          # margin / return / take rate: fcf / revenue, revenue / $gmv
         return "ratio"
     if node.kind == "suffix" and node.value == "yoy":
         return "pct"
