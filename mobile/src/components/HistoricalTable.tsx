@@ -26,6 +26,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { PricePoint, Statements } from '@/api/types';
+import { formatMetric } from '@/api/metrics';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 import {
   CELL_WIDTH,
@@ -56,7 +57,9 @@ import {
   yoyDelta,
   type Column,
   type RatioRow,
+  type CustomRow,
   type RawRow,
+  type Row,
   type Section,
   type ValuationRow,
 } from '@/lib/historicalTable';
@@ -82,10 +85,12 @@ type Props = {
   fxFactor?: number;
   /** Unit label for the $-sections, e.g. 'USD' or 'CNY'. */
   currencyLabel?: string;
+  /** The account's metrics and extracted series, as a section above the statements. */
+  customRows?: CustomRow[];
 };
 
 
-export function HistoricalTable({ statements, quarterly, priceHistory, externalScrollX, fxFactor = 1, currencyLabel = 'USD' }: Props) {
+export function HistoricalTable({ statements, quarterly, priceHistory, externalScrollX, fxFactor = 1, currencyLabel = 'USD', customRows = [] }: Props) {
   const c = useColors();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -175,6 +180,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
   // depend on the ticker's actual data, and Valuation Multiples is only
   // included when we have a price history to ground the math.
   const sections: Section[] = [
+    ...(customRows.length ? [{ title: 'Custom Metrics', rows: customRows as Row[] }] : []),
     {
       title: `Income Statement (${currencyLabel})`,
       rows: [
@@ -527,6 +533,10 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                           ? formatMargin(r.num, r.den)
                           : formatPerShare(r.num, r.den, fxFactor);
                         yoy = yoyForRatioRow(row, col, idx);
+                      } else if (row.kind === 'custom') {
+                        const v = (col.kind === 'annual' ? row.annual : row.quarterly)[col.period] ?? null;
+                        const money = row.format === 'money' && v != null ? v * fxFactor : v;
+                        text = formatMetric(money, row.format);
                       } else {
                         // valuation
                         text = resolveValuationCell(row, col);

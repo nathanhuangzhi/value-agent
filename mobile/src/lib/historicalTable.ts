@@ -86,7 +86,16 @@ export type ValuationRow = {
     | 'pb';         // mcap_now / book value at this period
 };
 
-export type Row = RawRow | RatioRow | ValuationRow;
+/** A user's metric or extracted series: server-evaluated per period. */
+export type CustomRow = {
+  kind: 'custom';
+  label: string;
+  format: 'number' | 'ratio' | 'pct' | 'money' | 'bool';
+  annual: Record<string, number | null>;
+  quarterly: Record<string, number | null>;
+};
+
+export type Row = RawRow | RatioRow | ValuationRow | CustomRow;
 
 export type Section = {
   title: string;

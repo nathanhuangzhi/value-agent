@@ -123,6 +123,33 @@ def evaluate_user_metrics(user_id: int, ticker: str, *, last_n: int = 8) -> list
     return out
 
 
+def table_rows(user_id: int, ticker: str) -> list[dict]:
+    """The user's series + metrics as rows for the company page's statements
+    table: {id, name, format, annual: {period: value}, quarterly: {period: value}}
+    on the same period labels the table's columns use."""
+    metrics = list_metrics(user_id)
+    own = list_series(user_id, ticker)
+    if not metrics and not own:
+        return []
+    qctx = build_context(ticker, grid="quarterly", user_id=user_id)
+    actx = build_context(ticker, grid="annual", user_id=user_id)
+    rows = []
+    for s in own:
+        node = validate(f"${s['name']}")
+        rows.append({"id": f"s{s['id']}", "name": s["label"], "format": "money" if s["unit"] == "money" else s["unit"],
+                     "annual": dict(zip(actx.periods, evaluate(node, actx), strict=True)) if actx else {},
+                     "quarterly": dict(zip(qctx.periods, evaluate(node, qctx), strict=True)) if qctx else {}})
+    for m in metrics:
+        try:
+            node = validate(m["expr"])
+            rows.append({"id": m["id"], "name": m["name"], "format": m["format"],
+                         "annual": dict(zip(actx.periods, evaluate(node, actx), strict=True)) if actx else {},
+                         "quarterly": dict(zip(qctx.periods, evaluate(node, qctx), strict=True)) if qctx else {}})
+        except ExprError:
+            rows.append({"id": m["id"], "name": m["name"], "format": m["format"], "annual": {}, "quarterly": {}})
+    return rows
+
+
 def latest_for_tickers(user_id: int, metric_id: int, tickers: list[str]) -> dict[str, float | None]:
     """One metric's latest value for many companies (industry-row column)."""
     m = get_metric(user_id, metric_id)

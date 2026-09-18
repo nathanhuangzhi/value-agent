@@ -46,7 +46,8 @@ def _align(points: dict[str, float | None], periods: list[str], *, annual: bool)
     """A user series onto grid periods: annual by fiscal-year label, quarterly by
     the quarter's year-month (a point dated 2026-06-30 matches the grid's 2026-06 quarter)."""
     if annual:
-        return [points.get(p) for p in periods]
+        by_year = {k[:4]: v for k, v in points.items()}          # grid labels are fiscal-year-end dates
+        return [by_year.get(p[:4]) for p in periods]
     by_month = {k[:7]: v for k, v in points.items()}
     return [by_month.get(p[:7]) for p in periods]
 
@@ -78,7 +79,7 @@ def _user_series(user_id: int | None, ticker: str, q_periods: list[str], a_perio
             # annual view of a quarterly series: the four quarters of each fiscal year, when complete
             a_vals[name] = []
             for fy in a_periods:
-                qs = [v for k, v in s["points"].items() if k[:4] == fy]
+                qs = [v for k, v in s["points"].items() if k[:4] == fy[:4]]
                 a_vals[name].append(sum(qs) if len(qs) == 4 and all(v is not None for v in qs) else None)
     return q_vals, a_vals
 

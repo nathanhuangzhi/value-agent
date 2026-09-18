@@ -40,7 +40,7 @@ import {
   computeHistoricalTableColumns,
 } from '@/components/HistoricalTable';
 import { KPIGrid } from '@/components/KPIGrid';
-import { MyCharts, MyMetricsStrip } from '@/components/MyMetrics';
+import { MyCharts, MyMetricsStrip, useCustom } from '@/components/MyMetrics';
 import { Section } from '@/components/Section';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ValuationGrid } from '@/components/ValuationGrid';
@@ -126,6 +126,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
   }, [isCenter, showStickyOverlay]);
 
   const [showNative, setShowNative] = useState(false);
+  const custom = useCustom(symbol);
 
   async function refreshAll() {
     await Promise.all([ticker.refresh(), priceHistory.refresh()]);
@@ -266,6 +267,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
                   externalScrollX={tableScrollX}
                   fxFactor={fxFactor}
                   currencyLabel={currencyLabel}
+                  customRows={(custom?.rows ?? []).map((r) => ({ kind: 'custom' as const, label: r.name, format: r.format, annual: r.annual, quarterly: r.quarterly }))}
                 />
               ) : (
                 <View style={styles.chartLoading}>

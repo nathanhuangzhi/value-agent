@@ -89,6 +89,7 @@ def preview(body: Preview, user: dict = Depends(current_user)):
 def ticker_custom(ticker: str, user: dict = Depends(current_user)):
     return {"ticker": ticker.upper(),
             "metrics": service.evaluate_user_metrics(user["id"], ticker),
+            "rows": service.table_rows(user["id"], ticker),          # for the statements table's Custom Metrics section
             "charts": charts.render_all(user["id"], ticker)}
 
 

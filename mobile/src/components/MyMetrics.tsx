@@ -8,23 +8,23 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { formatMetric, metricsApi, type ChartData, type Evaluated } from '@/api/metrics';
+import { formatMetric, metricsApi, type ChartData, type CustomTableRow, type Evaluated } from '@/api/metrics';
 import { CustomChart } from '@/components/CustomChart';
 import { useAuth } from '@/hooks/useAuth';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
-type Custom = { metrics: Evaluated[]; charts: ChartData[] };
+type Custom = { metrics: Evaluated[]; charts: ChartData[]; rows: CustomTableRow[] };
 const cache = new Map<string, Custom>();
 
-function useCustom(ticker: string): Custom | null {
+export function useCustom(ticker: string): Custom | null {
   const { user } = useAuth();
   const [data, setData] = useState<Custom | null>(cache.get(ticker) ?? null);
   useEffect(() => {
     if (!user) { setData(null); return; }
     let cancelled = false;
     metricsApi.forTicker(ticker)
-      .then((r) => { const v = { metrics: r.metrics, charts: r.charts ?? [] }; cache.set(ticker, v); if (!cancelled) setData(v); })
-      .catch(() => { if (!cancelled) setData({ metrics: [], charts: [] }); });
+      .then((r) => { const v = { metrics: r.metrics, charts: r.charts ?? [], rows: r.rows ?? [] }; cache.set(ticker, v); if (!cancelled) setData(v); })
+      .catch(() => { if (!cancelled) setData({ metrics: [], charts: [], rows: [] }); });
     return () => { cancelled = true; };
   }, [ticker, user]);
   return user ? data : null;

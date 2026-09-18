@@ -48,6 +48,8 @@ def _clean_points(points: list[dict], grid: str) -> list[dict]:
     for p in points or []:
         period = str(p.get("period") or "").strip()
         if grid == "annual":
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", period):
+                period = period[:4]                              # a fiscal-year-end date → the year
             if not re.match(r"^\d{4}$", period):
                 raise SeriesError(f"annual periods are fiscal years like 2025 (got {period!r})")
         elif not re.match(r"^\d{4}-\d{2}-\d{2}$", period):
