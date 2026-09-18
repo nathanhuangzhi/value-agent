@@ -11,6 +11,7 @@
  * mid-reply, `resumeStream` picks the same reply up where it stopped.
  */
 import { APP_TOKEN_HEADER, ApiError, BASE_URL } from './client';
+import { authHeaders } from './session';
 
 const AI_URL = (
   process.env.EXPO_PUBLIC_AI_URL?.replace(/\/$/, '') ??
@@ -59,7 +60,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(url, {
       cache: 'no-store',
       ...init,
-      headers: { 'content-type': 'application/json', ...APP_TOKEN_HEADER, ...(init?.headers ?? {}) },
+      headers: { 'content-type': 'application/json', ...APP_TOKEN_HEADER, ...authHeaders(), ...(init?.headers ?? {}) },
     });
   } catch (e) {
     throw new ApiError(0, `Network error reaching ${url}: ${e}`);
@@ -127,7 +128,7 @@ function openStream(
     xhr.open(method, url);
     xhr.setRequestHeader('content-type', 'application/json');
     xhr.setRequestHeader('accept', 'text/event-stream');
-    for (const [k, v] of Object.entries(APP_TOKEN_HEADER)) xhr.setRequestHeader(k, v);
+    for (const [k, v] of Object.entries({ ...APP_TOKEN_HEADER, ...authHeaders() })) xhr.setRequestHeader(k, v);
     xhr.onprogress = drain;
     xhr.onload = () => {
       drain();

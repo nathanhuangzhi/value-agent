@@ -15,8 +15,16 @@ def isolated(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def client():
-    return TestClient(app)
+def client(monkeypatch):
+    """A TestClient whose requests carry a signed-in user's bearer token."""
+    from app.auth import service
+    sent = {}
+    monkeypatch.setattr(service, "_send_code", lambda email, code: sent.__setitem__(email, code))
+    c = TestClient(app)
+    c.post("/auth/code", json={"email": "t@x.io"})
+    token = c.post("/auth/verify", json={"email": "t@x.io", "code": sent["t@x.io"]}).json()["token"]
+    c.headers.update({"Authorization": f"Bearer {token}"})
+    return c
 
 
 def _events(body: str) -> list[dict]:
@@ -61,7 +69,7 @@ def test_second_message_while_busy_is_409(client, monkeypatch):
 
     monkeypatch.setattr(jobs, "stream_reply", slow)
     conv = client.post("/ai/conversations", json={}).json()
-    jobs.start(conv, "first", "m")
+    jobs.start(store.load(conv["id"]), "first", "m")
     r = client.post(f"/ai/conversations/{conv['id']}/messages", json={"content": "second"})
     assert r.status_code == 409
     assert client.get(f"/ai/conversations/{conv['id']}").json()["pending"] is True
@@ -80,5 +88,12 @@ def test_app_token_gate(client, monkeypatch):
     assert client.get("/ai/models").status_code == 401
     assert client.get("/ai/models", headers={"X-App-Token": "wrong"}).status_code == 401
     assert client.get("/ai/models", headers={"X-App-Token": "s3cret"}).status_code == 200
-    assert client.get("/watchlist").status_code == 401
     assert client.get("/api/industries.json").status_code != 401     # read-only data stays open
+
+
+def test_conversations_are_private(client):
+    conv = client.post("/ai/conversations", json={}).json()
+    other = TestClient(app)          # not signed in
+    assert other.get(f"/ai/conversations/{conv['id']}").status_code == 401
+    assert other.get("/ai/conversations").status_code == 401
+    assert client.get("/ai/conversations").json()["conversations"][0]["id"] == conv["id"]

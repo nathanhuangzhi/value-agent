@@ -6,14 +6,16 @@
  * Same shape as useLastViewed: a context provider at the root, a hook
  * anywhere below it. Writes are optimistic (state first, storage after).
  *
- * Every change is also mirrored to the pipeline box's /watchlist (best
- * effort, no UI on failure) so the daily run fetches data for saved
- * companies; the full list is re-sent once on startup to heal any missed
- * sync.
+ * When signed in, every change is also mirrored to the account's
+ * /watchlist on the box (best effort, no UI on failure) so the daily run
+ * fetches data for saved companies. On sign-in the phone's list is pushed
+ * up and the account's list merged down, so a second device sees the same
+ * companies.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { watchlistApi } from '@/api/watchlist';
+import { useAuth } from '@/hooks/useAuth';
 import {
   createContext,
   useCallback,
@@ -42,6 +44,8 @@ const SavedContext = createContext<Saved | null>(null);
 export function SavedProvider({ children }: { children: ReactNode }) {
   const [tickers, setTickers] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
+  const { user } = useAuth();
+  const signedIn = user !== null;
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +56,6 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         if (!cancelled && Array.isArray(parsed)) {
           const list = parsed.filter((t): t is string => typeof t === 'string');
           setTickers(list);
-          if (list.length) watchlistApi.add(list).catch(() => {});
         }
       } catch {
         // Corrupt / unavailable storage: start empty, keep the app usable.
@@ -65,16 +68,40 @@ export function SavedProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Sign-in (or launch while signed in): push the local list up, merge the
+  // account's list down.
+  useEffect(() => {
+    if (!signedIn || !ready) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const server = tickers.length ? await watchlistApi.add(tickers) : await watchlistApi.get();
+        if (cancelled) return;
+        setTickers((prev) => {
+          const missing = server.tickers.filter((t) => !prev.includes(t));
+          if (!missing.length) return prev;
+          const next = [...prev, ...missing];
+          AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+          return next;
+        });
+      } catch {
+        // offline or signed out meanwhile — the next change retries
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn, ready]);
+
   const add = useCallback((symbol: string) => {
     const sym = symbol.toUpperCase();
     setTickers((prev) => {
       if (prev.includes(sym)) return prev;
       const next = [sym, ...prev];
       AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
-      watchlistApi.add([sym]).catch(() => {});
+      if (signedIn) watchlistApi.add([sym]).catch(() => {});
       return next;
     });
-  }, []);
+  }, [signedIn]);
 
   const remove = useCallback((symbol: string) => {
     const sym = symbol.toUpperCase();
@@ -82,10 +109,10 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       if (!prev.includes(sym)) return prev;
       const next = prev.filter((t) => t !== sym);
       AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
-      watchlistApi.remove(sym).catch(() => {});
+      if (signedIn) watchlistApi.remove(sym).catch(() => {});
       return next;
     });
-  }, []);
+  }, [signedIn]);
 
   const value = useMemo<Saved>(
     () => ({

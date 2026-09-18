@@ -4,6 +4,7 @@ state).
 
     {
       "id": "20260914-0a1b2c",
+      "user_id": 1,                           # owner (app.db users.id)
       "title": "QDEL vs Inogen",
       "model": "deepseek-v4-flash",          # last model used
       "created_at": "...", "updated_at": "...",
@@ -47,9 +48,9 @@ def new_id() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
 
 
-def create(model: str) -> dict:
+def create(model: str, user_id: int | None = None) -> dict:
     CHATS_DIR.mkdir(parents=True, exist_ok=True)
-    conv = {"id": new_id(), "title": "New chat", "model": model,
+    conv: dict = {"id": new_id(), "user_id": user_id, "title": "New chat", "model": model,
             "created_at": _now(), "updated_at": _now(), "messages": []}
     save(conv)
     return conv
@@ -76,8 +77,8 @@ def delete(conv_id: str) -> bool:
     return True
 
 
-def list_all() -> list[dict]:
-    """Newest first; summary fields only."""
+def list_all(user_id: int | None = None) -> list[dict]:
+    """Newest first; summary fields only. With `user_id`, only that user's."""
     if not CHATS_DIR.exists():
         return []
     import json
@@ -87,6 +88,8 @@ def list_all() -> list[dict]:
             c = json.loads(p.read_text())
         except Exception:
             log.warning("skipping unreadable conversation file %s", p, exc_info=True)
+            continue
+        if user_id is not None and c.get("user_id") != user_id:
             continue
         out.append({
             "id": c.get("id") or p.stem,

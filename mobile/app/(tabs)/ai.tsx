@@ -36,6 +36,8 @@ import { MessageRow } from '@/components/chat/MessageRow';
 import { ModelToggle } from '@/components/chat/ModelToggle';
 import { ScrollToBottomButton } from '@/components/ScrollToBottomButton';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
+import { SignIn } from '@/components/SignIn';
+import { useAuth } from '@/hooks/useAuth';
 import { LAST_CONV_KEY, useConversation } from '@/hooks/useConversation';
 import { useModelPref } from '@/hooks/useModelPref';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
@@ -47,6 +49,7 @@ export default function AiScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const { user, ready: authReady } = useAuth();
   const [model, pickModel, modelOptions] = useModelPref();
   const [conversations, setConversations] = useState<ConversationSummary[] | null>(null);
   const [input, setInput] = useState('');
@@ -62,8 +65,9 @@ export default function AiScreen() {
   const openRef = useRef(chat.open);
   openRef.current = chat.open;
 
-  // Reopen the last conversation on launch.
+  // Reopen the last conversation once signed in.
   useEffect(() => {
+    if (!user) return;
     (async () => {
       await refreshList();
       try {
@@ -73,7 +77,7 @@ export default function AiScreen() {
         // ignore
       }
     })();
-  }, [refreshList]);
+  }, [refreshList, user]);
 
   const newChat = () => chat.reset(true);
 
@@ -131,6 +135,14 @@ export default function AiScreen() {
     if (chat.streaming) rows.push({ role: 'assistant', content: chat.streaming.text, _streaming: true });
     return rows.reverse();
   }, [chat.messages, chat.streaming]);
+
+  if (!user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.background, paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg }}>
+        {authReady ? <SignIn intro="Conversations are saved to your account. Sign in with your email to chat." /> : <ActivityIndicator color={c.brand} />}
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView

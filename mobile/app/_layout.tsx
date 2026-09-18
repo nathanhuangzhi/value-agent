@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 
 import { useColors } from '@/theme/colors';
 import { useIsTabletLandscape } from '@/hooks/useDeviceClass';
+import { AuthProvider } from '@/hooks/useAuth';
 import { LastViewedProvider } from '@/hooks/useLastViewed';
 import { SavedProvider } from '@/hooks/useSaved';
 import { SplitLayout } from '@/components/SplitLayout';
@@ -27,6 +28,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <AuthProvider>
       <LastViewedProvider>
       <SavedProvider>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
@@ -71,6 +73,7 @@ export default function RootLayout() {
       )}
       </SavedProvider>
       </LastViewedProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

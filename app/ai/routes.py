@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 from app.ai import jobs, store
 from app.ai.providers import MODELS, available, resolve_model
 from app.api.auth import require_app_token
+from app.auth.deps import current_user
 
 router = APIRouter(prefix="/ai", tags=["ai-chat"], dependencies=[Depends(require_app_token)])
 
@@ -42,29 +43,35 @@ def models():
     return {"models": [{"key": m.key, "id": m.model_id, "label": m.label, "hint": m.hint} for m in available()]}
 
 
+def _owned(conv_id: str, user: dict) -> dict:
+    """The conversation, or 404 when it doesn't exist or belongs to someone else."""
+    conv = store.load(conv_id)
+    if not conv or conv.get("user_id") != user["id"]:
+        raise HTTPException(404, detail="conversation not found")
+    return conv
+
+
 @router.get("/conversations")
-def list_conversations():
-    return {"conversations": store.list_all()}
+def list_conversations(user: dict = Depends(current_user)):
+    return {"conversations": store.list_all(user["id"])}
 
 
 @router.post("/conversations")
-def create_conversation(body: NewConversation):
-    return store.create(resolve_model(body.model, MODELS["flash"]))
+def create_conversation(body: NewConversation, user: dict = Depends(current_user)):
+    return store.create(resolve_model(body.model, MODELS["flash"]), user_id=user["id"])
 
 
 @router.get("/conversations/{conv_id}")
-def get_conversation(conv_id: str):
-    conv = store.load(conv_id)
-    if not conv:
-        raise HTTPException(404, detail="conversation not found")
+def get_conversation(conv_id: str, user: dict = Depends(current_user)):
+    conv = _owned(conv_id, user)
     conv["pending"] = jobs.is_pending(conv_id)   # a reply is still being generated
     return conv
 
 
 @router.delete("/conversations/{conv_id}")
-def delete_conversation(conv_id: str):
-    if not store.delete(conv_id):
-        raise HTTPException(404, detail="conversation not found")
+def delete_conversation(conv_id: str, user: dict = Depends(current_user)):
+    _owned(conv_id, user)
+    store.delete(conv_id)
     return {"deleted": conv_id}
 
 
@@ -77,10 +84,8 @@ def _sse(frames):
 
 
 @router.post("/conversations/{conv_id}/messages")
-def post_message(conv_id: str, body: NewMessage):
-    conv = store.load(conv_id)
-    if not conv:
-        raise HTTPException(404, detail="conversation not found")
+def post_message(conv_id: str, body: NewMessage, user: dict = Depends(current_user)):
+    conv = _owned(conv_id, user)
     model = resolve_model(body.model, conv.get("model") or MODELS["flash"])
     try:
         job = jobs.start(conv, body.content.strip(), model)
@@ -90,7 +95,8 @@ def post_message(conv_id: str, body: NewMessage):
 
 
 @router.get("/conversations/{conv_id}/stream")
-def resume_stream(conv_id: str, from_: int = Query(0, alias="from", ge=0)):
+def resume_stream(conv_id: str, from_: int = Query(0, alias="from", ge=0), user: dict = Depends(current_user)):
+    _owned(conv_id, user)
     job = jobs.get(conv_id)
     if not job:
         raise HTTPException(404, detail="no reply in progress for this conversation")

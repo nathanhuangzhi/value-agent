@@ -3,6 +3,7 @@
  *   - Daily Digest — the archive home: batch banners + industries list.
  *   - Saved        — the user's own watchlist, with a universe search bar.
  *   - AI           — DeepSeek chat grounded in the archive's company data.
+ *   - Me           — account (email-code sign-in); custom metrics/charts next.
  *
  * Detail screens (digest / industry / ticker) live in the root Stack and
  * push over the tabs, so the tab bar hides while drilled in. iPad
@@ -58,6 +59,15 @@ export default function TabsLayout() {
           tabBarLabel: 'Saved',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bookmark-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="me"
+        options={{
+          title: 'Me',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" color={color} size={size} />
           ),
         }}
       />

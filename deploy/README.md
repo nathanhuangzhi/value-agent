@@ -9,7 +9,8 @@ of GitHub Actions. What lives where:
 | Secrets | `~/value-agent/.env` (chmod 600) — same keys as the old Actions secrets |
 | SEC cache | `~/value-agent/data/sec/<TICKER>.json` — persistent, incremental (no cold fetch) |
 | State files | `~/value-agent/data/*.json` — committed + pushed back to GitHub after each run via a write deploy key (`~/.ssh/id_ed25519_valueagent`) |
-| Watchlist | `data/watchlist.json` — the app's Saved tab syncs here (`/watchlist` on the same uvicorn); `daily_scan` folds these tickers into each day's batch. `daily_scan --watchlist-only --no-llm` fetches them on demand. |
+| Accounts | `data/app.db` (SQLite, box only) — users, sessions, per-user watchlists, custom metrics/charts. Sign-in codes go out through the digest's Gmail creds. |
+| Watchlist | per user in `app.db`; `data/watchlist.json` is the union the pipeline reads (`daily_scan` folds these tickers into each day's batch; `daily_scan --watchlist-only --no-llm` fetches them on demand). |
 | Published site | `~/public/value-agent/` — HTML + `api/`, served by `serve_reports.sh` on `127.0.0.1:8091`, fronted by `tailscale serve` at `https://debian-mac-air.tail38ab8e.ts.net/reports/` (tailnet only) |
 | AI chat service | `deploy/serve_ai.sh` — uvicorn `app.main:app` on `127.0.0.1:8000`, fronted by `tailscale serve` at `https://debian-mac-air.tail38ab8e.ts.net/ai/` (tailnet only). Conversations in `~/value-agent/data/ai_chats/` (gitignored). Restarted by `run_daily.sh` after each pull. |
 | Logs | `~/value-agent/logs/daily-YYYY-MM-DD.log` (30-day retention); `logs/ai.log` |
@@ -32,6 +33,8 @@ git remote set-url origin git@github.com-valueagent:nathanhuangzhi/value-agent.g
 tailscale serve --bg --set-path /reports http://127.0.0.1:8091
 tailscale serve --bg --set-path /ai http://127.0.0.1:8000/ai
 tailscale serve --bg --set-path /watchlist http://127.0.0.1:8000/watchlist
+tailscale serve --bg --set-path /auth http://127.0.0.1:8000/auth
+tailscale serve --bg --set-path /me http://127.0.0.1:8000/me
 
 # cron (local time on the box, PDT/PST)
 crontab -e

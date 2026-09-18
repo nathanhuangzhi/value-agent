@@ -23,6 +23,7 @@ import { Composer } from '@/components/chat/Composer';
 import { MessageRow } from '@/components/chat/MessageRow';
 import { ModelToggle } from '@/components/chat/ModelToggle';
 import { SelectTextSheet } from '@/components/SelectTextSheet';
+import { useAuth } from '@/hooks/useAuth';
 import { useConversation } from '@/hooks/useConversation';
 import { useModelPref } from '@/hooks/useModelPref';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
@@ -34,6 +35,7 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
   const insets = useSafeAreaInsets();
   const prefix = `#${ticker} `;
   const [model, pickModel, modelOptions] = useModelPref();
+  const { user } = useAuth();
   const chat = useConversation();
   const [input, setInput] = useState(prefix);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -86,7 +88,14 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
         <ModelToggle value={model} onChange={pickModel} options={modelOptions} />
       </View>
 
-      {chat.messages.length === 0 && !chat.streaming ? (
+      {!user ? (
+        <Pressable onPress={() => router.push('/me')} style={[styles.signIn, { borderColor: c.border, backgroundColor: c.surface }]}>
+          <Ionicons name="person-circle-outline" size={20} color={c.brand} />
+          <Text style={[styles.hint, { color: c.textPrimary, marginBottom: 0, flex: 1 }]}>Sign in to ask the AI about {ticker}.</Text>
+          <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+        </Pressable>
+      ) : null}
+      {user && chat.messages.length === 0 && !chat.streaming ? (
         <Text style={[styles.hint, { color: c.textMuted }]}>
           Ask anything about this company — the reply uses its SEC statements, ratios and filings.
         </Text>
@@ -109,7 +118,7 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
         </Pressable>
       ) : null}
 
-      <Composer
+      {user ? <Composer
         value={input}
         onChange={(v) => setInput(v.startsWith(prefix) ? v : prefix + v.replace(/^#\w+\s*/, ''))}
         placeholder={`${prefix}your question…`}
@@ -118,7 +127,7 @@ export function TickerChat({ ticker, onActiveChange }: { ticker: string; onActiv
         onSend={send}
         onStop={chat.stop}
         style={styles.composer}
-      />
+      /> : null}
       {chat.convId ? (
         <Pressable onPress={() => router.push('/ai')} hitSlop={6} style={styles.openLink}>
           <Text style={[styles.openText, { color: c.brand }]}>Continue in the AI tab →</Text>
@@ -176,6 +185,7 @@ const styles = StyleSheet.create({
   errorBar: { padding: spacing.sm, borderRadius: radii.md, marginBottom: spacing.sm },
   errorText: { fontSize: fontSize.sm },
   composer: { marginTop: spacing.xs },
+  signIn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radii.md, padding: spacing.md, marginBottom: spacing.sm },
   openLink: { alignSelf: 'flex-end', paddingVertical: spacing.sm },
   openText: { fontSize: fontSize.xs, fontWeight: '600', letterSpacing: 0.5 },
   iconBtn: { marginLeft: 'auto', marginRight: spacing.sm, padding: 2 },
