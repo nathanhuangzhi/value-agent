@@ -16,6 +16,7 @@ from app.ai.routes import router as ai_router
 from app.api.routes import router as api_router
 from app.api.watchlist_routes import router as watchlist_router
 from app.auth.routes import router as auth_router
+from app.metrics.routes import router as metrics_router
 from app.tools.paths import ENV_FILE
 
 # The AI chat routes call DeepSeek, whose key lives in .env (the scripts
@@ -35,6 +36,7 @@ app.include_router(api_router)
 app.include_router(ai_router)
 app.include_router(watchlist_router)
 app.include_router(auth_router)
+app.include_router(metrics_router)
 
 
 @app.get("/")

@@ -40,6 +40,7 @@ import {
   computeHistoricalTableColumns,
 } from '@/components/HistoricalTable';
 import { KPIGrid } from '@/components/KPIGrid';
+import { MyMetrics } from '@/components/MyMetrics';
 import { Section } from '@/components/Section';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ValuationGrid } from '@/components/ValuationGrid';
@@ -226,6 +227,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
 
         <Section title="Snapshot">
           <KPIGrid snapshot={data.snapshot} />
+          <MyMetrics ticker={data.ticker} />
         </Section>
 
         <Section title="Stock Price & Valuation">
