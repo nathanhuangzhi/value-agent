@@ -66,3 +66,30 @@ def test_watchlist_is_per_user_and_union_feeds_the_pipeline(client, mailbox, tmp
     client.delete("/watchlist/VIPS", headers=ha)
     assert wl.load_watchlist() == ["PDD", "QDEL"]
     assert client.get("/watchlist").status_code == 401
+
+
+def test_named_lists(client, mailbox, tmp_path, monkeypatch):
+    from app.tools import watchlist as wl
+    monkeypatch.setattr(wl, "WATCHLIST", tmp_path / "watchlist.json")
+    monkeypatch.setattr(wl, "watchlist_rows", lambda t=None: ([], []))
+    tok = sign_in(client, mailbox, "l@x.io")
+    h = {"Authorization": f"Bearer {tok}"}
+    # legacy shape still works and lands in the default list
+    client.put("/watchlist", json={"tickers": ["VIPS"]}, headers=h)
+    lists = client.get("/watchlist/lists", headers=h).json()["lists"]
+    assert [(x["name"], x["tickers"]) for x in lists] == [("Saved", ["VIPS"])]
+    default_id = lists[0]["id"]
+    # a second, named list
+    r = client.post("/watchlist/lists", json={"name": "  China   ADRs "}, headers=h)
+    assert r.status_code == 200 and r.json()["name"] == "China ADRs"
+    lid = r.json()["id"]
+    assert client.post("/watchlist/lists", json={"name": "China ADRs"}, headers=h).status_code == 422
+    assert client.put(f"/watchlist/lists/{lid}/tickers", json={"tickers": ["pdd", "VIPS"]}, headers=h).json()["tickers"] == ["PDD", "VIPS"]
+    assert wl.load_watchlist() == ["PDD", "VIPS"]                                   # union for the pipeline
+    client.delete(f"/watchlist/lists/{default_id}/tickers/VIPS", headers=h)
+    assert wl.load_watchlist() == ["PDD", "VIPS"]                                   # still in the other list
+    assert client.put(f"/watchlist/lists/{lid}", json={"name": "ADRs", "position": 0}, headers=h).json()["name"] == "ADRs"
+    assert client.delete(f"/watchlist/lists/{lid}", headers=h).json() == {"deleted": lid}
+    assert wl.load_watchlist() == []
+    assert client.get(f"/watchlist/lists/{lid}/tickers", headers=h).status_code in (404, 405)
+    assert client.delete("/watchlist/lists/999", headers=h).status_code == 404

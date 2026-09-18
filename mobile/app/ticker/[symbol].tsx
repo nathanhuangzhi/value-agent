@@ -30,6 +30,7 @@ import {
   usePriceHistory,
 } from '@/api/hooks';
 import { BusinessOverview } from '@/components/BusinessOverview';
+import { SaveToListsSheet } from '@/components/SaveToListsSheet';
 import { ScrollToBottomButton } from '@/components/ScrollToBottomButton';
 import { TickerChat } from '@/components/TickerChat';
 import { SHOW_LLM_ANALYSIS } from '@/config';
@@ -363,18 +364,23 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
  * on iPad-landscape, which renders without a Stack header. */
 function SaveButton({ symbol }: { symbol: string }) {
   const c = useColors();
-  const { isSaved, toggle } = useSaved();
+  const { isSaved, lists } = useSaved();
+  const [open, setOpen] = useState(false);
   const saved = isSaved(symbol);
   return (
-    <Pressable
-      onPress={() => toggle(symbol)}
-      hitSlop={10}
-      accessibilityRole="button"
-      accessibilityLabel={saved ? 'Remove from Saved' : 'Save company'}
-      style={styles.saveBtn}
-    >
-      <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={24} color={saved ? c.brand : c.textMuted} />
-    </Pressable>
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel={saved ? 'Saved — choose lists' : 'Save to a list'}
+        style={styles.saveBtn}
+      >
+        <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={24} color={saved ? c.brand : c.textMuted} />
+        {lists.length > 1 && saved ? <Text style={[styles.saveCount, { color: c.brand }]}>{lists.filter((l) => l.tickers.includes(symbol)).length}</Text> : null}
+      </Pressable>
+      <SaveToListsSheet symbol={symbol} visible={open} onClose={() => setOpen(false)} />
+    </>
   );
 }
 
@@ -415,6 +421,7 @@ const styles = StyleSheet.create({
   },
   headerRight: { alignItems: 'flex-end', marginLeft: spacing.md },
   saveBtn: { marginLeft: spacing.md, paddingTop: 2 },
+  saveCount: { position: 'absolute', right: -4, top: -2, fontSize: 10, fontWeight: '700' },
   fxRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   fxChip: { borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
   fxChipText: { fontSize: fontSize.xs, fontWeight: '700' },

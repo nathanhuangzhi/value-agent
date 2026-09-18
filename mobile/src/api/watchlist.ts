@@ -1,8 +1,8 @@
 /**
- * Sync the Saved tab to the pipeline box (`/watchlist`, next to `/ai` on
- * the same host). Fire-and-forget: the phone's AsyncStorage stays the
- * source of truth for what the user sees; the server copy is what the
- * daily run reads to fetch data for saved companies.
+ * The account's named lists on the box (`/watchlist/lists`, next to `/ai`).
+ * The phone keeps a cached copy (useSaved) so the tab renders offline;
+ * the server copy is what the daily run reads to fetch data for saved
+ * companies.
  */
 import { APP_TOKEN_HEADER, ApiError, BASE_URL } from './client';
 import { authHeaders } from './session';
@@ -24,15 +24,22 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (e) {
     throw new ApiError(0, `Network error reaching ${url}: ${e}`);
   }
-  if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText} at ${url}`);
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try { detail = (await res.json()).detail ?? detail; } catch { /* keep the status text */ }
+    throw new ApiError(res.status, detail);
+  }
   return (await res.json()) as T;
 }
 
-export type WatchlistResponse = { tickers: string[]; unknown: string[] };
+export type Watchlist = { id: number; name: string; position: number; tickers: string[] };
 
 export const watchlistApi = {
-  get: () => req<WatchlistResponse>(''),
-  /** Union-adds; never removes. */
-  add: (tickers: string[]) => req<WatchlistResponse>('', { method: 'PUT', body: JSON.stringify({ tickers }) }),
-  remove: (ticker: string) => req<WatchlistResponse>(`/${encodeURIComponent(ticker)}`, { method: 'DELETE' }),
+  lists: () => req<{ lists: Watchlist[] }>('/lists').then((r) => r.lists),
+  create: (name: string) => req<Watchlist>('/lists', { method: 'POST', body: JSON.stringify({ name }) }),
+  rename: (id: number, name: string) => req<Watchlist>(`/lists/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
+  reorder: (id: number, position: number) => req<Watchlist>(`/lists/${id}`, { method: 'PUT', body: JSON.stringify({ position }) }),
+  remove: (id: number) => req<{ deleted: number }>(`/lists/${id}`, { method: 'DELETE' }),
+  add: (id: number, tickers: string[]) => req<Watchlist>(`/lists/${id}/tickers`, { method: 'PUT', body: JSON.stringify({ tickers }) }),
+  removeTicker: (id: number, ticker: string) => req<Watchlist>(`/lists/${id}/tickers/${encodeURIComponent(ticker)}`, { method: 'DELETE' }),
 };

@@ -29,7 +29,9 @@ import {
 
 import { fetchIndustry, useSearchIndex } from '@/api/hooks';
 import type { SearchCompany, TickerRow as TickerRowData } from '@/api/types';
+import { ListChips } from '@/components/ListChips';
 import { TickerRow, TickerRowHeader } from '@/components/TickerRow';
+import { useAuth } from '@/hooks/useAuth';
 import { useLastViewed } from '@/hooks/useLastViewed';
 import { useSaved } from '@/hooks/useSaved';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
@@ -88,7 +90,11 @@ function useSavedKpiRows(saved: SearchCompany[]): Map<string, TickerRowData> {
 export default function SavedScreen() {
   const c = useColors();
   const index = useSearchIndex();
-  const { tickers: savedTickers, ready, isSaved, toggle, remove } = useSaved();
+  const { lists, ready, isSaved, add, remove } = useSaved();
+  const { user } = useAuth();
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const activeList = lists.find((l) => l.id === activeId) ?? lists[0] ?? null;
+  const savedTickers = useMemo(() => activeList?.tickers ?? [], [activeList]);
   const { lastCompany } = useLastViewed();
   const [query, setQuery] = useState('');
 
@@ -113,14 +119,14 @@ export default function SavedScreen() {
   const searching = query.trim().length > 0;
 
   const confirmRemove = (ticker: string) =>
-    Alert.alert(`Remove ${ticker}?`, 'It will disappear from your Saved list.', [
+    Alert.alert(`Remove ${ticker}?`, `It will leave “${activeList?.name ?? 'Saved'}”.`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => remove(ticker) },
+      { text: 'Remove', style: 'destructive', onPress: () => activeList && remove(ticker, activeList.id) },
     ]);
 
   const sections = searching
     ? [{ key: 'results', title: `RESULTS · ${results.length}`, data: results }]
-    : [{ key: 'saved', title: `SAVED · ${savedCompanies.length}`, data: savedCompanies }];
+    : [{ key: 'saved', title: `${(activeList?.name ?? 'Saved').toUpperCase()} · ${savedCompanies.length}`, data: savedCompanies }];
 
   return (
     <SectionList
@@ -151,6 +157,9 @@ export default function SavedScreen() {
               </Pressable>
             ) : null}
           </View>
+          {!searching ? (
+            <ListChips activeId={activeList?.id ?? null} onSelect={setActiveId} canManage={user !== null} />
+          ) : null}
           {index.error && !index.data ? (
             <Text style={[styles.note, { color: c.negative }]}>
               Search index unavailable: {index.error}
@@ -180,8 +189,8 @@ export default function SavedScreen() {
           return (
             <SearchResultRow
               company={item}
-              saved={isSaved(item.ticker)}
-              onToggle={() => toggle(item.ticker)}
+              saved={activeList ? activeList.tickers.includes(item.ticker) : isSaved(item.ticker)}
+              onToggle={() => activeList && (activeList.tickers.includes(item.ticker) ? remove(item.ticker, activeList.id) : add(item.ticker, activeList.id))}
             />
           );
         }

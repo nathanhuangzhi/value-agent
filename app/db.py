@@ -39,11 +39,25 @@ CREATE TABLE IF NOT EXISTS login_codes (
     attempts    INTEGER NOT NULL DEFAULT 0,
     sent_at     TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS watchlist (
+CREATE TABLE IF NOT EXISTS watchlist (             -- legacy single list; migrated into watchlists on first use
     user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     ticker      TEXT NOT NULL,
     added_at    TEXT NOT NULL,
     PRIMARY KEY (user_id, ticker)
+);
+CREATE TABLE IF NOT EXISTS watchlists (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    position    INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT NOT NULL,
+    UNIQUE (user_id, name)
+);
+CREATE TABLE IF NOT EXISTS watchlist_items (
+    watchlist_id INTEGER NOT NULL REFERENCES watchlists(id) ON DELETE CASCADE,
+    ticker      TEXT NOT NULL,
+    added_at    TEXT NOT NULL,
+    PRIMARY KEY (watchlist_id, ticker)
 );
 CREATE TABLE IF NOT EXISTS metrics (
     id          INTEGER PRIMARY KEY,
