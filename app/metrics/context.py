@@ -51,12 +51,25 @@ def _align(points: dict[str, float | None], periods: list[str], *, annual: bool)
     return [by_month.get(p[:7]) for p in periods]
 
 
+def _to_usd(points: dict[str, float | None], currency: str | None) -> dict[str, float | None]:
+    """Money series in a reporting currency are converted with the same daily
+    rates as the statements, so $gmv and revenue share a unit."""
+    if not currency or currency.upper() == "USD":
+        return points
+    rate = (repo.fx().get(currency.upper()) or {}).get("per_usd")
+    if not rate:
+        return points
+    return {k: (None if v is None else v / rate) for k, v in points.items()}
+
+
 def _user_series(user_id: int | None, ticker: str, q_periods: list[str], a_periods: list[str]) -> tuple[dict, dict]:
     if user_id is None:
         return {}, {}
     q_vals: dict[str, list[float | None]] = {}
     a_vals: dict[str, list[float | None]] = {}
     for name, s in values_for(user_id, ticker).items():
+        if s["unit"] == "money":
+            s = {**s, "points": _to_usd(s["points"], s.get("currency"))}
         if s["grid"] == "annual":
             a_vals[name] = _align(s["points"], a_periods, annual=True)
             q_vals[name] = [None] * len(q_periods)          # annual-only series: use $name.fy on a quarterly grid

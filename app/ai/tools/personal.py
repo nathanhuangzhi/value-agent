@@ -174,7 +174,9 @@ def arrange(metric_ids: list[int] | None, chart_ids: list[int] | None, user_id: 
                 "count…). It becomes $name in expressions and charts and is listed under My metrics for that "
                 "company; the daily pipeline extends it from new filings using extraction_hint. points: "
                 "[{period, value, source}] with period = quarter-end date (quarterly) or fiscal year (annual). "
-                "unit: number | money | pct | ratio; give currency for money in the reporting currency (CNY…). "
+                "VALUES IN FULL UNITS, never billions/millions (RMB 50.6 billion → 50600000000; pct as a "
+                "fraction, 12.5% → 0.125). unit: number | money | pct | ratio; for money give the reporting "
+                "currency (CNY…) — the engine converts it to USD like the statements, so revenue / $gmv works. "
                 "Saving again with the same name replaces the points.",
     params={"ticker": {"type": "string"}, "name": {"type": "string", "description": "short id, e.g. gmv"},
             "label": {"type": "string"}, "unit": {"type": "string"}, "currency": {"type": "string"},
