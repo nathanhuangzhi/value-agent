@@ -40,7 +40,7 @@ import {
   computeHistoricalTableColumns,
 } from '@/components/HistoricalTable';
 import { KPIGrid } from '@/components/KPIGrid';
-import { MyMetrics } from '@/components/MyMetrics';
+import { MyCharts, MyMetricsStrip } from '@/components/MyMetrics';
 import { Section } from '@/components/Section';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ValuationGrid } from '@/components/ValuationGrid';
@@ -88,6 +88,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
 
   const tableScrollX = useRef(new Animated.Value(0)).current;
   const tableTopRef = useRef<number | null>(null);
+  const sectionTopRef = useRef<number>(0);
   const tableHeightRef = useRef<number | null>(null);
   const [showStickyOverlay, setShowStickyOverlay] = useState(false);
   // "Jump to bottom" while a chat is going on down there and the reader is scrolled up.
@@ -227,10 +228,11 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
 
         <Section title="Snapshot">
           <KPIGrid snapshot={data.snapshot} />
-          <MyMetrics ticker={data.ticker} />
         </Section>
 
-        <Section title="Stock Price & Valuation">
+        {/* The account's own charts first, then the built-in price / valuation charts. */}
+        <Section title="My Charts">
+          <MyCharts ticker={data.ticker} />
           {heavyVisible && priceHistory.data ? (
             <ValuationGrid
               annual={data.annual}
@@ -244,27 +246,33 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
           )}
         </Section>
 
-        <View
-          onLayout={(e) => {
-            tableTopRef.current = e.nativeEvent.layout.y;
-            tableHeightRef.current = e.nativeEvent.layout.height;
-          }}
-        >
-          <Section title="Historical Data (annual + quarterly)">
-            {heavyVisible ? (
-              <HistoricalTable
-                statements={data.annual}
-                quarterly={data.quarterly}
-                priceHistory={priceHistory.data?.data}
-                externalScrollX={tableScrollX}
-                fxFactor={fxFactor}
-                currencyLabel={currencyLabel}
-              />
-            ) : (
-              <View style={styles.chartLoading}>
-                <ActivityIndicator color={c.brand} />
-              </View>
-            )}
+        {/* The account's metrics strip above the full statements table. The
+            sticky period header tracks the table alone, so its top is the
+            section's top plus the table's offset inside it. */}
+        <View onLayout={(e) => { sectionTopRef.current = e.nativeEvent.layout.y; }}>
+          <Section title="My Metrics (annual + quarterly)">
+            <MyMetricsStrip ticker={data.ticker} />
+            <View
+              onLayout={(e) => {
+                tableTopRef.current = sectionTopRef.current + e.nativeEvent.layout.y;
+                tableHeightRef.current = e.nativeEvent.layout.height;
+              }}
+            >
+              {heavyVisible ? (
+                <HistoricalTable
+                  statements={data.annual}
+                  quarterly={data.quarterly}
+                  priceHistory={priceHistory.data?.data}
+                  externalScrollX={tableScrollX}
+                  fxFactor={fxFactor}
+                  currencyLabel={currencyLabel}
+                />
+              ) : (
+                <View style={styles.chartLoading}>
+                  <ActivityIndicator color={c.brand} />
+                </View>
+              )}
+            </View>
           </Section>
         </View>
 
