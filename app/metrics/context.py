@@ -52,7 +52,7 @@ def build_context(ticker: str, *, grid: str = "quarterly", last_n: int | None = 
     if not (sec_row or yf_row):
         return None
     ph = (analyzed.get("price_history") or {}).get("data") or []
-    q = _blended_quarterly(sec_row, yf_row)
+    q = _blended_quarterly(sec_row, yf_row, last_n=40)     # charts may look back ten years; TTM needs history
     a = _blended_annual(sec_row, yf_row)
     q_periods, a_periods = _periods(q), _periods(a)
     if grid == "annual":

@@ -82,12 +82,12 @@ def _load_fx() -> dict:
     return repo.fx(_paths)
 
 
-def _blended_quarterly(sec_row, yf_row):
+def _blended_quarterly(sec_row, yf_row, *, last_n: int = 8):
     """Mirror what the renderer does: blend SEC + yfinance for the last
-    8 quarters across all three statements, then convert a non-USD
+    `last_n` quarters across all three statements, then convert a non-USD
     reporting currency to USD (app/tools/fx.py) so every downstream
     number — ratios, rows, the app's tables — is in one currency."""
-    stmts = sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row)
+    stmts = sec_to_yfinance_quarterly(sec_row or {}, last_n=last_n, yfinance_row=yf_row)
     return to_usd_statements(stmts, source_currencies(yf_row, sec_row), _load_fx())
 
 
