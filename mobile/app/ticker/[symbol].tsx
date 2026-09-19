@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 
 import {
   useTickerDetail,
@@ -390,6 +390,7 @@ function SaveButton({ symbol }: { symbol: string }) {
 // and was removed on 2026-09-17 — `git show 4ac597dd:mobile/app/ticker/[symbol].tsx`.)
 // ===========================================================================
 export default function TickerScreen() {
+  const c = useColors();
   const navigation = useNavigation();
   const device = useDeviceClass();
   const { symbol: initialSymbol } = useLocalSearchParams<{ symbol: string }>();
@@ -402,11 +403,22 @@ export default function TickerScreen() {
   }, [symbol, setLastCompany]);
 
   // Nav title. Skip on iPad-landscape (the SplitLayout renders without a Stack header).
+  // If this page is the first in the stack (deep link, restored state), the
+  // header has no back arrow — give it a Home button so the user is never stuck.
+  const router = useRouter();
   useEffect(() => {
-    if (device !== 'tablet-landscape') {
-      navigation.setOptions({ title: symbol });
-    }
-  }, [symbol, navigation, device]);
+    if (device === 'tablet-landscape') return;
+    navigation.setOptions({
+      title: symbol,
+      headerLeft: navigation.canGoBack()
+        ? undefined
+        : () => (
+            <Pressable onPress={() => router.replace('/')} hitSlop={10} accessibilityLabel="Home" style={{ paddingRight: 8 }}>
+              <Ionicons name="home-outline" size={22} color={c.textPrimary} />
+            </Pressable>
+          ),
+    });
+  }, [symbol, navigation, device, router, c.textPrimary]);
 
   return <TickerPageContent symbol={symbol} isCenter />;
 }
