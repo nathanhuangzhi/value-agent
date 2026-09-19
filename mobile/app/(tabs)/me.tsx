@@ -14,6 +14,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 import { formatDate } from '@/utils/format';
 
+/** Where a formula shows: every company page, or only the companies that have the $series it uses. */
+function scope(applies: string[] | null | undefined): string {
+  if (applies == null) return 'Every company page';
+  return applies.length ? `Only ${applies.join(', ')} (uses extracted series)` : 'No company has the series it needs yet';
+}
+
 export default function MeScreen() {
   const c = useColors();
   const { user, ready, signOut } = useAuth();
@@ -101,6 +107,7 @@ export default function MeScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.metricName, { color: c.textPrimary }]}>{m.name}</Text>
                 <Text style={[styles.mono, styles.metricExpr, { color: c.textMuted }]} numberOfLines={2}>{m.expr}</Text>
+                <Text style={[styles.meta, { color: c.textMuted }]}>{scope(m.applies_to)}</Text>
               </View>
               <Text style={[styles.fmt, { color: c.textMuted }]}>{m.format}</Text>
             </Pressable>
@@ -114,6 +121,7 @@ export default function MeScreen() {
                 <Text style={[styles.mono, styles.metricExpr, { color: c.textMuted }]} numberOfLines={2}>
                   {ch.spec.series.map((sr) => `${sr.label}: ${sr.expr}`).join(' · ')}
                 </Text>
+                <Text style={[styles.meta, { color: c.textMuted }]}>{scope(ch.applies_to)}</Text>
               </View>
               <Text style={[styles.fmt, { color: c.textMuted }]}>{ch.spec.period === 'annual' ? 'FY' : 'Q'}·{ch.spec.last_n ?? 12}</Text>
             </Pressable>

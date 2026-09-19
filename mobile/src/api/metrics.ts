@@ -5,14 +5,14 @@ import { authHeaders } from './session';
 const ROOT = BASE_URL.replace(/\/reports$/, '');
 
 export type MetricFormat = 'number' | 'ratio' | 'pct' | 'money' | 'bool';
-export type Metric = { id: number; name: string; expr: string; format: MetricFormat; position: number; created_at: string; updated_at: string };
+export type Metric = { id: number; name: string; expr: string; format: MetricFormat; position: number; created_at: string; updated_at: string; applies_to?: string[] | null };
 export type SeriesPoint = { period: string; value: number | null };
 export type Evaluated = Metric & { series: SeriesPoint[]; latest: number | null; error: string | null };
 export type PreviewResult = { series: SeriesPoint[]; latest: number | null; format: MetricFormat } | { error: string };
 export type ChartSeriesData = { label: string; kind: 'line' | 'bar'; axis: 'left' | 'right'; format: MetricFormat; values: (number | null)[] };
 export type ChartData = { id?: number; title: string; period?: 'quarterly' | 'annual'; periods?: string[]; series?: ChartSeriesData[]; error?: string; position?: number };
 export type ChartSpec = { title: string; period?: 'quarterly' | 'annual'; last_n?: number; series: { expr: string; label: string; kind?: 'line' | 'bar'; axis?: 'left' | 'right'; format?: MetricFormat }[] };
-export type Chart = { id: number; title: string; spec: ChartSpec; position: number; created_at: string; updated_at: string };
+export type Chart = { id: number; title: string; spec: ChartSpec; position: number; created_at: string; updated_at: string; applies_to?: string[] | null };
 export type CustomTableRow = { id: number | string; name: string; format: MetricFormat; annual: Record<string, number | null>; quarterly: Record<string, number | null> };
 export type Series = { id: number; ticker: string; name: string; label: string; unit: 'number' | 'money' | 'pct' | 'ratio'; currency: string | null; grid: 'quarterly' | 'annual'; points: { period: string; value: number | null; source: string }[]; source_hint: string | null; last_source: string | null };
 export type Aliases = {

@@ -51,7 +51,10 @@ def aliases():
 
 @router.get("/metrics")
 def list_metrics(user: dict = Depends(current_user)):
-    return {"metrics": service.list_metrics(user["id"])}
+    out = service.list_metrics(user["id"])
+    for m in out:
+        m["applies_to"] = service.applies_to(user["id"], [m["expr"]])
+    return {"metrics": out}
 
 
 @router.post("/metrics")
@@ -116,7 +119,10 @@ def delete_series(series_id: int, user: dict = Depends(current_user)):
 
 @router.get("/charts")
 def list_charts(user: dict = Depends(current_user)):
-    return {"charts": charts.list_charts(user["id"])}
+    out = charts.list_charts(user["id"])
+    for ch in out:
+        ch["applies_to"] = service.applies_to(user["id"], [s["expr"] for s in ch["spec"]["series"]])
+    return {"charts": out}
 
 
 @router.post("/charts")

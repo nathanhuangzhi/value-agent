@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from app.db import connect
 from app.metrics.context import build_context
-from app.metrics.expr import ExprError, evaluate, guess_format, validate
+from app.metrics.expr import ExprError, evaluate, guess_format, user_refs, validate
 from app.metrics.series import list_series
 
 FORMATS = ("number", "ratio", "pct", "money", "bool")
@@ -25,6 +25,23 @@ def _row(r) -> dict:
 def list_metrics(user_id: int) -> list[dict]:
     with connect() as cx:
         return [_row(r) for r in cx.execute("SELECT * FROM metrics WHERE user_id = ? ORDER BY position, id", (user_id,))]
+
+
+def applies_to(user_id: int, exprs: list[str]) -> list[str] | None:
+    """Companies an expression set is meaningful for: None = every company
+    (only statement items), else the tickers that have ALL the $series it uses."""
+    needed: set[str] = set()
+    for e in exprs:
+        try:
+            needed |= user_refs(validate(e))
+        except ExprError:
+            continue
+    if not needed:
+        return None
+    have: dict[str, set[str]] = {}
+    for s in list_series(user_id):
+        have.setdefault(s["ticker"], set()).add(s["name"])
+    return sorted(t for t, names in have.items() if needed <= names)
 
 
 def get_metric(user_id: int, metric_id: int) -> dict | None:
