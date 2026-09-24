@@ -402,21 +402,32 @@ export default function TickerScreen() {
     if (symbol) setLastCompany(symbol);
   }, [symbol, setLastCompany]);
 
-  // Nav title. Skip on iPad-landscape (the SplitLayout renders without a Stack header).
-  // If this page is the first in the stack (deep link, restored state), the
-  // header has no back arrow — give it a Home button so the user is never stuck.
+  // Nav title + an explicit back control. We draw it ourselves rather than
+  // relying on the stack's default button: this screen sets options on every
+  // symbol change, and a screen that is first in the stack (deep link,
+  // restored state) would otherwise have no way back at all. Falls back to
+  // Home when there is nothing to pop. Skipped on iPad-landscape, which
+  // renders through SplitLayout without a Stack header.
   const router = useRouter();
   useEffect(() => {
     if (device === 'tablet-landscape') return;
     navigation.setOptions({
       title: symbol,
-      headerLeft: navigation.canGoBack()
-        ? undefined
-        : () => (
-            <Pressable onPress={() => router.replace('/')} hitSlop={10} accessibilityLabel="Home" style={{ paddingRight: 8 }}>
-              <Ionicons name="home-outline" size={22} color={c.textPrimary} />
-            </Pressable>
-          ),
+      headerLeft: () => (
+        <Pressable
+          onPress={() => (navigation.canGoBack() ? navigation.goBack() : router.replace('/'))}
+          hitSlop={16}
+          accessibilityRole="button"
+          accessibilityLabel={navigation.canGoBack() ? 'Back' : 'Home'}
+          style={{ paddingRight: spacing.md, paddingVertical: 4 }}
+        >
+          <Ionicons
+            name={navigation.canGoBack() ? 'chevron-back' : 'home-outline'}
+            size={26}
+            color={c.textPrimary}
+          />
+        </Pressable>
+      ),
     });
   }, [symbol, navigation, device, router, c.textPrimary]);
 

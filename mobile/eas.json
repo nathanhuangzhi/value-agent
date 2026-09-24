@@ -28,6 +28,15 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://debian-mac-air.tail38ab8e.ts.net/reports"
       }
+    },
+    "testflight": {
+      "extends": "preview",
+      "distribution": "store",
+      "channel": "preview",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://debian-mac-air.tail38ab8e.ts.net/reports"
+      }
     }
   },
   "submit": {
