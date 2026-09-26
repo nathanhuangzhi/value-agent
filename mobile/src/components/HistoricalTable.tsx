@@ -431,6 +431,18 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     return yoyDelta(currC.num / currC.den, prevC.num / prevC.den);
   }
 
+  /** Custom rows get the same YoY tint as the rest of the table (a boolean
+   *  metric has no meaningful change, so it stays untinted). */
+  function yoyForCustomRow(row: CustomRow, col: Column, idx: number): number | null {
+    if (row.format === 'bool') return null;
+    const priorIdx = col.kind === 'annual' ? idx - 1 : idx - 4;
+    if (priorIdx < 0 || priorIdx >= columns.length) return null;
+    const prior = columns[priorIdx];
+    if (prior.kind !== col.kind) return null;
+    const values = col.kind === 'annual' ? row.annual : row.quarterly;
+    return yoyDelta(values[col.period] ?? null, values[prior.period] ?? null);
+  }
+
   function yoyTint(delta: number | null): string | undefined {
     if (delta == null) return undefined;
     if (delta >= YOY_GREEN) return c.statusOkBg;
@@ -545,6 +557,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                         const v = (col.kind === 'annual' ? row.annual : row.quarterly)[col.period] ?? null;
                         const money = row.format === 'money' && v != null ? v * fxFactor : v;
                         text = formatMetric(money, row.format);
+                        yoy = yoyForCustomRow(row, col, idx);
                       } else {
                         // valuation
                         text = resolveValuationCell(row, col);
