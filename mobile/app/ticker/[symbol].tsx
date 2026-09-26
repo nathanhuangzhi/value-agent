@@ -41,7 +41,7 @@ import {
   computeHistoricalTableColumns,
 } from '@/components/HistoricalTable';
 import { KPIGrid } from '@/components/KPIGrid';
-import { MyCharts, MyMetricsStrip, useCustom } from '@/components/MyMetrics';
+import { MyCharts, useCustom } from '@/components/MyMetrics';
 import { Section } from '@/components/Section';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ValuationGrid } from '@/components/ValuationGrid';
@@ -248,12 +248,11 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
           )}
         </Section>
 
-        {/* The account's metrics strip above the full statements table. The
-            sticky period header tracks the table alone, so its top is the
+        {/* The account's metrics are rows of the table's Custom Metrics section.
+            The sticky period header tracks the table alone, so its top is the
             section's top plus the table's offset inside it. */}
         <View onLayout={(e) => { sectionTopRef.current = e.nativeEvent.layout.y; }}>
           <Section title="My Metrics (annual + quarterly)">
-            <MyMetricsStrip ticker={data.ticker} />
             <View
               onLayout={(e) => {
                 tableTopRef.current = sectionTopRef.current + e.nativeEvent.layout.y;
