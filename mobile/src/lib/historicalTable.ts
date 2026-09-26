@@ -11,6 +11,8 @@ export const MAX_QUARTERLY = 8;
 export const LABEL_WIDTH = 132;
 export const CELL_WIDTH = 70;
 export const ROW_HEIGHT = 30;
+/** Custom rows carry the user's own wording, which needs two lines to read. */
+export const CUSTOM_ROW_HEIGHT = 44;
 export const HEADER_HEIGHT = 28;
 export const SECTION_HEADER_HEIGHT = 26;
 

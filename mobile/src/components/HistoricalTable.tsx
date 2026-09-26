@@ -30,6 +30,7 @@ import { formatMetric } from '@/api/metrics';
 import { useColors, fontSize, spacing } from '@/theme/colors';
 import {
   CELL_WIDTH,
+  CUSTOM_ROW_HEIGHT,
   HEADER_HEIGHT,
   LABEL_WIDTH,
   MAX_ANNUAL,
@@ -147,6 +148,10 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     }
     return m;
   }, [priceHistory]);
+
+  /** Custom rows are taller so a user-written label can wrap to two lines;
+   *  the frozen column and the scrolling cells must agree on every height. */
+  const rowHeight = (row: Row) => (row.kind === 'custom' ? CUSTOM_ROW_HEIGHT : ROW_HEIGHT);
 
   const onContentSizeChange = useCallback(() => {
     scrollRef.current?.scrollToEnd({ animated: false });
@@ -453,10 +458,13 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
               {section.rows.map((row) => (
                 <View
                   key={row.label}
-                  style={[styles.labelCell, { height: ROW_HEIGHT },
+                  style={[styles.labelCell, { height: rowHeight(row) },
                     row.kind === 'raw' && row.dividerAbove ? { borderTopWidth: 1, borderTopColor: c.border } : null]}
                 >
-                  <Text style={[styles.labelText, { color: c.textPrimary }]} numberOfLines={1}>
+                  <Text
+                    style={[styles.labelText, { color: c.textPrimary }, row.kind === 'custom' && styles.labelTextCustom]}
+                    numberOfLines={row.kind === 'custom' ? 3 : 1}
+                  >
                     {row.label}
                   </Text>
                 </View>
@@ -514,7 +522,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                 {section.rows.map((row) => (
                   <View
                     key={row.label}
-                    style={[styles.valueRow, { height: ROW_HEIGHT },
+                    style={[styles.valueRow, { height: rowHeight(row) },
                       row.kind === 'raw' && row.dividerAbove ? { borderTopWidth: 1, borderTopColor: c.border } : null]}
                   >
                     {columns.map((col, idx) => {
@@ -555,7 +563,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                             styles.cell,
                             {
                               width: CELL_WIDTH,
-                              height: ROW_HEIGHT,
+                              height: rowHeight(row),
                               backgroundColor: tint,
                             },
                             idx === dividerIdx && { borderLeftWidth: 2, borderLeftColor: c.border },
@@ -748,6 +756,10 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: fontSize.sm,
     fontWeight: '500',
+  },
+  labelTextCustom: {
+    fontSize: fontSize.xs,
+    lineHeight: 13,
   },
   cellText: {
     fontSize: fontSize.sm,
