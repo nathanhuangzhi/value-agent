@@ -6,6 +6,7 @@ import pytest
 from app.tools.ashare_adapter import (
     ashare_source_row,
     dedupe,
+    dividend_cash,
     latest_daily_basic,
     main_business,
     market_cap,
@@ -82,6 +83,14 @@ def _raw():
         "cashflow_q": [],
         "daily_basic": [{"trade_date": "20260923", "total_mv": 5590196.48, "pe_ttm": 10.06},
                         {"trade_date": "20260924", "total_mv": 5758455.8592, "pe_ttm": 10.4959}],
+        "dividend": [
+            # FY2025 final: ¥2.00/share paid 2026-05-15 → Q2 2026
+            {"end_date": "20251231", "div_proc": "实施", "cash_div": 2.0, "cash_div_tax": 2.0,
+             "ex_date": "20260515", "pay_date": "20260515"},
+            # the board's proposal for the next one — not yet paid
+            {"end_date": "20260630", "div_proc": "预案", "cash_div": 0.0, "cash_div_tax": 0.6,
+             "ex_date": None, "pay_date": None},
+        ],
         "fina_mainbz": [
             {"end_date": "20251231", "bz_item": "海外销售", "bz_code": "D",
              "bz_sales": 21107906300.0, "bz_cost": 14855650600.0, "bz_profit": 6252255700.0,
@@ -138,3 +147,27 @@ def test_main_business_drops_the_rollup_rows():
 def test_no_payload_is_not_an_error():
     assert ashare_source_row(None) is None
     assert market_cap(None) is None
+
+
+def test_dividends_come_from_the_executed_records_only():
+    """Chinese cash flow bundles dividends with interest, so the payout is
+    read from the 分红 records; 预案 (proposed) must not count as paid."""
+    raw = _raw()
+    shares = {"2025-12-31": 2213939223.0}
+    div = dividend_cash(raw, shares)
+    assert div == {"2026-06-30": pytest.approx(-2.0 * 2213939223.0)}   # booked to the pay quarter
+
+
+def test_dividend_lands_on_both_grids():
+    row = ashare_source_row(_raw())
+    q = row["quarterly"]["cash_dividends_paid"]["2026-06-30"]
+    assert q["val"] == pytest.approx(-4427878446.0)
+    assert q["source"] == "ashare"
+    # …and the fiscal year it was paid in, so an annual column shows it too.
+    assert row["annual"]["cash_dividends_paid"]["2026"]["val"] == pytest.approx(-4427878446.0)
+
+
+def test_no_dividend_records_is_not_an_error():
+    raw = {**_raw(), "dividend": []}
+    assert dividend_cash(raw, {"2025-12-31": 100.0}) == {}
+    assert "cash_dividends_paid" not in ashare_source_row(raw)["quarterly"]

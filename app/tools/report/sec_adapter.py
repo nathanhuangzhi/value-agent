@@ -46,6 +46,8 @@ SEC_TO_YFINANCE_INCOME = {
 SEC_TO_YFINANCE_CASHFLOW = {
     "operating_cf": "Cash Flow From Continuing Operating Activities",
     "capex": "Capital Expenditure",
+    # Feeds the snapshot's Dividend Rate (ratios._ttm_dividend_per_share).
+    "cash_dividends_paid": "Cash Dividends Paid",
 }
 
 SEC_TO_YFINANCE_BALANCE = {

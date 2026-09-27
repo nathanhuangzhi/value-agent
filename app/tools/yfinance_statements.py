@@ -76,6 +76,12 @@ _CASHFLOW_LABELS: dict[str, list[str]] = {
     "operating_cf": ["Operating Cash Flow",
                       "Cash Flow From Continuing Operating Activities"],
     "capex": ["Capital Expenditure", "Purchase Of PPE"],
+    # Present in 135 of 400 raw caches on the box — downloaded all along,
+    # just never extracted, which is why every company's Dividend Rate read
+    # $0. "Cash Dividends Paid" is the common-stock figure; the preferred
+    # line is deliberately not a fallback.
+    "cash_dividends_paid": ["Cash Dividends Paid", "Common Stock Dividend Paid",
+                             "Dividends Paid Direct"],
 }
 
 

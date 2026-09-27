@@ -422,6 +422,14 @@ EPS_METRICS: dict[str, list[str]] = {
 
 CASH_FLOW_METRICS: dict[str, list[str]] = {
     "operating_cf": ["NetCashProvidedByUsedInOperatingActivities"],
+    # Cash actually paid to common holders. Preferred dividends and
+    # minority-interest distributions are deliberately excluded — the
+    # snapshot's Dividend Rate is a per-common-share figure.
+    "cash_dividends_paid": [
+        "PaymentsOfDividendsCommonStock",
+        "PaymentsOfDividends",
+        "PaymentsOfOrdinaryDividends",
+    ],
     "capex": [
         "PaymentsToAcquirePropertyPlantAndEquipment",
         "PaymentsToAcquireProductiveAssets",

@@ -203,10 +203,32 @@ is what keeps them out of the daily digest — by design.
 - **Validation.** `validate_ticker(..., sec_expected=False)` drops the
   XBRL-presence tier for these companies (`SEC_ONLY_RULES`) — otherwise a
   complete page shows a red banner for filings that will never exist.
-- **Chat.** SEC-based tools have nothing on file; `main_business`
-  (主营业务构成 by region and product) and `compare_sources` are the A-share
-  additions. `data/ashare*` and `data/eastmoney*` are gitignored views — the
-  tracked `companies_analyzed.json` row is what defines the company.
+- **What's on disk.** `data/ashare_raw/<T>.json` keeps every interface in
+  full — 三大报表 (85 / 152 / 97 columns, 合并 and 单季), `fina_indicator` (108
+  ratios), `fina_mainbz`, `dividend`, `forecast`, `express`, `top10_holders`,
+  `stk_holdernumber`, and the complete `daily` / `daily_basic` history — so
+  surfacing a new line item is a `--reparse`, never a re-download. The mapped
+  view (`data/ashare/<T>.json`) exposes the ~27 metrics the blend vocabulary
+  has a home for.
+- **年报 / 半年报.** Chinese issuers file a PDF with 巨潮资讯网, not an HTML
+  10-K, so `scripts/fetch_ashare_reports.py` downloads it and converts it to
+  **Markdown** with pymupdf4llm (`app/tools/ashare_reports.py` → `data/ashare_reports/`).
+  Headings stay headings and 合并利润表 stays a table, and the TOC is built from
+  the filing's own numbering (第N节 → 一、→ (一) → 1、) with the section span
+  running to the next heading at its own level or shallower. cninfo needs its
+  internal `orgId`, which comes from the platform's own 6,258-row lookup table
+  — guessing it returns an empty result set.
+- **Chat.** The annual-report tools dispatch per ticker (`_store` in
+  `app/ai/tools/annual_reports.py`); `main_business`, `ashare_indicators`,
+  `ashare_shareholders`, `ashare_guidance` and `compare_sources` are the
+  A-share additions. `data/ashare*`, `data/eastmoney*` are gitignored views —
+  the tracked `companies_analyzed.json` row is what defines the company.
+- **Dividends** were long a blank for *every* company (`Dividend Rate` read $0
+  across all 1,262): nothing extracted the line. yfinance's raw caches had
+  "Cash Dividends Paid" all along, so it is now in `_CASHFLOW_LABELS`, the SEC
+  concept map and the blend vocabulary; A-shares get it from the 分红 records
+  (`cash_div_tax` × shares, booked to the quarter of `pay_date`) because the
+  Chinese cash-flow line bundles dividends with interest.
 
 ## Daily automation (self-hosted, debian-mac-air)
 

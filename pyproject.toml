@@ -22,6 +22,10 @@ dependencies = [
     "pandas",
     "matplotlib",
     "markdown-it-py",
+    # A-share 年报 arrive as PDF (cninfo); pymupdf4llm converts them to the
+    # Markdown the chat reads (app/tools/ashare_reports.py).
+    "pymupdf",
+    "pymupdf4llm",
 ]
 
 [project.optional-dependencies]

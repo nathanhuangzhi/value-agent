@@ -15,7 +15,11 @@ so re-mapping after a field-map change is `--reparse`, not a re-download —
 same contract as `data/sec_raw` and `data/yfinance_raw`.
 
 Interfaces used (all need ≥2000 积分): stock_basic, income, balancesheet,
-cashflow, daily_basic, fina_mainbz.
+cashflow, daily_basic, daily, fina_indicator, fina_mainbz, dividend,
+forecast, express, top10_holders, stk_holdernumber. Everything the API
+returns is kept in the raw file, whether or not the app surfaces it — the
+`_vip` bulk variants (5000 积分) are the only thing out of reach, and they
+only matter for whole-market pulls.
 """
 from __future__ import annotations
 
@@ -105,16 +109,30 @@ def fetch_raw(ticker: str, *, start_date: str = "20120101") -> dict:
         "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "tushare",
         "stock_basic": call("stock_basic", {"ts_code": code}),
+        # Statements: 合并报表 (report_type 1, YTD) and 单季合并 (2).
         "income": call("income", p),
         "income_q": call("income", {**p, "report_type": "2"}),
         "balancesheet": call("balancesheet", p),
         "cashflow": call("cashflow", p),
         "cashflow_q": call("cashflow", {**p, "report_type": "2"}),
+        # 财务指标: 108 ready-made ratios (turnover days, diluted ROE, …).
+        "fina_indicator": call("fina_indicator", p),
+        # 主营业务构成 by region / industry / product.
         "fina_mainbz": call("fina_mainbz", {**p, "start_date": "20180101"}),
+        # 分红送股: every stage (预案 → 股东大会通过 → 实施); the adapter reads
+        # the 实施 rows, which is what the snapshot's Dividend Rate needs.
+        "dividend": call("dividend", {"ts_code": code}),
+        # 业绩预告 / 业绩快报 — results the company flagged before the filing.
+        "forecast": call("forecast", p),
+        "express": call("express", p),
+        # 股东: top ten holders per period, and the holder count over time.
+        "top10_holders": call("top10_holders", p),
+        "stk_holdernumber": call("stk_holdernumber", p),
     }
-    # daily_basic: the last ~30 sessions is enough for the latest market cap
-    # and Tushare's own pe_ttm/pb, which the cross-check reconciles against.
-    out["daily_basic"] = call("daily_basic", {"ts_code": code})[:30]
+    # Daily bars and daily valuation, full history (one stock is ~7k rows).
+    # The charts use the 10-year monthly series; these are the raw record.
+    out["daily"] = call("daily", {"ts_code": code, "start_date": start_date})
+    out["daily_basic"] = call("daily_basic", {"ts_code": code, "start_date": start_date})
     return out
 
 

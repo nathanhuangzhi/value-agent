@@ -15,6 +15,11 @@ Two quirks of Chinese filings are handled here:
   can carry nulls a later one fills (`ebit` on 600066's 2025Q1). Dedupe is
   therefore per *cell*: rows are applied oldest-announced first and the last
   non-null value wins.
+* **Dividends.** Chinese cash-flow statements bundle dividends with interest
+  (`c_pay_dist_dpcp_int_exp`), so the payout comes from the 分红 records
+  instead: each 实施 row's per-share amount × the share count, booked to the
+  quarter its `pay_date` falls in — i.e. cash actually paid in the period,
+  the same basis as a US filer's "Cash Dividends Paid" line.
 * **YTD cumulation.** Income and cash flow are cumulative within the fiscal
   year (Q1 / 中报 / 三季报 / 年报). Tushare's `report_type=2` gives true
   single quarters; where it's missing, `ytd_to_quarter` differences
@@ -150,6 +155,34 @@ def ytd_to_quarter(by_end: dict[str, dict], fields: dict[str, tuple[str, ...]]) 
     return out
 
 
+def dividend_cash(raw: dict | None, shares_by_end: dict[str, float]) -> dict[str, float]:
+    """{quarter-end ISO: cash dividend paid that quarter, negative}.
+
+    Only 实施 (executed) records count — 预案 and 股东大会通过 are proposals.
+    The amount is per share (`cash_div_tax`, pre-tax, which is what a payout
+    ratio and a yield are quoted on), multiplied by the share count reported
+    at or before the payment."""
+    out: dict[str, float] = {}
+    if not raw:
+        return out
+    shares_sorted = sorted(shares_by_end.items())
+    for row in raw.get("dividend") or []:
+        if row.get("div_proc") != "实施":
+            continue
+        per_share = _num(row.get("cash_div_tax")) or _num(row.get("cash_div"))
+        pay = str(row.get("pay_date") or row.get("ex_date") or "")
+        if not per_share or len(pay) != 8:
+            continue
+        paid_iso = f"{pay[:4]}-{pay[4:6]}-{pay[6:8]}"
+        idx = min((int(pay[4:6]) - 1) // 3, 3)
+        quarter = f"{pay[:4]}-{_QUARTER_ENDS[idx]}"
+        shares = next((v for end, v in reversed(shares_sorted) if end <= paid_iso), None)
+        if not shares:
+            continue
+        out[quarter] = out.get(quarter, 0.0) - per_share * shares
+    return out
+
+
 def _entries(by_end: dict[str, dict], fields: dict[str, tuple[str, ...]],
              *, period_key, only_year_end: bool = False,
              source: str = "ashare") -> dict[str, dict]:
@@ -232,6 +265,21 @@ def ashare_source_row(raw: dict | None) -> dict | None:
         _entries(bal_y, BALANCE_FIELDS, period_key=qk),
         _entries(cf_q, CASHFLOW_FIELDS, period_key=qk),
     ))
+    # Dividends: paid once or twice a year, booked to the quarter they hit.
+    shares_by_end = {end: v for end, row in bal_y.items()
+                     if (v := _num(row.get("total_share")))}
+    div = dividend_cash(raw, shares_by_end)
+    for quarter, amount in div.items():
+        quarterly.setdefault("cash_dividends_paid", {})[quarter] = {
+            "val": amount, "end": quarter, "concept": "cash_div_tax × total_share",
+            "source": "ashare",
+        }
+    for year in {q[:4] for q in div}:
+        annual.setdefault("cash_dividends_paid", {})[year] = {
+            "val": sum(v for q, v in div.items() if q[:4] == year),
+            "end": f"{year}-12-31", "concept": "cash_div_tax × total_share",
+            "source": "ashare",
+        }
     basic = (raw.get("stock_basic") or [{}])[0]
     return {
         "ticker": raw.get("ticker") or "",

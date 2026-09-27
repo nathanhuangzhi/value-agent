@@ -8,17 +8,61 @@ from app.log import get_logger
 log = get_logger(__name__)
 
 
+_TOC_BUDGET = 70          # lines of table of contents per filing
+
+
+def _toc_lines(toc: list[dict]) -> list[str]:
+    """One line per section, shallowest levels first. A Chinese 年报 has ~400
+    headings (第N节 → 一、 → (一) → 1、); listing them all would bury the
+    reply, so deeper levels are dropped and their existence noted — the model
+    can still reach them with a title or search_annual_report."""
+    if len(toc) <= _TOC_BUDGET or not any("level" in h for h in toc):
+        return [f"- {h['key']}: {h['title']}  ({h['end'] - h['line']} lines)" for h in toc]
+    kept: list[dict] = []
+    for level in sorted({h.get("level", 1) for h in toc}):
+        at_level = [h for h in toc if h.get("level", 1) <= level]
+        if len(at_level) > _TOC_BUDGET:
+            break
+        kept = at_level
+    out = [f"- {h['key']}: {h['title']}  ({h['end'] - h['line']} lines)" for h in kept]
+    hidden = len(toc) - len(kept)
+    if hidden:
+        out.append(f"- (+{hidden} deeper sub-sections not listed — ask by title, "
+                   f"or use search_annual_report)")
+    return out
+
+
+def _store(ticker: str):
+    """Which report store a ticker belongs to. A-shares file a PDF with
+    cninfo, not an HTML 10-K with EDGAR, so they have their own store — the
+    reading helpers (`find_section`, `section_text`, `search_text`) are shared."""
+    from app.tools.ashare_tools import is_ashare
+    if is_ashare(ticker):
+        from app.tools import ashare_reports
+        return ashare_reports
+    from app.tools import sec_annual_reports
+    return sec_annual_reports
+
+
 def _annual_index(ticker: str, *, fetch: bool = True):
     """The cached annual-report index; fetch the latest report on demand when empty."""
-    from app.tools.sec_annual_reports import load_index, sync_ticker
+    store = _store(ticker)
     t = ticker.upper()
-    idx = load_index(t)
+    idx = store.load_index(t)
     if not idx.get("filings") and fetch:
+        if store.__name__.endswith("ashare_reports"):
+            try:
+                idx = store.sync_ticker(t, keep=1, log=lambda *_: None)
+            except Exception as e:
+                return None, (f"could not fetch {t}'s 年报 from cninfo: {type(e).__name__}: {e}")
+            if not idx.get("filings"):
+                return None, f"no 年报 found on cninfo for {t}"
+            return idx, None
         cik = repo.cik_for(t)
         if not cik:
             return None, f"no CIK on file for {t}"
         try:
-            idx = sync_ticker(t, cik, keep=1, log=lambda *_: None)
+            idx = store.sync_ticker(t, cik, keep=1, log=lambda *_: None)
         except Exception as e:
             return None, f"could not fetch {t}'s annual report from EDGAR: {type(e).__name__}: {e}"
     if not idx.get("filings"):
@@ -53,8 +97,8 @@ def list_annual_reports(ticker: str) -> str:
     out = [f"## Annual reports on file for {ticker.upper()}"]
     for f in idx["filings"]:
         out.append(f"\n### {f['form']} for fiscal year {f['fiscal_year']} (period {f.get('report_date')}, filed {f['filed']}, {f['chars']:,} chars)")
-        for h in f.get("toc") or []:
-            out.append(f"- {h['key']}: {h['title']}  ({h['end'] - h['line']} lines)")
+        for h in _toc_lines(f.get("toc") or []):
+            out.append(h)
     out.append("\nRead one with get_annual_report_section(ticker, section=<key or title words>, fiscal_year=<YYYY>).")
     return "\n".join(out)
 
@@ -68,7 +112,8 @@ def list_annual_reports(ticker: str) -> str:
 )
 def get_annual_report_section(ticker: str, section: str, fiscal_year: str | None,
                                    offset: int | None, max_chars: int | None) -> str:
-    from app.tools.sec_annual_reports import find_section, read_text, section_text
+    from app.tools.sec_annual_reports import find_section, section_text
+    read_text = _store(ticker).read_text
     f, err = _annual_filing(ticker, fiscal_year)
     if err:
         return err
@@ -94,7 +139,8 @@ def get_annual_report_section(ticker: str, section: str, fiscal_year: str | None
     status="Searching {ticker}'s annual report for “{keyword}”…",
 )
 def search_annual_report(ticker: str, keyword: str, fiscal_year: str | None) -> str:
-    from app.tools.sec_annual_reports import read_text, search_text
+    from app.tools.sec_annual_reports import search_text
+    read_text = _store(ticker).read_text
     f, err = _annual_filing(ticker, fiscal_year)
     if err:
         return err

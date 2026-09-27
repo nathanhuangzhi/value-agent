@@ -201,6 +201,9 @@ def main():
         # universe — which is what keeps them out of the digest), so this is
         # where their prices, statements and source cross-check are refreshed.
         _run_stage("refresh_ashare", ["-m", "scripts.refresh_ashare"])
+        # Their 年报 / 半年报 come from cninfo as PDF; already-converted
+        # filings are skipped, so this only does work after a new filing.
+        _run_stage("fetch_ashare_reports", ["-m", "scripts.fetch_ashare_reports"])
         # Users' extracted series (GMV, segment figures…) pick up the new
         # filings (DeepSeek Flash, budgeted; skipped when no series exist).
         _run_stage("update_series", ["-m", "scripts.update_series"])
