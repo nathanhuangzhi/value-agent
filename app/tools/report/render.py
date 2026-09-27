@@ -9,6 +9,7 @@ import re
 
 from markdown_it import MarkdownIt
 
+from app.data import repo
 from app.tools.fx import (
     currency_meta,
     quote_fx,
@@ -120,8 +121,11 @@ def _extract_blended_statements(row: dict) -> dict:
     cf_quarterly = (fs.get("cash_flow") or {}).get("quarterly") or []
 
     sec_row = _get_sec_data().get(ticker)
+    # Same precedence the API uses (app/data/repo.gap_fill_row):
+    # SEC XBRL > Tushare (A-shares) > 6-K > yfinance, per cell.
     yf_row = overlay_source_row(_get_yfinance_data().get(ticker),
                                 sixk_as_source_row(_get_sixk_data().get(ticker)))
+    yf_row = overlay_source_row(yf_row, repo.ashare().get(ticker))
     currency = reporting_currency(yf_row, sec_row)
     by_source = source_currencies(yf_row, sec_row)
     if sec_row or yf_row:

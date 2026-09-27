@@ -18,6 +18,12 @@ def raw():
     }
 
 
+@pytest.fixture(autouse=True)
+def fx(monkeypatch):
+    """A fixed CNY rate, so the stored USD market cap is predictable."""
+    monkeypatch.setattr(add_company, "load_fx", lambda: {"CNY": {"per_usd": 6.7125}})
+
+
 @pytest.fixture
 def offline(monkeypatch):
     """No network: yfinance profile unavailable, prices stubbed."""
@@ -33,7 +39,10 @@ def test_row_is_marked_non_sec_and_cny_quoted(raw, offline):
     assert row["cik"] is None                       # nothing to fetch from EDGAR
     assert row["quote_currency"] == "CNY"           # drives app/tools/fx.quote_fx
     assert row["ts_code"] == "600066.SH"
-    assert row["market_cap"] == 57584558592.0       # 万元 → yuan
+    # 总市值 comes in 万元; the row stores USD (what the search index and the
+    # industry tables assume) and keeps the quoted figure beside it.
+    assert row["market_cap_native"] == 57584558592.0
+    assert row["market_cap"] == pytest.approx(57584558592.0 / 6.7125)
     assert row["price_history"]["data"][0]["close"] == 26.01
 
 
@@ -53,7 +62,8 @@ def test_yfinance_identity_is_preferred_when_available(raw, monkeypatch):
     row = add_company.build_row("600066.SS", raw=raw)
     assert row["industry"] == "Farm & Heavy Construction Machinery"   # the app groups by this
     assert row["exchange"] == "SHH"
-    assert row["market_cap"] == 57584558592.0        # Tushare's still wins for the figure
+    # Tushare's 总市值 still wins over yfinance's marketCap for the figure.
+    assert row["market_cap_native"] == 57584558592.0
 
 
 def test_upsert_appends_then_refreshes_in_place(tmp_path, monkeypatch, raw, offline):

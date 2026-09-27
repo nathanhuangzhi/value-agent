@@ -30,9 +30,10 @@ from datetime import date
 from app.db import connect
 from app.log import get_logger
 from app.tools import watchlist as wl
-from app.tools.ashare_adapter import latest_daily_basic, market_cap
+from app.tools.ashare_adapter import market_cap
 from app.tools.ashare_tools import fetch, is_ashare, ts_code
 from app.tools.financials_tools import fetch_price_history
+from app.tools.fx import load_fx
 from app.tools.json_io import atomic_write_json, read_json_array
 from app.tools.paths import COMPANIES_ANALYZED
 
@@ -72,7 +73,13 @@ def build_row(ticker: str, *, name: str | None = None, raw: dict | None = None) 
     basic = (raw.get("stock_basic") or [{}])[0]
     yfp = _yf_profile(ticker)
     prices = fetch_price_history(ticker)
-    mcap = market_cap(raw) or yfp.get("market_cap")
+    # Market cap is stored in USD like every other row's — the search index,
+    # the industry tables and the snapshot fallback all assume that. The
+    # quoted figure is kept beside it for reference.
+    mcap_native = market_cap(raw) or yfp.get("market_cap")
+    quote_ccy = yfp.get("quote_currency") or "CNY"
+    per_usd = (load_fx().get(quote_ccy) or {}).get("per_usd")
+    mcap = (mcap_native / per_usd) if (mcap_native and per_usd) else mcap_native
     return {
         "ticker": ticker,
         "ts_code": ts_code(ticker),
@@ -81,6 +88,7 @@ def build_row(ticker: str, *, name: str | None = None, raw: dict | None = None) 
         "sector": yfp.get("sector") or _SECTOR_FALLBACK,
         "industry": yfp.get("industry") or basic.get("industry") or "Uncategorized",
         "market_cap": mcap,
+        "market_cap_native": mcap_native,
         "country": yfp.get("country") or "China",
         "exchange": yfp.get("exchange") or ts_code(ticker).rpartition(".")[2],
         "business_overview": yfp.get("business_overview") or "",
@@ -89,7 +97,7 @@ def build_row(ticker: str, *, name: str | None = None, raw: dict | None = None) 
         # price-derived ratios). See app/tools/fx.quote_fx.
         "source": "ashare",
         "cik": None,
-        "quote_currency": yfp.get("quote_currency") or (latest_daily_basic(raw) and "CNY") or "CNY",
+        "quote_currency": quote_ccy,
         "classification": None,
         "classification_meta": None,
         "price_history": prices,
@@ -160,8 +168,11 @@ def main() -> None:
     refreshed = upsert_analyzed(row)
     points = len(((row.get("price_history") or {}).get("data")) or [])
     print(f"{'refreshed' if refreshed else 'added'} {ticker} {row['name']}")
-    print(f"  industry={row['industry']!r} mcap={row['market_cap']:,.0f} {row['quote_currency']}"
-          if row["market_cap"] else f"  industry={row['industry']!r} mcap=?")
+    if row["market_cap"]:
+        print(f"  industry={row['industry']!r} mcap=${row['market_cap']:,.0f} "
+              f"({row['market_cap_native']:,.0f} {row['quote_currency']})")
+    else:
+        print(f"  industry={row['industry']!r} mcap=?")
     print(f"  price history: {points} points")
     if args.list_name:
         print(f"  {add_to_list(ticker, args.list_name, args.email)}")
