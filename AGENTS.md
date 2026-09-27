@@ -283,6 +283,9 @@ REPORT_BASE_URL=https://debian-mac-air.tail38ab8e.ts.net/reports  # base URL of 
 # --- Identity for SEC EDGAR requests (their fair-access policy requires a contact) ---
 SEC_CONTACT_EMAIL=you@example.com   # or SEC_USER_AGENT="value-agent (you@example.com)"
 
+# --- Required for A-share companies (沪深) ---
+TUSHARE_TOKEN=...           # api.tushare.pro; the statement interfaces need ≥2000 积分
+
 # --- Optional ---
 ANTHROPIC_API_KEY=...       # offers "Claude" (claude-opus-5) in the chat's model toggle
 APP_TOKEN=...               # if set, /ai and /watchlist require X-App-Token (mobile: EXPO_PUBLIC_APP_TOKEN)
