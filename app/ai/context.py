@@ -104,6 +104,10 @@ def detect_companies(text: str, *, limit: int = 4) -> list[str]:
 # Compact company block
 # ---------------------------------------------------------------------------
 
+# Scaling a statement into another currency applies to every line except a
+# count of shares.
+_COUNT_ITEMS = {"Diluted Average Shares"}
+
 _ANNUAL_LINES = [
     ("income_statement", "Total Revenue", "Revenue"),
     ("income_statement", "Gross Profit", "Gross profit"),
@@ -149,7 +153,7 @@ _RATIO_LABELS = [
     ("roe", "ROE", "pct"),
     ("roa", "ROA", "pct"),
     ("debt_asset", "Debt / assets", "pct"),
-    ("dividend_rate", "Dividend rate", "pct"),
+    ("dividend_rate", "Dividend rate (per share)", "money"),
 ]
 
 
@@ -180,9 +184,12 @@ def _fmt(v, kind: str) -> str:
     return str(v)
 
 
-def _statement_table(stmts: dict, lines, *, max_periods: int, period_label) -> str:
+def _statement_table(stmts: dict, lines, *, max_periods: int, period_label,
+                     factor: float = 1.0) -> str:
     """Rows = metrics, columns = periods (oldest → newest). yfinance-sourced
-    cells get a trailing `y`."""
+    cells get a trailing `y`. `factor` converts the served USD figures into
+    the company's own currency (see `company_block`); share counts are left
+    alone."""
     periods: list[str] = []
     for key in ("income_statement", "cash_flow", "balance_sheet"):
         for p in stmts.get(key) or []:
@@ -209,7 +216,8 @@ def _statement_table(stmts: dict, lines, *, max_periods: int, period_label) -> s
                 cells.append("—")
             else:
                 any_val = True
-                cells.append(_money(v) + ("y" if src == "yfinance" else ""))
+                scaled = v if item in _COUNT_ITEMS else v * factor
+                cells.append(_money(scaled) + ("y" if src == "yfinance" else ""))
         if any_val:
             out.append(f"| {label} | " + " | ".join(cells) + " |")
     return "\n".join(out)
@@ -249,11 +257,24 @@ def company_block(ticker: str, *, max_chars: int = 14000) -> str:
              f"{d.get('exchange') or ''} · {d.get('sector') or ''} / {d.get('industry') or ''} · "
              f"{d.get('country') or ''} · last scanned {d.get('analyzed_date') or '?'}"]
 
+    # A company that reports AND trades in its own currency (an A-share) is
+    # quoted in that currency: the app's page does the same, and the price
+    # history below is in it either way — mixing USD statements with a CNY
+    # close is how a P/E ends up 6.7x out.
     ccy = d.get("currency")
+    quote = (d.get("quote_currency") or "USD").upper()
+    rate = (ccy or {}).get("per_usd")
+    native = bool(ccy and rate and quote == ccy.get("code"))
+    factor = rate if native else 1.0
+    unit = ccy["code"] if native else "USD"
     if ccy:
-        if ccy.get("per_usd"):
+        if native:
+            parts.append(f"**Currency:** {unit}. Every figure below — statements, market cap and "
+                         f"prices — is in {unit}, the currency it reports and trades in. Divide by "
+                         f"{rate:.4f} for USD (rate of {ccy.get('as_of')}). Quote {unit} unless asked.")
+        elif rate:
             parts.append(f"**Currency:** statements reported in {ccy['code']}; all figures below are "
-                         f"converted to USD at {ccy['per_usd']:.4f} {ccy['code']}/USD (as of {ccy.get('as_of')}). "
+                         f"converted to USD at {rate:.4f} {ccy['code']}/USD (as of {ccy.get('as_of')}). "
                          f"Multiply by that rate to quote {ccy['code']}.")
         else:
             parts.append(f"**Currency:** statements are in {ccy['code']} (no USD rate on file) — "
@@ -268,16 +289,18 @@ def company_block(ticker: str, *, max_chars: int = 14000) -> str:
         attrs = ", ".join(f"{k.replace('_', ' ')}: {v}" for k, v in cls.items() if v)
         parts.append(f"**Business model:** {attrs}")
 
-    ratios = "; ".join(f"{label} {_fmt(snap.get(k), kind)}" for k, label, kind in _RATIO_LABELS
-                       if snap.get(k) is not None)
+    ratios = "; ".join(
+        f"{label} {_fmt(snap[k] * factor if kind == 'money' else snap[k], kind)}"
+        for k, label, kind in _RATIO_LABELS if snap.get(k) is not None)
     if ratios:
         parts.append(f"**Snapshot (latest):** {ratios}")
 
-    parts.append("**Annual (USD; `y` = yfinance-sourced):**\n" + _statement_table(
-        d.get("annual") or {}, _ANNUAL_LINES, max_periods=10, period_label=_fy_label))
+    parts.append(f"**Annual ({unit}; `y` = yfinance-sourced):**\n" + _statement_table(
+        d.get("annual") or {}, _ANNUAL_LINES, max_periods=10, period_label=_fy_label, factor=factor))
     parts.append("**Quarterly (last 8):**\n" + _statement_table(
-        d.get("quarterly") or {}, _ANNUAL_LINES, max_periods=8, period_label=lambda p: p[:7]))
-    parts.append("**Price:** " + _price_lines(row))
+        d.get("quarterly") or {}, _ANNUAL_LINES, max_periods=8, period_label=lambda p: p[:7],
+        factor=factor))
+    parts.append(f"**Price ({quote}):** " + _price_lines(row))
 
     val = d.get("validation") or {}
     issues = [i for i in (val.get("issues") or []) if i.get("severity") in ("warn", "error")]

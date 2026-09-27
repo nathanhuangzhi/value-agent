@@ -95,3 +95,41 @@ def test_a_real_filer_still_gets_every_rule():
     row = {"ticker": "QDEL", "market_cap": 1e9}
     issues = validate_ticker(None, row, sec_expected=True)
     assert any(i["rule"] == "missing_annual_revenue" for i in issues)
+
+
+def test_the_chat_block_quotes_a_company_in_its_own_currency(monkeypatch):
+    """The AI must see statements *and* prices in one unit. Before, an A-share's
+    statements were USD while its price history was raw CNY — enough for the
+    model to compute a P/E 6.7x out."""
+    from app.ai import context
+
+    payload = {
+        "ticker": "600066.SS", "name": "宇通客车", "exchange": "SHH", "sector": "Industrials",
+        "industry": "Farm & Heavy Construction Machinery", "country": "China",
+        "analyzed_date": "2026-09-27", "business_overview": "", "classification": {},
+        "classification_meta": {}, "validation": {"status": "ok", "issues": []},
+        "currency": {"code": "CNY", "per_usd": 6.7125, "as_of": "2026-09-26"},
+        "quote_currency": "CNY",
+        "snapshot": {"market_cap": 1_000_000_000.0, "ttm_pe": 10.5, "dividend_rate": 0.372},
+        "annual": {"income_statement": [{"period": "2025-12-31", "items": {
+            "Total Revenue": 1_000_000_000.0, "Diluted Average Shares": 2_213_939_223.0,
+            "Diluted EPS": 0.374}, "sources": {}}], "balance_sheet": [], "cash_flow": []},
+        "quarterly": {"income_statement": [], "balance_sheet": [], "cash_flow": []},
+    }
+    monkeypatch.setattr(context, "ticker_detail", lambda t: payload)
+    monkeypatch.setattr(context.repo, "analyzed", lambda: {"600066.SS": {
+        "price_history": {"data": [{"date": "2026-09-01", "close": 26.01}]}}})
+
+    block = context.company_block("600066.SS")
+    assert "**Currency:** CNY" in block and "Divide by 6.7125 for USD" in block
+    assert "**Annual (CNY" in block and "**Price (CNY):**" in block
+    assert "Market cap 6.71B" in block                    # 1.0B USD → ¥6.71B
+    assert "| Revenue | 6.71B |" in block
+    assert "| Diluted shares | 2.21B |" in block          # a count is never scaled
+    assert "Dividend rate (per share) 2.50" in block      # $0.372 → ¥2.50
+
+    # An ADR reports CNY but trades in USD: it stays converted, as before.
+    payload["quote_currency"] = "USD"
+    block = context.company_block("600066.SS")
+    assert "converted to USD at 6.7125" in block
+    assert "**Annual (USD" in block and "| Revenue | 1.00B |" in block
