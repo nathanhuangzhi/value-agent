@@ -265,7 +265,7 @@ def company_block(ticker: str, *, max_chars: int = 14000) -> str:
     quote = (d.get("quote_currency") or "USD").upper()
     rate = (ccy or {}).get("per_usd")
     native = bool(ccy and rate and quote == ccy.get("code"))
-    factor = float(rate) if native else 1.0
+    factor = float(rate) if (native and rate) else 1.0
     unit = ccy["code"] if native else "USD"
     if ccy:
         if native:
