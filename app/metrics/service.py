@@ -27,6 +27,25 @@ def list_metrics(user_id: int) -> list[dict]:
         return [_row(r) for r in cx.execute("SELECT * FROM metrics WHERE user_id = ? ORDER BY position, id", (user_id,))]
 
 
+def series_names(user_id: int, ticker: str) -> set[str]:
+    """The $names that exist for this company."""
+    return {s["name"] for s in list_series(user_id, ticker)}
+
+
+def needs(expr: str) -> set[str]:
+    """The $names an expression requires ({} when it only uses statement items)."""
+    try:
+        return user_refs(validate(expr))
+    except ExprError:
+        return set()
+
+
+def shows_on(exprs: list[str], available: set[str]) -> bool:
+    """A metric or chart belongs on a company page only when every $series it
+    references exists for that company — otherwise it would render as blanks."""
+    return all(needs(e) <= available for e in exprs)
+
+
 def applies_to(user_id: int, exprs: list[str]) -> list[str] | None:
     """Companies an expression set is meaningful for: None = every company
     (only statement items), else the tickers that have ALL the $series it uses."""
@@ -144,8 +163,9 @@ def table_rows(user_id: int, ticker: str) -> list[dict]:
     """The user's series + metrics as rows for the company page's statements
     table: {id, name, format, annual: {period: value}, quarterly: {period: value}}
     on the same period labels the table's columns use."""
-    metrics = list_metrics(user_id)
     own = list_series(user_id, ticker)
+    available = {s["name"] for s in own}
+    metrics = [m for m in list_metrics(user_id) if shows_on([m["expr"]], available)]
     if not metrics and not own:
         return []
     qctx = build_context(ticker, grid="quarterly", user_id=user_id)

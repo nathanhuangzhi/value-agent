@@ -139,8 +139,13 @@ def render(user_id: int, chart_id: int, ticker: str) -> dict | None:
 
 
 def render_all(user_id: int, ticker: str) -> list[dict]:
+    """Every chart that belongs on this company's page — one that references a
+    $series the company doesn't have would only draw blanks, so it is left out."""
+    from app.metrics.service import series_names, shows_on
+    available = series_names(user_id, ticker)
     return [{"id": ch["id"], "position": ch["position"], **render_spec(ChartSpec.model_validate(ch["spec"]), ticker, user_id)}
-            for ch in list_charts(user_id)]
+            for ch in list_charts(user_id)
+            if shows_on([s["expr"] for s in ch["spec"]["series"]], available)]
 
 
 __all__ = ["ChartError", "ChartSpec", "SeriesSpec", "parse_spec", "list_charts", "get_chart", "create_chart",
