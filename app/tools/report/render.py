@@ -9,7 +9,13 @@ import re
 
 from markdown_it import MarkdownIt
 
-from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
+from app.tools.fx import (
+    currency_meta,
+    quote_fx,
+    reporting_currency,
+    source_currencies,
+    to_usd_statements,
+)
 from app.tools.paths import COMPANIES_SEC_DIR, COMPANIES_YFINANCE_DIR
 from app.tools.report.charts import _chart_valuation_monthly
 from app.tools.report.format import (
@@ -32,6 +38,7 @@ from app.tools.report.ratios import (
     _recomputed_mcap,
     _strict_ttm_sum,
     _ttm_dividend_per_share,
+    to_usd_prices,
 )
 from app.tools.report.sec_adapter import (
     load_sharded_by_ticker,
@@ -134,7 +141,11 @@ def _extract_blended_statements(row: dict) -> dict:
     return {
         "inc_annual": inc_annual, "bs_annual": bs_annual, "cf_annual": cf_annual,
         "inc_quarterly": inc_quarterly, "bs_quarterly": bs_quarterly, "cf_quarterly": cf_quarterly,
-        "price_history": (row.get("price_history") or {}).get("data") or [],
+        # Converted to USD once, here: the statements above already are, and
+        # every consumer (snapshot, valuation history, chart) multiplies the
+        # two together. See app.tools.fx.quote_fx.
+        "price_history": to_usd_prices((row.get("price_history") or {}).get("data") or [],
+                                       quote_fx(row)),
         "currency": currency_meta(currency),
     }
 

@@ -43,6 +43,7 @@ class Settings:
     anthropic_api_key: str = ""
     alphavantage_api_keys: tuple[str, ...] = ()
     sec_contact_email: str = ""
+    tushare_token: str = ""         # A-share statements (api.tushare.pro); needs ≥2000 积分
     app_token: str = ""             # when set, /ai and /watchlist require X-App-Token
     log_level: str = "INFO"
     chat: ChatSettings = field(default_factory=ChatSettings)
@@ -55,6 +56,7 @@ class Settings:
             anthropic_api_key=env.get("ANTHROPIC_API_KEY", "").strip(),
             alphavantage_api_keys=tuple(k.strip() for k in env.get("ALPHAVANTAGE_API_KEY", "").split(",") if k.strip()),
             sec_contact_email=env.get("SEC_CONTACT_EMAIL", "").strip(),
+            tushare_token=env.get("TUSHARE_TOKEN", "").strip(),
             app_token=env.get("APP_TOKEN", "").strip(),
             log_level=env.get("LOG_LEVEL", "INFO").upper(),
             chat=ChatSettings(

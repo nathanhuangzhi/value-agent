@@ -161,6 +161,53 @@ Flow: `companies.jsonl` (universe) → `companies_classified.json` → `companie
 
 `run_value_agent` returns a dict (not a string) — see its docstring. Cost estimates use the approximate per-million-token rates in `app.tools.llm_router._PRICING_USD_PER_M_TOKENS` — verify against DeepSeek's pricing page.
 
+## A-share (非 SEC) companies
+
+Everything above starts at SEC's ticker file, so a 沪深 listing can't enter
+through the funnel: `watchlist_rows()` can only return tickers present in
+`companies.jsonl`. A-shares are added directly instead, and that same absence
+is what keeps them out of the daily digest — by design.
+
+```bash
+./venv/bin/python -m scripts.add_company --ticker 600066.SS --list Red --name "宇通客车 Yutong Bus"
+./venv/bin/python -m scripts.fetch_ashare_statements --ticker 600066.SS   # Tushare → data/ashare/<T>.json
+./venv/bin/python -m scripts.xcheck_ashare --ticker 600066.SS             # three-source reconciliation
+./venv/bin/python -m scripts.refresh_ashare                               # daily stage (prices + statements + xcheck)
+```
+
+- **Sources, in precedence order.** Tushare (`TUSHARE_TOKEN`, needs ≥2000 积分)
+  is primary: ~15 years of statements and true 单季 figures (`report_type=2`),
+  mapped in `app/tools/ashare_adapter.py` onto the same metric vocabulary as
+  every other source and laid over the gap-fill row by
+  `sec_adapter.overlay_source_row` (so SEC XBRL > Tushare > 6-K > yfinance,
+  per cell, with provenance tags). 东方财富 (`app/tools/eastmoney_tools.py`,
+  free, no token) and yfinance are kept as **check** sources, not blended.
+- **Cross-validation.** `app/tools/ashare_xcheck.py` compares the three
+  sources cell by cell and reconciles the ratios we compute against the ones
+  Tushare publishes (`daily_basic.pe_ttm` / `pe` / `pb` / 总市值 — an
+  end-to-end check that catches share-count and FX mistakes). Findings land in
+  `data/ashare_xcheck/<T>.json`, are folded into `companies_validation.json`
+  by `validate_companies`, and are readable in chat via `compare_sources`.
+  yfinance's 成本 / 营业利润 are excluded by definition (see `INCOMPARABLE`).
+- **Two traps.** Tushare returns several rows per `end_date` for restated
+  periods, and a first publication can carry nulls a later one fills — dedupe
+  is per *cell*, newest announcement last. Chinese income and cash-flow
+  statements are YTD-cumulative, so `ytd_to_quarter` differences them, and
+  only against the *adjacent* quarter (differencing 三季报 against 一季报 would
+  label six months as one quarter).
+- **Currency.** Statements are CNY and converted to USD at the blend sites
+  like any ADR's; prices are also CNY, which the USD statements are *not*, so
+  `app/tools/fx.quote_fx` + `ratios.to_usd_prices` divide the series once at
+  each boundary (`_snapshot_ratios_for`, `metrics/context._fill_values`,
+  `report/render`). Skip that and every price-derived ratio is off by ~7x.
+- **Validation.** `validate_ticker(..., sec_expected=False)` drops the
+  XBRL-presence tier for these companies (`SEC_ONLY_RULES`) — otherwise a
+  complete page shows a red banner for filings that will never exist.
+- **Chat.** SEC-based tools have nothing on file; `main_business`
+  (主营业务构成 by region and product) and `compare_sources` are the A-share
+  additions. `data/ashare*` and `data/eastmoney*` are gitignored views — the
+  tracked `companies_analyzed.json` row is what defines the company.
+
 ## Daily automation (self-hosted, debian-mac-air)
 
 The daily pipeline runs on a persistent Debian box via cron —

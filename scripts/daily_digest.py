@@ -3,7 +3,8 @@
 Runs the stages that turn one day's analyzed tickers into a delivered
 email digest (+ optional publish step):
 
-    fetch_sec_annual  →  fetch_yfinance_statements  →  validate_companies
+    fetch_sec_annual  →  fetch_yfinance_statements  →  refresh_ashare
+                                                    →  validate_companies
                                                     →  build_report
                                                     →  build_index
                                                     →  digest_summary (LLM)
@@ -196,6 +197,10 @@ def main():
         # Earnings-call transcripts (Alpha Vantage, free key: 25 requests/day)
         # for the watchlist — new quarters only, budgeted, no LLM.
         _run_stage("fetch_earnings_calls", ["-m", "scripts.fetch_earnings_calls"])
+        # A-shares never enter a rotating batch (they're absent from SEC's
+        # universe — which is what keeps them out of the digest), so this is
+        # where their prices, statements and source cross-check are refreshed.
+        _run_stage("refresh_ashare", ["-m", "scripts.refresh_ashare"])
         # Users' extracted series (GMV, segment figures…) pick up the new
         # filings (DeepSeek Flash, budgeted; skipped when no series exist).
         _run_stage("update_series", ["-m", "scripts.update_series"])

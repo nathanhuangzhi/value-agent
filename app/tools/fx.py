@@ -73,8 +73,10 @@ def source_currencies(yf_row: dict | None, sec_row: dict | None) -> dict[str, st
     are computed from SEC values when SEC has them, so they follow SEC."""
     sec_ccy = ((sec_row or {}).get("currency") or "USD").upper()
     yf_ccy = ((yf_row or {}).get("financial_currency") or "USD").upper()
-    # 6-K overlays share the gap-fill row, whose currency they must match.
-    return {"sec": sec_ccy, "yfinance": yf_ccy, "6k": yf_ccy, "derived": sec_ccy}
+    # 6-K and Tushare overlays share the gap-fill row, whose currency they
+    # must match (overlay_source_row refuses to merge a mismatch).
+    return {"sec": sec_ccy, "yfinance": yf_ccy, "6k": yf_ccy, "ashare": yf_ccy,
+            "derived": sec_ccy}
 
 
 def currency_meta(currency: str, fx: dict | None = None) -> dict | None:
@@ -84,6 +86,21 @@ def currency_meta(currency: str, fx: dict | None = None) -> dict | None:
         return None
     r = (fx if fx is not None else load_fx()).get(currency) or {}
     return {"code": currency, "per_usd": r.get("per_usd"), "as_of": r.get("as_of")}
+
+
+def quote_fx(analyzed_row: dict | None, fx: dict | None = None) -> float:
+    """Divisor that turns a row's *quoted* prices into USD.
+
+    Statements are converted to USD at the blend sites, but `price_history`
+    stays in the currency the stock trades in — for a CNY-quoted A-share
+    every price-derived ratio would be off by the FX factor. This reads the
+    **quote** currency, not the reporting one: an ADR like VIPS reports CNY
+    but trades in USD. 1.0 when the quote is USD or no rate is on file."""
+    ccy = ((analyzed_row or {}).get("quote_currency") or "USD").upper()
+    if ccy == "USD":
+        return 1.0
+    rate = ((fx if fx is not None else load_fx()).get(ccy) or {}).get("per_usd")
+    return float(rate) if rate else 1.0
 
 
 def _rates_for(currency, fx: dict) -> dict[str, float | None]:

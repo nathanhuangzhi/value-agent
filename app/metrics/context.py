@@ -7,7 +7,8 @@ from app.api.routes import _blended_annual, _blended_quarterly, _gap_fill_row
 from app.data import repo
 from app.metrics.expr import ALIASES, Context
 from app.metrics.series import values_for
-from app.tools.report.ratios import _close_at_or_before
+from app.tools.fx import quote_fx
+from app.tools.report.ratios import _close_at_or_before, to_usd_prices
 
 _STATEMENT_OF = {"flow": None, "stock": "balance_sheet", "per_share": "income_statement", "market": None}
 
@@ -94,7 +95,11 @@ def build_context(ticker: str, *, grid: str = "quarterly", last_n: int | None = 
     yf_row = _gap_fill_row(t, repo.yfinance().get(t))
     if not (sec_row or yf_row):
         return None
-    ph = (analyzed.get("price_history") or {}).get("data") or []
+    # Blended statements are USD; quoted prices are not (CNY for an A-share),
+    # so `price` and `mcap` in an expression must be converted the same way
+    # the snapshot ratios are — otherwise a user's P/E is off by the FX rate.
+    ph = to_usd_prices((analyzed.get("price_history") or {}).get("data") or [],
+                       quote_fx(analyzed, repo.fx()))
     q = _blended_quarterly(sec_row, yf_row, last_n=40)     # charts may look back ten years; TTM needs history
     a = _blended_annual(sec_row, yf_row)
     q_periods, a_periods = _periods(q), _periods(a)

@@ -174,7 +174,11 @@ def main():
         wl_rows, unknown = watchlist_rows()
         todo = [r for r in wl_rows if not is_done_in_cycle(latest.get(r["ticker"]), cycle_start)]
         print(f"=== Watchlist scan {today} (cycle {cycle}) ===")
-        print(f"  watchlist: {len(wl_rows)} known, {len(unknown)} unknown {unknown or ''}")
+        # "unknown" = saved but absent from SEC's universe, i.e. the A-shares
+        # added by scripts.add_company. They're refreshed by
+        # scripts.refresh_ashare instead, and stay out of the digest by design.
+        print(f"  watchlist: {len(wl_rows)} known, {len(unknown)} non-SEC "
+              f"(refreshed separately) {unknown or ''}")
         print(f"  to analyze now: {len(todo)}  ({', '.join(r['ticker'] for r in todo) or 'nothing'})")
         if args.dry_run or not todo:
             print("(nothing to do)" if not todo else "(dry run — no LLM calls, no file writes)")

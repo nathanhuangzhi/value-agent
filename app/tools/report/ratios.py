@@ -31,6 +31,25 @@ def _latest_value(quarterly, value_keys):
     return None
 
 
+def to_usd_prices(price_history, price_fx: float = 1.0):
+    """Price history with every close divided by `price_fx` (the quote
+    currency's per-USD rate — see `app.tools.fx.quote_fx`).
+
+    Blended statements are already USD by the time they reach this module,
+    but `price_history` is in the currency the stock trades in. Every
+    price-derived number here (market cap, the P/E family, the quarterly
+    multiples, the valuation history) would be off by the FX factor for a
+    CNY-quoted A-share, so callers convert the series ONCE at the boundary
+    and pass the converted list to every function below. Returns the input
+    object itself when there is nothing to convert."""
+    if not price_history or not price_fx or price_fx == 1.0:
+        return price_history
+    return [
+        {**p, "close": (None if p.get("close") is None else p["close"] / price_fx)}
+        for p in price_history
+    ]
+
+
 def _latest_close(price_history):
     for p in reversed(price_history or []):
         c = p.get("close")

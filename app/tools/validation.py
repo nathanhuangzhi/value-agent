@@ -353,6 +353,29 @@ def rule_mcap_reconcile(sec, analyzed, today):
 
 # =============== driver ===============
 
+# Rules that read SEC XBRL facts and therefore only make sense for a filer.
+# A company whose statements come from elsewhere (A-shares, via Tushare —
+# see app/tools/ashare_adapter.py) has no `sec_row` at all, and these would
+# report every headline metric as missing, i.e. a red banner on a page whose
+# numbers are actually complete.
+SEC_ONLY_RULES: frozenset[str] = frozenset({
+    "rule_annual_revenue_present",
+    "rule_net_income_present",
+    "rule_operating_income_present",
+    "rule_diluted_shares_present",
+    "rule_balance_sheet_present",
+    "rule_gross_profit_derivable",
+    "rule_latest_filing_fresh",
+    "rule_gross_margin_in_range",
+    "rule_ni_magnitude_vs_revenue",
+    "rule_shares_in_range",
+    "rule_yoy_revenue_plausible",
+    "rule_q_sum_vs_annual",
+    "rule_eps_consistent",
+    "rule_mcap_reconcile",
+})
+
+
 ALL_RULES: tuple[Callable, ...] = (
     rule_annual_revenue_present,
     rule_net_income_present,
@@ -381,13 +404,19 @@ def worst_severity(issues: list[Issue]) -> str:
     return max(issues, key=lambda i: _SEVERITY_ORDER.get(i["severity"], 0))["severity"]
 
 
-def validate_ticker(sec_row, analyzed_row=None, today=None):
+def validate_ticker(sec_row, analyzed_row=None, today=None, *, sec_expected: bool = True):
     """Run every rule against one ticker; collect issues. A rule that raises
     is captured as its own error issue so one broken rule never crashes the
-    whole pipeline."""
+    whole pipeline.
+
+    `sec_expected=False` (a non-SEC company — see SEC_ONLY_RULES) keeps only
+    the rules that read the analyzed row, so a complete A-share page isn't
+    flagged for missing XBRL it was never going to have."""
     today = today or date.today()
     issues = []
-    for rule_fn in ALL_RULES:
+    rules = ALL_RULES if sec_expected else tuple(
+        r for r in ALL_RULES if r.__name__ not in SEC_ONLY_RULES)
+    for rule_fn in rules:
         try:
             issues.extend(rule_fn(sec_row, analyzed_row, today))
         except Exception as e:

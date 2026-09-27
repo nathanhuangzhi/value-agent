@@ -62,8 +62,10 @@ def test_per_source_conversion_scales_each_cell_by_its_own_currency():
                 "sources": {"Total Revenue": "sec", "Net Income": "yfinance", "Total Debt": "derived"}}]
     out = to_usd_periods(periods, {"sec": "CNY", "yfinance": "HKD", "derived": "CNY"}, fx)
     assert out[0]["items"] == {"Total Revenue": 100.0, "Net Income": 10.0, "Total Debt": 10.0}
+    # 6-K and Tushare ("ashare") overlays ride on the gap-fill row, so they
+    # share its currency; derived cells follow SEC's.
     assert source_currencies({"financial_currency": "hkd"}, {"currency": "CNY"}) == \
-        {"sec": "CNY", "yfinance": "HKD", "6k": "HKD", "derived": "CNY"}
+        {"sec": "CNY", "yfinance": "HKD", "6k": "HKD", "ashare": "HKD", "derived": "CNY"}
 
 
 def test_infer_ads_ratio_from_overlapping_share_counts():

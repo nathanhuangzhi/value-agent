@@ -23,6 +23,11 @@ COMPANIES_ANALYZED = DATA_DIR / "companies_analyzed.json"      # Stage 4
 COMPANIES_SEC_DIR = DATA_DIR / "sec"                            # Stage 4b (SEC EDGAR rows, one file per ticker)
 COMPANIES_SEC = DATA_DIR / "companies_sec.json"                # legacy monolith — only read by the migration
 COMPANIES_YFINANCE_DIR = DATA_DIR / "yfinance"                 # Stage 4b' (yfinance enrichment, sharded one file per industry: <industry-slug>.json)
+ASHARE_DIR = DATA_DIR / "ashare"                               # Stage 4b'' (A-share statements from Tushare, one file per ticker)
+ASHARE_RAW_DIR = DATA_DIR / "ashare_raw"                       # raw Tushare responses (re-parseable without network)
+EASTMONEY_DIR = DATA_DIR / "eastmoney"                         # A-share cross-check source (东方财富), one file per ticker
+EASTMONEY_RAW_DIR = DATA_DIR / "eastmoney_raw"                 # raw 东方财富 responses
+ASHARE_XCHECK_DIR = DATA_DIR / "ashare_xcheck"                 # per-ticker source reconciliation reports
 COMPANIES_VALIDATION = DATA_DIR / "companies_validation.json"  # Stage 4c (data-quality checks)
 COMPANIES_DIGEST = DATA_DIR / "companies_digest.json"          # Stage 6 (LLM-summarized daily digest payload — consumed by the mobile app)
 

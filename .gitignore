@@ -52,3 +52,12 @@ data/sec_6k/*/
 # raw upstream responses (SEC companyfacts gz, yfinance frames) — re-parseable, not tracked
 data/sec_raw/
 data/yfinance_raw/
+
+# A-shares: statements (Tushare), the 东方财富 cross-check source and the
+# reconciliation reports are all views over re-fetchable upstream data, like
+# data/sec/ — the analyzed row that defines the company IS tracked.
+data/ashare/
+data/ashare_raw/
+data/eastmoney/
+data/eastmoney_raw/
+data/ashare_xcheck/

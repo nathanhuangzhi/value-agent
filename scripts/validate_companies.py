@@ -16,9 +16,16 @@ import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+from app.data.repo import read_json
+from app.tools.ashare_xcheck import as_issues
 from app.tools.fx import load_fx, sec_row_to_usd
 from app.tools.json_io import atomic_write_json, load_latest_by_ticker
-from app.tools.paths import COMPANIES_ANALYZED, COMPANIES_VALIDATION, COMPANIES_YFINANCE_DIR
+from app.tools.paths import (
+    ASHARE_XCHECK_DIR,
+    COMPANIES_ANALYZED,
+    COMPANIES_VALIDATION,
+    COMPANIES_YFINANCE_DIR,
+)
 from app.tools.report.sec_adapter import _ads_normalized, load_sharded_by_ticker
 from app.tools.sec_6k import load_all_stores, sixk_as_source_row
 from app.tools.sec_store import load_all as load_all_sec
@@ -79,7 +86,17 @@ def main():
         sec_row = _with_sixk(sec_row, sixk_as_source_row(sixk.get(t)))
         # Rules compare against USD market cap / prices — put every entry in USD.
         sec_row = sec_row_to_usd(sec_row, fx_rates) if sec_row else None
-        issues = validate_ticker(sec_row, analyzed.get(t), today=today)
+        analyzed_row = analyzed.get(t)
+        # Companies whose statements don't come from EDGAR (A-shares) skip the
+        # XBRL-presence tier; everything that reads the analyzed row still runs.
+        is_ashare = (analyzed_row or {}).get("source") == "ashare"
+        issues = validate_ticker(sec_row, analyzed_row, today=today,
+                                 sec_expected=not is_ashare)
+        if is_ashare:
+            # …and instead carry whatever the three-source reconciliation found
+            # (scripts/xcheck_ashare.py), so a disagreement between Tushare,
+            # 东方财富 and yfinance reaches the same banner as any other issue.
+            issues += as_issues(read_json(ASHARE_XCHECK_DIR / f"{t}.json", {}))
         status = worst_severity(issues)
         counts[status] += 1
         row = {

@@ -197,6 +197,26 @@ def _merge_period_dicts(sec_section: dict, yf_section: dict) -> tuple[dict, dict
     return merged, sources
 
 
+_SOURCE_RANK = ("sec", "ashare", "6k", "yfinance")   # most → least authoritative
+
+
+def _weakest_source(*srcs: str | None) -> str:
+    """Source tag for a value derived from other cells — the "weakest link"
+    of its inputs, so the reader sees the least authoritative one.
+
+    It must be a *real* tag rather than a hardcoded "sec": `app/tools/fx.py`
+    looks a cell's currency up by tag, and a company fed by Tushare
+    (A-shares) has no SEC currency to convert with — tagging its derived
+    Gross Profit / FCF "sec" left those cells unconverted while their inputs
+    became USD, i.e. off by the FX rate."""
+    present = {x for x in srcs if x}
+    if "yfinance" in present:
+        return "yfinance"
+    if "sec" in present or not present:
+        return "sec"
+    return next((r for r in reversed(_SOURCE_RANK) if r in present), "sec")
+
+
 def _resolve_total_debt(by_key: dict, period_key, sources_by_key: dict | None = None):
     """Combine the LT noncurrent + ST current debt buckets without
     double-counting the legacy "ambiguous total" concept. Returns
@@ -276,7 +296,8 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
             items["Cash Cash Equivalents And Short Term Investments"] = sum(items.get(k) or 0 for k in parts)
             srcs = {sources.get(k, "sec") for k in parts if items.get(k) is not None}
             sources["Cash Cash Equivalents And Short Term Investments"] = (
-                "yfinance" if "yfinance" in srcs else "derived" if srcs - {"sec"} else "sec")
+                "yfinance" if "yfinance" in srcs else
+                "derived" if srcs - {"sec"} - set(_SOURCE_RANK) else _weakest_source(*srcs))
             if currencies.get("Cash And Cash Equivalents"):
                 currencies["Cash Cash Equivalents And Short Term Investments"] = currencies["Cash And Cash Equivalents"]
 
@@ -296,7 +317,7 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
             # the two inputs so the user sees the "weakest link".
             rev_src = sources.get("Total Revenue", "sec")
             cor_src = sources.get("Cost Of Revenue", "sec")
-            sources["Gross Profit"] = "yfinance" if "yfinance" in (rev_src, cor_src) else "sec"
+            sources["Gross Profit"] = _weakest_source(rev_src, cor_src)
 
     if derived_fcf:
         # Capex is an outflow: yfinance and 6-K report it negative, SEC's
@@ -315,7 +336,7 @@ def _build_period(period_key: str, mapping: dict, merged: dict, source_map: dict
             if ocf is not None and capex is not None:
                 items["Free Cash Flow"] = ocf - abs(capex)
                 capex_src = sources.get("Capital Expenditure", "sec")
-                sources["Free Cash Flow"] = "yfinance" if "yfinance" in (ocf_src, capex_src) else "sec"
+                sources["Free Cash Flow"] = _weakest_source(ocf_src, capex_src)
 
     if not items:
         return None, None

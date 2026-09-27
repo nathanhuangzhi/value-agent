@@ -23,8 +23,14 @@ from fastapi import APIRouter, HTTPException
 from app.data import repo
 from app.data.repo import DataPaths
 from app.tools.daily_selector import display_industries
-from app.tools.fx import currency_meta, reporting_currency, source_currencies, to_usd_statements
-from app.tools.report.ratios import compute_snapshot_ratios, quarterly_multiples
+from app.tools.fx import (
+    currency_meta,
+    quote_fx,
+    reporting_currency,
+    source_currencies,
+    to_usd_statements,
+)
+from app.tools.report.ratios import compute_snapshot_ratios, quarterly_multiples, to_usd_prices
 from app.tools.report.sec_adapter import sec_to_yfinance_annual, sec_to_yfinance_quarterly
 from app.tools.sec_store import SecStore
 
@@ -116,7 +122,10 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
         }
     q = _blended_quarterly(sec_row, yf_row)
     a = _blended_annual(sec_row, yf_row)
-    ph = (analyzed_row.get("price_history") or {}).get("data") or []
+    # Statements above are USD; prices are quoted in the local currency, so
+    # convert once here — every ratio below multiplies the two together.
+    ph = to_usd_prices((analyzed_row.get("price_history") or {}).get("data") or [],
+                       quote_fx(analyzed_row, _load_fx()))
     out = compute_snapshot_ratios(
         q["income_statement"], q["balance_sheet"], q["cash_flow"], ph,
         inc_annual=a["income_statement"],
@@ -373,6 +382,7 @@ def ticker_detail(symbol: str):
         # Non-USD filers: statements above are converted to USD at this rate;
         # None for USD reporters. per_usd None → no rate on file, values native.
         "currency": currency_meta(reporting_currency(yf_row, sec_row), _load_fx()),
+        "quote_currency": (row.get("quote_currency") or "USD").upper(),
     }
 
 
@@ -388,6 +398,9 @@ def ticker_price_history(symbol: str):
         "ticker": ticker,
         "period": ph.get("period"),
         "interval": ph.get("interval"),
+        # Closes stay in the currency the stock trades in (CNY for an
+        # A-share); ratios are USD, converted at the snapshot boundary.
+        "quote_currency": (row.get("quote_currency") or "USD").upper(),
         "data": ph.get("data") or [],
     }
 

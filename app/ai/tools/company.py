@@ -7,6 +7,7 @@ from app.ai.context import _money, company_block
 from app.ai.tools.registry import tool
 from app.data import repo
 from app.log import get_logger
+from app.tools.paths import ASHARE_XCHECK_DIR
 
 log = get_logger(__name__)
 
@@ -58,3 +59,73 @@ def lookup_company(ticker: str) -> str:
         return (f"ERROR: {t} has not been analyzed by the pipeline — no statements "
                 f"on file. Use search_companies to confirm the ticker, and tell the user "
                 f"the data is not available.")
+
+
+# ---- A-shares (沪深) ---------------------------------------------------------
+# These companies have no SEC filings, so the filing / 6-K / earnings-call
+# tools have nothing to serve for them. What they do have is a deeper
+# statement history than yfinance, a structured segment breakdown and three
+# independent sources to compare — the two tools below.
+
+@tool(
+    "main_business",
+    description=(
+        "主营业务构成 for an A-share (沪深) company: revenue, cost and profit split by "
+        "region (国内/海外) and by product/industry, per fiscal year, straight from the filing. "
+        "Use it for segment questions instead of guessing from the income statement."
+    ),
+    params={"ticker": {"type": "string", "description": "e.g. 600066.SS"},
+            "period": {"type": "string", "description": "fiscal year, e.g. 2025 (default: the latest two)"}},
+    required=["ticker"],
+    status="Reading 主营业务构成 for {ticker}…",
+)
+def main_business(ticker: str, period: str | None = None) -> str:
+    from app.tools.ashare_adapter import main_business as mb
+    from app.tools.ashare_tools import load_raw
+
+    t = (ticker or "").upper().strip()
+    rows = mb(load_raw(t) or {}, period)
+    if not rows:
+        return (f"ERROR: no 主营业务构成 on file for {t} — it is only collected for A-shares "
+                f"(600066.SS-style tickers).")
+    periods = sorted({r["period"] for r in rows}, reverse=True)[:1 if period else 2]
+    out = []
+    for p in periods:
+        out.append(f"{p}:")
+        for r in [r for r in rows if r["period"] == p]:
+            margin = "" if not r["revenue"] or r["profit"] is None else f" · 毛利率 {r['profit'] / r['revenue']:.1%}"
+            out.append(f"  - {r['item']} ({r['kind']}): revenue {_money(r['revenue'])} "
+                       f"{r['currency']}{margin}")
+    return "\n".join(out)
+
+
+@tool(
+    "compare_sources",
+    description=(
+        "For an A-share, compare the same figures across every source on file (Tushare, 东方财富, "
+        "yfinance) and against the valuation ratios Tushare publishes. Use it when the user asks "
+        "whether a number is trustworthy, or when two numbers seem to disagree."
+    ),
+    params={"ticker": {"type": "string", "description": "e.g. 600066.SS"},
+            "grid": {"type": "string", "enum": ["annual", "quarterly"]}},
+    required=["ticker"],
+    status="Cross-checking {ticker} across sources…",
+)
+def compare_sources(ticker: str, grid: str | None = "annual") -> str:
+    t = (ticker or "").upper().strip()
+    grid = grid or "annual"          # the registry passes None for an omitted param
+    report = repo.read_json(ASHARE_XCHECK_DIR / f"{t}.json", {})
+    if not report:
+        return (f"ERROR: no cross-check on file for {t} — it is produced for A-shares by "
+                f"scripts.xcheck_ashare.")
+    cells = [c for c in report.get("cells") or [] if c["grid"] == grid]
+    agreed = [c for c in cells if c["severity"] == "ok"]
+    out = [f"{t} cross-check as of {report.get('as_of')} — sources: {', '.join(report.get('sources') or [])}",
+           f"{len(agreed)}/{len(cells)} {grid} cells agree to within 0.1%."]
+    for c in [c for c in cells if c["severity"] != "ok"]:
+        vals = ", ".join(f"{k} {_money(v)}" for k, v in c["values"].items())
+        out.append(f"  ! {c['metric']} {c['period']}: {vals} (spread {(c['spread_pct'] or 0):.2%})")
+    for v in report.get("valuation") or []:
+        out.append(f"  our {v['metric']} {v['ours']:,.4g} vs Tushare's {v['tushare']:,.4g} "
+                   f"(spread {(v['spread_pct'] or 0):.2%})")
+    return "\n".join(out)

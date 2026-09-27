@@ -24,6 +24,7 @@ from typing import Any
 from app.tools.fx import load_fx
 from app.tools.json_io import read_jsonl
 from app.tools.paths import (
+    ASHARE_DIR,
     COMPANIES_ANALYZED,
     COMPANIES_DIGEST,
     COMPANIES_JSONL,
@@ -50,6 +51,7 @@ class DataPaths:
     digest: Path = COMPANIES_DIGEST
     fx: Path = FX_RATES                        # USD→reporting-currency rates
     sixk: Path = SIXK_DIR                      # 6-K extractions (foreign filers)
+    ashare: Path = ASHARE_DIR                  # A-share statements (Tushare), one file per ticker
     universe: Path = COMPANIES_JSONL           # Stage 1 NYSE+Nasdaq universe
 
 
@@ -132,14 +134,30 @@ def sixk(paths: DataPaths = DEFAULT) -> dict:
     return _mtime_load(paths.sixk, lambda p: load_all_stores(), mtime_key=dir_mtime)
 
 
+def ashare(paths: DataPaths = DEFAULT) -> dict:
+    """ticker → A-share source row (data/ashare/<T>.json, written by
+    scripts/fetch_ashare_statements.py)."""
+    if not paths.ashare.exists():
+        return {}
+    return _mtime_load(
+        paths.ashare,
+        lambda p: {r["ticker"].upper(): r for r in (read_json(f, {}) for f in sorted(p.glob("*.json")))
+                   if r.get("ticker")},
+        mtime_key=dir_mtime,
+    )
+
+
 def fx(paths: DataPaths = DEFAULT) -> dict:
     """USD→reporting-currency rates."""
     return _mtime_load(paths.fx, lambda p: load_fx())
 
 
 def gap_fill_row(ticker: str, yf_row: dict | None, paths: DataPaths = DEFAULT) -> dict | None:
-    """yfinance row with any 6-K extractions laid over it (SEC XBRL > 6-K > yfinance)."""
-    return overlay_source_row(yf_row, sixk_as_source_row(sixk(paths).get(ticker)))
+    """yfinance row with 6-K extractions and, for A-shares, Tushare laid over
+    it — so the blend precedence is SEC XBRL > Tushare > 6-K > yfinance. (No
+    company has both SEC facts and Tushare rows, so the two never compete.)"""
+    row = overlay_source_row(yf_row, sixk_as_source_row(sixk(paths).get(ticker)))
+    return overlay_source_row(row, ashare(paths).get(ticker.upper()))
 
 
 def cik_for(ticker: str, paths: DataPaths = DEFAULT):
@@ -147,4 +165,4 @@ def cik_for(ticker: str, paths: DataPaths = DEFAULT):
 
 
 __all__ = ["DataPaths", "DEFAULT", "read_json", "dir_mtime", "analyzed", "universe", "validation",
-           "sec", "yfinance", "sixk", "fx", "gap_fill_row", "cik_for"]
+           "sec", "yfinance", "sixk", "ashare", "fx", "gap_fill_row", "cik_for"]
