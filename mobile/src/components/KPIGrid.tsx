@@ -13,7 +13,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { Snapshot } from '@/api/types';
 import { useDeviceClass } from '@/hooks/useDeviceClass';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
-import { formatMoney, formatRatio } from '@/utils/format';
+import { currencySymbol, formatMoney, formatRatio } from '@/utils/format';
 
 
 function formatPctOneDecimal(n: number | null | undefined): string {
@@ -22,14 +22,25 @@ function formatPctOneDecimal(n: number | null | undefined): string {
   return Math.abs(v) < 10 ? `${v.toFixed(1)}%` : `${v.toFixed(0)}%`;
 }
 
-function formatDividend(n: number | null | undefined): string {
+function formatDividend(n: number | null | undefined, currency: string = 'USD'): string {
   if (n == null || !isFinite(n)) return '—';
-  if (n === 0) return '$0';
-  return `$${n.toFixed(2)}`;
+  const s = currencySymbol(currency);
+  if (n === 0) return `${s}0`;
+  return `${s}${n.toFixed(2)}`;
 }
 
 
-export function KPIGrid({ snapshot }: { snapshot: Snapshot }) {
+type Props = {
+  snapshot: Snapshot;
+  /** Money cells are multiplied by this and labelled `currency` — the page's
+   * USD↔native chip. Ratios and percentages are currency-free, so they never
+   * change. An A-share defaults to its own currency (CNY). */
+  fxFactor?: number;
+  currency?: string;
+};
+
+
+export function KPIGrid({ snapshot, fxFactor = 1, currency = 'USD' }: Props) {
   const c = useColors();
   const device = useDeviceClass();
   // On a wider screen we can fit more cells per row without squeezing the
@@ -43,9 +54,10 @@ export function KPIGrid({ snapshot }: { snapshot: Snapshot }) {
   // a user comparing the email/web report to the app sees identical
   // wording. Abbreviated forms (P/B, ROE, etc.) were a mistake — labels
   // fit fine at full length on the 3-cell-per-row grid.
+  const money = (n: number | null | undefined) => (n == null || !isFinite(n) ? null : n * fxFactor);
   const items: { label: string; value: string }[] = [
     // Headline
-    { label: 'Market Cap',       value: formatMoney(snapshot.market_cap) },
+    { label: 'Market Cap',       value: formatMoney(money(snapshot.market_cap), currency) },
     // Valuation multiples (the price-paid-vs-fundamentals view)
     { label: 'TTM P/E',          value: formatRatio(snapshot.ttm_pe) },
     { label: 'Static P/E',       value: formatRatio(snapshot.static_pe) },
@@ -62,7 +74,7 @@ export function KPIGrid({ snapshot }: { snapshot: Snapshot }) {
     { label: 'Return on Equity', value: formatPctOneDecimal(snapshot.roe) },
     { label: 'Return on Assets', value: formatPctOneDecimal(snapshot.roa) },
     // Shareholder yield
-    { label: 'Dividend Rate',    value: formatDividend(snapshot.dividend_rate) },
+    { label: 'Dividend Rate',    value: formatDividend(money(snapshot.dividend_rate), currency) },
   ];
 
   return (

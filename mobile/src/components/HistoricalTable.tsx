@@ -562,7 +562,7 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                       } else if (row.kind === 'custom') {
                         const v = (col.kind === 'annual' ? row.annual : row.quarterly)[col.period] ?? null;
                         const money = row.format === 'money' && v != null ? v * fxFactor : v;
-                        text = formatMetric(money, row.format);
+                        text = formatMetric(money, row.format, currencyLabel);
                         yoy = yoyForCustomRow(row, col, idx);
                       } else {
                         // valuation

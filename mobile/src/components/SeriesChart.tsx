@@ -26,8 +26,25 @@ function scale(values: (number | null)[][]): { min: number; max: number } {
   return { min: min < 0 ? min - pad : 0, max: max + pad };
 }
 
-export function SeriesChart({ periods, series, period }: { periods: string[]; series: ChartSeries[]; period: 'quarterly' | 'annual' }) {
+export function SeriesChart({ periods, series: rawSeries, period, fxFactor = 1, currency = 'USD' }: {
+  periods: string[];
+  series: ChartSeries[];
+  period: 'quarterly' | 'annual';
+  /** The company page's USD↔native chip: money series are scaled and
+   * labelled, so a chart agrees with the table above it. Ratios and
+   * percentages are currency-free and pass through untouched. */
+  fxFactor?: number;
+  currency?: string;
+}) {
   const c = useColors();
+  const series = useMemo(
+    () => (fxFactor === 1
+      ? rawSeries
+      : rawSeries.map((s) => (s.format === 'money'
+        ? { ...s, values: s.values.map((v) => (v == null ? null : v * fxFactor)) }
+        : s))),
+    [rawSeries, fxFactor],
+  );
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState<number | null>(null);
   const n = periods.length;
@@ -63,12 +80,12 @@ export function SeriesChart({ periods, series, period }: { periods: string[]; se
           {/* axis labels */}
           {[left.max, left.min].map((v, k) => (
             <SvgText key={`l${k}`} x={PAD.left - 4} y={y(v, 'left') + (k ? 0 : 10)} fontSize={9} fill={c.textMuted} textAnchor="end">
-              {formatMetric(v, series.find((s) => s.axis === 'left')?.format ?? 'number')}
+              {formatMetric(v, series.find((s) => s.axis === 'left')?.format ?? 'number', currency)}
             </SvgText>
           ))}
           {hasRight ? [right.max, right.min].map((v, k) => (
             <SvgText key={`r${k}`} x={width - PAD.right + 4} y={y(v, 'right') + (k ? 0 : 10)} fontSize={9} fill={c.textMuted} textAnchor="start">
-              {formatMetric(v, series.find((s) => s.axis === 'right')?.format ?? 'number')}
+              {formatMetric(v, series.find((s) => s.axis === 'right')?.format ?? 'number', currency)}
             </SvgText>
           )) : null}
           {/* bars */}
@@ -113,7 +130,7 @@ export function SeriesChart({ periods, series, period }: { periods: string[]; se
           <View key={si} style={styles.legendItem}>
             <View style={[styles.swatch, { backgroundColor: PALETTE[si % PALETTE.length], borderRadius: s.kind === 'bar' ? 2 : 4 }]} />
             <Text style={[styles.legendText, { color: c.textMuted }]}>
-              {s.label}{s.axis === 'right' ? ' (right)' : ''}{active != null ? `: ${formatMetric(s.values[active], s.format)}` : ''}
+              {s.label}{s.axis === 'right' ? ' (right)' : ''}{active != null ? `: ${formatMetric(s.values[active], s.format, currency)}` : ''}
             </Text>
           </View>
         ))}

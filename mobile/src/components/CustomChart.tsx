@@ -6,7 +6,13 @@ import { metricsApi, type ChartData } from '@/api/metrics';
 import { SeriesChart } from '@/components/SeriesChart';
 import { useColors, fontSize, radii, spacing } from '@/theme/colors';
 
-export function CustomChart({ chartId, ticker, data: given }: { chartId?: number; ticker: string; data?: ChartData }) {
+export function CustomChart({ chartId, ticker, data: given, fxFactor = 1, currency = 'USD' }: {
+  chartId?: number;
+  ticker: string;
+  data?: ChartData;
+  fxFactor?: number;
+  currency?: string;
+}) {
   const c = useColors();
   const [data, setData] = useState<ChartData | null>(given ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +33,13 @@ export function CustomChart({ chartId, ticker, data: given }: { chartId?: number
       ) : !data ? (
         <ActivityIndicator color={c.brand} style={{ height: 120 }} />
       ) : (
-        <SeriesChart periods={data.periods ?? []} series={data.series ?? []} period={data.period ?? 'quarterly'} />
+        <SeriesChart
+          periods={data.periods ?? []}
+          series={data.series ?? []}
+          period={data.period ?? 'quarterly'}
+          fxFactor={fxFactor}
+          currency={currency}
+        />
       )}
     </View>
   );

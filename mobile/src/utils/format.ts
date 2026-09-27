@@ -4,14 +4,23 @@
  * the mobile UI shows the same numbers users see in the web reports.
  */
 
-export function formatMoney(n: number | null | undefined): string {
+/** `currency` is a code like 'USD' or 'CNY'; list views leave it at the
+ * default so a mixed table stays comparable in dollars. */
+const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', CNY: '¥', HKD: 'HK$', EUR: '€', GBP: '£', JPY: '¥' };
+
+export function currencySymbol(currency: string | null | undefined): string {
+  return CURRENCY_SYMBOL[(currency || 'USD').toUpperCase()] ?? '';
+}
+
+export function formatMoney(n: number | null | undefined, currency: string = 'USD'): string {
   if (n == null || !isFinite(n)) return '—';
+  const s = currencySymbol(currency);
   const abs = Math.abs(n);
-  if (abs >= 1e12) return `$${(n / 1e12).toFixed(1)}T`;
-  if (abs >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `$${Math.round(n / 1e6).toLocaleString()}M`;
-  if (abs >= 1e3) return `$${Math.round(n / 1e3).toLocaleString()}K`;
-  return `$${Math.round(n).toLocaleString()}`;
+  if (abs >= 1e12) return `${s}${(n / 1e12).toFixed(1)}T`;
+  if (abs >= 1e9) return `${s}${(n / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${s}${Math.round(n / 1e6).toLocaleString()}M`;
+  if (abs >= 1e3) return `${s}${Math.round(n / 1e3).toLocaleString()}K`;
+  return `${s}${Math.round(n).toLocaleString()}`;
 }
 
 export function formatRatio(n: number | null | undefined): string {
@@ -41,13 +50,11 @@ export function formatDate(iso: string | null | undefined): string {
  *   >= $10   → one decimal  ($87.4)
  *   <  $10   → two decimals ($5.23)
  */
-const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', CNY: '¥', HKD: 'HK$', EUR: '€', GBP: '£', JPY: '¥' };
-
 /** A quoted share price. `currency` is the payload's `quote_currency` — an
  * A-share trades in CNY, so labelling it `$` would misstate it. */
 export function formatStockPrice(n: number | null | undefined, currency: string = 'USD'): string {
   if (n == null || !isFinite(n)) return '—';
-  const sym = CURRENCY_SYMBOL[(currency || 'USD').toUpperCase()] ?? '';
+  const sym = currencySymbol(currency);
   if (n >= 100) return `${sym}${Math.round(n).toLocaleString()}`;
   if (n >= 10) return `${sym}${n.toFixed(1)}`;
   return `${sym}${n.toFixed(2)}`;

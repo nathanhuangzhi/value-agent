@@ -127,6 +127,17 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
   }, [isCenter, showStickyOverlay]);
 
   const [showNative, setShowNative] = useState(false);
+  // A company that TRADES in its own currency (an A-share: quoted and
+  // reporting in CNY) opens in that currency — dollars are the odd unit
+  // there. An ADR keeps USD, which is what it trades in. Applied once per
+  // symbol, so the chip still wins afterwards.
+  const defaultedFor = useRef<string | null>(null);
+  const quoteCurrency = (ticker.data?.quote_currency ?? '').toUpperCase();
+  useEffect(() => {
+    if (!quoteCurrency || defaultedFor.current === symbol) return;
+    defaultedFor.current = symbol;
+    setShowNative(quoteCurrency !== 'USD');
+  }, [symbol, quoteCurrency]);
   const custom = useCustom(symbol);
 
   async function refreshAll() {
@@ -198,7 +209,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
           </View>
           <View style={styles.headerRight}>
             <Text style={[styles.mcap, { color: c.textPrimary }]}>
-              {formatMoney(data.snapshot.market_cap)}
+              {formatMoney(data.snapshot.market_cap == null ? null : data.snapshot.market_cap * fxFactor, currencyLabel)}
             </Text>
             <Text style={[styles.metaSmall, { color: c.textMuted }]}>Market Cap</Text>
           </View>
@@ -229,12 +240,12 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
         </Section>
 
         <Section title="Snapshot">
-          <KPIGrid snapshot={data.snapshot} />
+          <KPIGrid snapshot={data.snapshot} fxFactor={fxFactor} currency={currencyLabel} />
         </Section>
 
         {/* The account's own charts first, then the built-in price / valuation charts. */}
         <Section title="My Charts">
-          <MyCharts ticker={data.ticker} />
+          <MyCharts ticker={data.ticker} fxFactor={fxFactor} currency={currencyLabel} />
           {heavyVisible && priceHistory.data ? (
             <ValuationGrid
               annual={data.annual}

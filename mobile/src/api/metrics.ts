@@ -1,6 +1,7 @@
 /** Custom metrics (per account) — /me/metrics on the box. */
 import { APP_TOKEN_HEADER, ApiError, BASE_URL } from './client';
 import { authHeaders } from './session';
+import { currencySymbol } from '@/utils/format';
 
 const ROOT = BASE_URL.replace(/\/reports$/, '');
 
@@ -62,19 +63,22 @@ export const metricsApi = {
 };
 
 /** Render a metric value in its declared format. */
-export function formatMetric(v: number | null | undefined, format: MetricFormat): string {
+/** `currency` labels money values — the company page passes its USD↔native
+ * chip's code, so an A-share's chart reads ¥ like the rest of its page. */
+export function formatMetric(v: number | null | undefined, format: MetricFormat,
+                             currency: string = 'USD'): string {
   if (v == null || !isFinite(v)) return '—';
   switch (format) {
     case 'bool': return v ? '✓' : '✗';
     case 'pct': { const p = v * 100; return `${Math.abs(p) < 10 ? p.toFixed(1) : p.toFixed(0)}%`; }
     case 'ratio': return `${Math.abs(v) < 10 ? v.toFixed(2) : v.toFixed(1)}x`;
     case 'money': {
-      const a = Math.abs(v), sign = v < 0 ? '-' : '';
-      if (a >= 1e12) return `${sign}$${(a / 1e12).toFixed(2)}T`;
-      if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(2)}B`;
-      if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(1)}M`;
-      if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(0)}K`;
-      return `${sign}$${a.toFixed(2)}`;
+      const a = Math.abs(v), sign = v < 0 ? '-' : '', c = currencySymbol(currency);
+      if (a >= 1e12) return `${sign}${c}${(a / 1e12).toFixed(2)}T`;
+      if (a >= 1e9) return `${sign}${c}${(a / 1e9).toFixed(2)}B`;
+      if (a >= 1e6) return `${sign}${c}${(a / 1e6).toFixed(1)}M`;
+      if (a >= 1e3) return `${sign}${c}${(a / 1e3).toFixed(0)}K`;
+      return `${sign}${c}${a.toFixed(2)}`;
     }
     default: return Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2);
   }

@@ -30,10 +30,20 @@ export function useCustom(ticker: string): Custom | null {
   return user ? data : null;
 }
 
-export function MyCharts({ ticker }: { ticker: string }) {
+export function MyCharts({ ticker, fxFactor = 1, currency = 'USD' }: {
+  ticker: string;
+  fxFactor?: number;
+  currency?: string;
+}) {
   const data = useCustom(ticker);
   if (!data || data.charts.length === 0) return null;
-  return <View style={styles.charts}>{data.charts.map((ch) => <CustomChart key={ch.id} ticker={ticker} data={ch} />)}</View>;
+  return (
+    <View style={styles.charts}>
+      {data.charts.map((ch) => (
+        <CustomChart key={ch.id} ticker={ticker} data={ch} fxFactor={fxFactor} currency={currency} />
+      ))}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
