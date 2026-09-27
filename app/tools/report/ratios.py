@@ -34,23 +34,47 @@ def _latest_value(quarterly, value_keys):
 SHARE_KEYS = ["Diluted Average Shares", "Basic Average Shares"]
 _SHARE_WINDOW = 6        # quarters of share counts to judge against
 _SHARE_TOLERANCE = 2.0   # a usable count sits within this factor of their median
+_ANCHOR_TOLERANCE = 3.0  # …or of the count implied by yfinance's own market cap
 
 
-def reliable_shares(periods, *, window: int = _SHARE_WINDOW, tolerance: float = _SHARE_TOLERANCE):
-    """Share count to value the company on: the most recent quarterly figure
-    that agrees with its neighbours, else their median.
+def implied_shares(market_cap, price_history, price_fx: float = 1.0):
+    """Share count implied by an independently sourced market cap — yfinance's
+    own `marketCap`, stored on the analyzed row at scan time — against the
+    latest close. It is the anchor `reliable_shares` checks filed counts
+    against, and it is the right concept for market cap: shares outstanding
+    now, not a weighted average over a past quarter."""
+    price = _latest_close(price_history)
+    if not market_cap or not price:
+        return None
+    return market_cap / (price / (price_fx or 1.0))
 
-    The newest quarter's `WeightedAverageNumberOfDilutedShares…` fact is not
-    always trustworthy — 279 of 1,251 companies on file have one that
-    contradicts the quarters around it by more than a factor of two (NPK
-    reports 7,159 against a real 7.16 million, ALIT 1.3M against 26.2M).
-    Taking it at face value put market cap — and therefore every P/E, P/B,
-    P/S and P/FCF — out by orders of magnitude, so a lone outlier is skipped
-    rather than trusted."""
+
+def reliable_shares(periods, *, expected: float | None = None,
+                    window: int = _SHARE_WINDOW, tolerance: float = _SHARE_TOLERANCE):
+    """Share count to value the company on.
+
+    The newest quarter's `WeightedAverageNumberOfDilutedShares…` fact is often
+    not usable: 279 of 1,251 companies file one that contradicts the quarters
+    around it by more than 2x, and some series alternate between two scales
+    entirely (NPK's SEC facts read 7,137 where yfinance has 7,137,000 for the
+    same quarter). Taking the latest value on trust put market cap — and every
+    P/E, P/B, P/S and P/FCF with it — out by orders of magnitude.
+
+    `expected` is an independent anchor: the share count implied by yfinance's
+    own market cap. When it is given, the newest filed count within 3x of it
+    wins and the anchor itself is the fallback — i.e. where our filings-derived
+    count disagrees with the market's by an order of magnitude, the market
+    decides. Without an anchor, the newest count within `tolerance` of the
+    recent median is used."""
     vals = [v for p in (periods or []) if (v := _pick_first(p.get("items") or {}, SHARE_KEYS))]
+    if not vals and expected:
+        return expected
     if not vals:
         return None
     recent = vals[-window:]
+    if expected:
+        near = [v for v in reversed(recent) if expected / _ANCHOR_TOLERANCE <= v <= expected * _ANCHOR_TOLERANCE]
+        return near[0] if near else expected
     med = _median(recent)
     if not med:
         return next((v for v in reversed(recent) if v), None)
@@ -95,11 +119,11 @@ def _latest_close(price_history):
     return None
 
 
-def _recomputed_mcap(price_history, inc_quarterly):
+def _recomputed_mcap(price_history, inc_quarterly, expected_shares: float | None = None):
     """Most recent monthly close × most recently reported diluted shares.
     Matches the market cap derivation used by the monthly valuation chart."""
     price = _latest_close(price_history)
-    shares = reliable_shares(inc_quarterly)
+    shares = reliable_shares(inc_quarterly, expected=expected_shares)
     if price is None or shares is None:
         return None
     return price * shares
@@ -280,7 +304,8 @@ def _ttm_dividend_per_share(cf_quarterly, latest_shares):
     return total / latest_shares
 
 
-def _compute_valuation_history_monthly(inc_q, bs_q, inc_annual, bs_annual, price_history):
+def _compute_valuation_history_monthly(inc_q, bs_q, inc_annual, bs_annual, price_history,
+                                       expected_shares: float | None = None):
     """For each monthly price point, compute Static P/E, Static P/S, and P/B.
     Static ratios use the most recently reported annual income statement
     (period_end ≤ current month). P/B uses the most recently reported book
@@ -300,7 +325,8 @@ def _compute_valuation_history_monthly(inc_q, bs_q, inc_annual, bs_annual, price
         key=lambda p: p["date"],
     )
 
-    baseline_shares = reliable_shares(inc_q_sorted) or reliable_shares(inc_a_sorted)
+    baseline_shares = (reliable_shares(inc_q_sorted, expected=expected_shares)
+                       or reliable_shares(inc_a_sorted, expected=expected_shares))
     out = []
     for pt in sorted_prices:
         date = pt["date"]
@@ -341,7 +367,7 @@ def _compute_valuation_history_monthly(inc_q, bs_q, inc_annual, bs_annual, price
 
 
 def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_history,
-                             inc_annual=None):
+                             inc_annual=None, expected_shares: float | None = None):
     """Compute the headline KPIs used by the per-ticker snapshot grid AND
     the industry-index table. Returns a dict with 15 fields — any field
     is None when inputs are missing or the denominator would be zero.
@@ -355,7 +381,7 @@ def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_his
     (mcap / latest annual NI). When omitted, Static P/E is None.
     """
     # --- TTM rolling sums (strict: require all 4 quarters to have data) ---
-    mcap = _recomputed_mcap(price_history, inc_quarterly)
+    mcap = _recomputed_mcap(price_history, inc_quarterly, expected_shares)
     ttm_rev = _strict_ttm_sum(inc_quarterly, ["Total Revenue", "Operating Revenue"])
     ttm_gp = _strict_ttm_sum(inc_quarterly, ["Gross Profit"])
     ttm_op = _strict_ttm_sum(inc_quarterly, ["Operating Income",
@@ -375,7 +401,7 @@ def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_his
                                                 "Cash And Cash Equivalents"])
     latest_debt = _latest_value(bs_quarterly, ["Total Debt", "Long Term Debt"])
     latest_assets = _latest_value(bs_quarterly, ["Total Assets"])
-    latest_shares = reliable_shares(inc_quarterly)
+    latest_shares = reliable_shares(inc_quarterly, expected=expected_shares)
     latest_annual_ni = _latest_value(inc_annual or [], ["Net Income",
                                                          "Net Income Common Stockholders"])
 
@@ -430,7 +456,8 @@ def _annualised(mcap, quarterly_den):
     return mcap / (quarterly_den * 4)
 
 
-def quarterly_multiples(inc_quarterly, cf_quarterly, price_history, *, n: int = 4) -> list[dict]:
+def quarterly_multiples(inc_quarterly, cf_quarterly, price_history, *, n: int = 4,
+                        expected_shares: float | None = None) -> list[dict]:
     """Per-quarter valuation multiples for the last `n` quarters, ANNUALISED so
     they sit on the same scale as the TTM figures:
 
@@ -444,7 +471,7 @@ def quarterly_multiples(inc_quarterly, cf_quarterly, price_history, *, n: int = 
     denominator is missing/zero."""
     ni_keys = ["Net Income", "Net Income Common Stockholders"]
     sh_keys = SHARE_KEYS
-    baseline = reliable_shares(inc_quarterly)
+    baseline = reliable_shares(inc_quarterly, expected=expected_shares)
     cf_by_period = {p.get("period"): p for p in cf_quarterly or []}
     out = []
     for q in (inc_quarterly or [])[-n:]:

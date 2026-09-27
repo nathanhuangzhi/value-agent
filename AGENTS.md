@@ -293,9 +293,14 @@ GEMINI_API_KEY=...          # only if you re-enable the dormant Gemini path in l
   against a real 7.16 million), which put market cap — and every P/E, P/B, P/S
   and P/FCF with it — out by orders of magnitude. `ratios.reliable_shares`
   takes the newest count within 2x of the recent median instead; use it rather
-  than reading the share count directly. Separately, ~131 serial diluters have
-  a whole series legitimately far below current shares outstanding (a weighted
-  average is the wrong concept for market cap) — still open.
+  than reading the share count directly. Some series are worse than noisy —
+  NPK's SEC facts alternate scales (7,137 where yfinance has 7,137,000 for the
+  same quarter) — so callers pass `expected_shares=implied_shares(row["market_cap"], prices)`:
+  yfinance's own market cap, stored on the analyzed row at scan time, anchors
+  the choice, and a filed count more than 3x away from it loses. That also
+  covers serial diluters, where a quarterly *weighted average* is simply the
+  wrong concept for market cap. After the fix no company's computed market cap
+  differs from the independent one by more than 3x (279 + 131 did before).
 - **Gross Profit / Capex / Total Debt derivations.** SEC adapter derives `Gross Profit = Revenue − Cost of Revenue` when GP not directly reported; `Free Cash Flow = OCF − |Capex|` with `Capex` defaulting to $0 if a cash-flow statement was filed but no capex concept; `Total Debt = LongTermDebtNoncurrent + DebtCurrent` (modern split), falling back to the ambiguous-total legacy bucket if neither is reported. See `sec_adapter._resolve_total_debt`.
 - **Gmail App Password is mandatory for SMTP.** Regular Gmail passwords are rejected. Need 2-Step Verification on, then create a 16-letter App Password at https://myaccount.google.com/apppasswords. Pipeline crashes loudly if `GMAIL_APP_PASSWORD` is missing or malformed.
 

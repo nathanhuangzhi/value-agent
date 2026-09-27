@@ -30,7 +30,12 @@ from app.tools.fx import (
     source_currencies,
     to_usd_statements,
 )
-from app.tools.report.ratios import compute_snapshot_ratios, quarterly_multiples, to_usd_prices
+from app.tools.report.ratios import (
+    compute_snapshot_ratios,
+    implied_shares,
+    quarterly_multiples,
+    to_usd_prices,
+)
 from app.tools.report.sec_adapter import sec_to_yfinance_annual, sec_to_yfinance_quarterly
 from app.tools.sec_store import SecStore
 
@@ -126,9 +131,13 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
     # convert once here — every ratio below multiplies the two together.
     ph = to_usd_prices((analyzed_row.get("price_history") or {}).get("data") or [],
                        quote_fx(analyzed_row, _load_fx()))
+    # Filed share counts are unreliable for a minority of companies (see
+    # ratios.reliable_shares); yfinance's own market cap, stored on the row at
+    # scan time, anchors them.
+    expected = implied_shares(analyzed_row.get("market_cap"), ph)
     out = compute_snapshot_ratios(
         q["income_statement"], q["balance_sheet"], q["cash_flow"], ph,
-        inc_annual=a["income_statement"],
+        inc_annual=a["income_statement"], expected_shares=expected,
     )
     # Prefer the recomputed mcap (price × diluted shares), fall back to
     # the Stage-1 stored value if we couldn't recompute.
@@ -150,7 +159,8 @@ def _snapshot_ratios_for(ticker: str, analyzed_row: dict,
         ["Cash Flow From Continuing Operating Activities", "Operating Cash Flow"],
     )
     # Last four quarters' annualised P/E and P/FCF — the industry rows draw them as bars.
-    out["quarterly_multiples"] = quarterly_multiples(inc, q["cash_flow"], ph)
+    out["quarterly_multiples"] = quarterly_multiples(inc, q["cash_flow"], ph,
+                                                     expected_shares=expected)
     return out
 
 

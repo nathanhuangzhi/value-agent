@@ -39,6 +39,8 @@ from app.tools.report.ratios import (
     _recomputed_mcap,
     _strict_ttm_sum,
     _ttm_dividend_per_share,
+    implied_shares,
+    reliable_shares,
     to_usd_prices,
 )
 from app.tools.report.sec_adapter import (
@@ -150,6 +152,10 @@ def _extract_blended_statements(row: dict) -> dict:
         # two together. See app.tools.fx.quote_fx.
         "price_history": to_usd_prices((row.get("price_history") or {}).get("data") or [],
                                        quote_fx(row)),
+        # Anchor for unreliable filed share counts — see ratios.reliable_shares.
+        "expected_shares": implied_shares(
+            row.get("market_cap"),
+            to_usd_prices((row.get("price_history") or {}).get("data") or [], quote_fx(row))),
         "currency": currency_meta(currency),
     }
 
@@ -165,6 +171,7 @@ def _assemble_report_body(row: dict, stmts: dict, validation: dict | None,
     val_history = _compute_valuation_history_monthly(
         stmts["inc_quarterly"], stmts["bs_quarterly"],
         stmts["inc_annual"], stmts["bs_annual"], stmts["price_history"],
+        stmts.get("expected_shares"),
     )
     valuation_chart = _chart_valuation_monthly(val_history, price_history=stmts["price_history"])
 
@@ -186,6 +193,7 @@ def _assemble_report_body(row: dict, stmts: dict, validation: dict | None,
         snapshot_html=_render_snapshot(
             stmts["inc_quarterly"], stmts["bs_quarterly"],
             stmts["cf_quarterly"], stmts["price_history"], stmts["inc_annual"],
+            stmts.get("expected_shares"),
         ),
         overview_html=_render_business_bullets(
             row.get("classification") or {}, row.get("classification_meta") or {},
@@ -383,12 +391,13 @@ def _band_footer():
     )
 
 
-def _render_snapshot(inc_quarterly, bs_quarterly, cf_quarterly, price_history, inc_annual):
+def _render_snapshot(inc_quarterly, bs_quarterly, cf_quarterly, price_history, inc_annual,
+                     expected_shares=None):
     """Every metric here is derived from the quarterly statements, monthly
     price history, and (for Static P/E) the most recent annual income
     statement. No fields from yfinance's `info` dict, so the snapshot is
     internally consistent and matches the monthly valuation chart."""
-    mcap = _recomputed_mcap(price_history, inc_quarterly)
+    mcap = _recomputed_mcap(price_history, inc_quarterly, expected_shares)
 
     ttm_rev = _strict_ttm_sum(inc_quarterly, ["Total Revenue", "Operating Revenue"])
     ttm_gp = _strict_ttm_sum(inc_quarterly, ["Gross Profit"])
@@ -403,7 +412,7 @@ def _render_snapshot(inc_quarterly, bs_quarterly, cf_quarterly, price_history, i
     latest_cash = _latest_value(bs_quarterly, ["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments"])
     latest_debt = _latest_value(bs_quarterly, ["Total Debt", "Long Term Debt"])
     latest_assets = _latest_value(bs_quarterly, ["Total Assets"])
-    latest_shares = _latest_value(inc_quarterly, ["Diluted Average Shares", "Basic Average Shares"])
+    latest_shares = reliable_shares(inc_quarterly, expected=expected_shares)
 
     dividend_rate_per_share = _ttm_dividend_per_share(cf_quarterly, latest_shares)
 

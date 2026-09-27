@@ -8,7 +8,12 @@ from app.data import repo
 from app.metrics.expr import ALIASES, Context
 from app.metrics.series import values_for
 from app.tools.fx import quote_fx
-from app.tools.report.ratios import _close_at_or_before, to_usd_prices
+from app.tools.report.ratios import (
+    _close_at_or_before,
+    implied_shares,
+    reliable_shares,
+    to_usd_prices,
+)
 
 _STATEMENT_OF = {"flow": None, "stock": "balance_sheet", "per_share": "income_statement", "market": None}
 
@@ -30,7 +35,8 @@ def _periods(stmts: dict) -> list[str]:
     return sorted(out)
 
 
-def _fill_values(stmts: dict, periods: list[str], price_history: list[dict]) -> dict[str, list[float | None]]:
+def _fill_values(stmts: dict, periods: list[str], price_history: list[dict],
+                 expected_shares: float | None = None) -> dict[str, list[float | None]]:
     values: dict[str, list[float | None]] = {}
     for alias, (item, kind) in ALIASES.items():
         if kind == "market":
@@ -38,6 +44,12 @@ def _fill_values(stmts: dict, periods: list[str], price_history: list[dict]) -> 
         values[alias] = _series(stmts, item, periods)
     price = [_close_at_or_before(price_history, p if len(p) > 4 else f"{p}-12-31") for p in periods]
     shares = values.get("shares") or [None] * len(periods)
+    # A filed share count that contradicts the others would make `mcap` (and so
+    # `pe`, `pb`, `ps`) nonsense for that period — same guard as the snapshot's.
+    baseline = expected_shares or reliable_shares(
+        [{"items": {"Diluted Average Shares": sh}} for sh in shares if sh])
+    if baseline:
+        shares = [sh if (sh and baseline / 3 <= sh <= baseline * 3) else baseline for sh in shares]
     values["price"] = price
     values["mcap"] = [None if (pr is None or not sh) else pr * sh for pr, sh in zip(price, shares, strict=True)]
     return values
@@ -100,6 +112,7 @@ def build_context(ticker: str, *, grid: str = "quarterly", last_n: int | None = 
     # the snapshot ratios are — otherwise a user's P/E is off by the FX rate.
     ph = to_usd_prices((analyzed.get("price_history") or {}).get("data") or [],
                        quote_fx(analyzed, repo.fx()))
+    expected = implied_shares(analyzed.get("market_cap"), ph)
     q = _blended_quarterly(sec_row, yf_row, last_n=40)     # charts may look back ten years; TTM needs history
     a = _blended_annual(sec_row, yf_row)
     q_periods, a_periods = _periods(q), _periods(a)
@@ -107,11 +120,11 @@ def build_context(ticker: str, *, grid: str = "quarterly", last_n: int | None = 
     if grid == "annual":
         periods = a_periods[-last_n:] if last_n else a_periods
         cut = len(a_periods) - len(periods)
-        return Context(periods=periods, grid="annual", values=_fill_values(a, periods, ph),
-                       annual_periods=periods, annual_values=_fill_values(a, periods, ph),
+        return Context(periods=periods, grid="annual", values=_fill_values(a, periods, ph, expected),
+                       annual_periods=periods, annual_values=_fill_values(a, periods, ph, expected),
                        user_values={k: v[cut:] for k, v in ua.items()}, user_annual={k: v[cut:] for k, v in ua.items()})
     periods = q_periods[-last_n:] if last_n else q_periods
     cut = len(q_periods) - len(periods)
-    return Context(periods=periods, grid="quarterly", values=_fill_values(q, periods, ph),
-                   annual_periods=a_periods, annual_values=_fill_values(a, a_periods, ph),
+    return Context(periods=periods, grid="quarterly", values=_fill_values(q, periods, ph, expected),
+                   annual_periods=a_periods, annual_values=_fill_values(a, a_periods, ph, expected),
                    user_values={k: v[cut:] for k, v in uq.items()}, user_annual=ua)
