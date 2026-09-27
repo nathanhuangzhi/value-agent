@@ -1,7 +1,7 @@
 [
   {
     "ticker": "NTRP",
-    "fetched_at": "2026-09-27T17:54:55+00:00",
+    "fetched_at": "2026-09-26T12:26:48+00:00",
     "source": "yfinance",
     "financial_currency": "USD",
     "annual": {
@@ -2498,6 +2498,26 @@
           "concept": "Capital Expenditure",
           "source": "yfinance"
         }
+      },
+      "cash_dividends_paid": {
+        "2025": {
+          "val": -1423000000.0,
+          "end": "2025-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 0.0,
+          "end": "2024-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 0.0,
+          "end": "2023-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        }
       }
     },
     "quarterly": {
@@ -3181,16 +3201,16 @@
           "concept": "Investments And Advances",
           "source": "yfinance"
         },
-        "2025-06-30": {
-          "val": 51121000000.0,
-          "end": "2025-06-30",
-          "concept": "Investments And Advances",
-          "source": "yfinance"
-        },
         "2025-03-31": {
           "val": 14841000000.0,
           "end": "2025-03-31",
           "concept": "Investmentin Financial Assets",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 51121000000.0,
+          "end": "2025-06-30",
+          "concept": "Investments And Advances",
           "source": "yfinance"
         },
         "2024-12-31": {
@@ -3439,7 +3459,8 @@
         }
       },
       "operating_cf": {},
-      "capex": {}
+      "capex": {},
+      "cash_dividends_paid": {}
     }
   }
 ]

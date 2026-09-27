@@ -142,12 +142,6 @@
           "concept": "Diluted EPS",
           "source": "yfinance"
         },
-        "2024": {
-          "val": -0.3,
-          "end": "2025-03-31",
-          "concept": "Diluted EPS",
-          "source": "yfinance"
-        },
         "2023": {
           "val": -0.37,
           "end": "2024-03-31",
@@ -159,18 +153,18 @@
           "end": "2023-03-31",
           "concept": "Diluted EPS",
           "source": "yfinance"
+        },
+        "2024": {
+          "val": -0.3,
+          "end": "2025-03-31",
+          "concept": "Diluted EPS",
+          "source": "yfinance"
         }
       },
       "diluted_shares": {
         "2025": {
           "val": 20921361.0,
           "end": "2026-03-31",
-          "concept": "Diluted Average Shares",
-          "source": "yfinance"
-        },
-        "2024": {
-          "val": 20596022.0,
-          "end": "2025-03-31",
           "concept": "Diluted Average Shares",
           "source": "yfinance"
         },
@@ -183,6 +177,12 @@
         "2022": {
           "val": 20339000.0,
           "end": "2023-03-31",
+          "concept": "Diluted Average Shares",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 20596022.0,
+          "end": "2025-03-31",
           "concept": "Diluted Average Shares",
           "source": "yfinance"
         }
@@ -712,6 +712,32 @@
           "val": -1752000.0,
           "end": "2022-03-31",
           "concept": "Capital Expenditure",
+          "source": "yfinance"
+        }
+      },
+      "cash_dividends_paid": {
+        "2025": {
+          "val": -21000.0,
+          "end": "2026-03-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -12437000.0,
+          "end": "2024-03-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -24537000.0,
+          "end": "2023-03-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2021": {
+          "val": -24384000.0,
+          "end": "2022-03-31",
+          "concept": "Cash Dividends Paid",
           "source": "yfinance"
         }
       }
@@ -1654,6 +1680,38 @@
           "concept": "Capital Expenditure",
           "source": "yfinance"
         }
+      },
+      "cash_dividends_paid": {
+        "2026-06-30": {
+          "val": 0.0,
+          "end": "2026-06-30",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 3000.0,
+          "end": "2026-03-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -1000.0,
+          "end": "2025-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -22000.0,
+          "end": "2025-09-30",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": -1000.0,
+          "end": "2025-06-30",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        }
       }
     }
   },
@@ -2394,6 +2452,26 @@
           "val": -22596.0,
           "end": "2021-12-31",
           "concept": "Capital Expenditure",
+          "source": "yfinance"
+        }
+      },
+      "cash_dividends_paid": {
+        "2025": {
+          "val": 0.0,
+          "end": "2025-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -14858831.0,
+          "end": "2024-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 0.0,
+          "end": "2023-12-31",
+          "concept": "Cash Dividends Paid",
           "source": "yfinance"
         }
       }
@@ -3293,6 +3371,38 @@
           "concept": "Purchase Of PPE",
           "source": "yfinance"
         }
+      },
+      "cash_dividends_paid": {
+        "2025-12-31": {
+          "val": 0.0,
+          "end": "2025-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 0.0,
+          "end": "2025-09-30",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 0.0,
+          "end": "2025-06-30",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2025-03-31": {
+          "val": 0.0,
+          "end": "2025-03-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 0.0,
+          "end": "2024-12-31",
+          "concept": "Cash Dividends Paid",
+          "source": "yfinance"
+        }
       }
     }
   },
@@ -3334,7 +3444,8 @@
       "deferred_revenue": {},
       "lease_liabilities": {},
       "operating_cf": {},
-      "capex": {}
+      "capex": {},
+      "cash_dividends_paid": {}
     },
     "quarterly": {
       "revenue": {},
@@ -3369,7 +3480,8 @@
       "deferred_revenue": {},
       "lease_liabilities": {},
       "operating_cf": {},
-      "capex": {}
+      "capex": {},
+      "cash_dividends_paid": {}
     }
   }
 ]
