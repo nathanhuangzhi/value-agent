@@ -86,12 +86,16 @@ type Props = {
   fxFactor?: number;
   /** Unit label for the $-sections, e.g. 'USD' or 'CNY'. */
   currencyLabel?: string;
+  /** `quote_fx` from the ticker payload. Closes are quoted in the stock's own
+   * currency while the statements are USD, so the valuation rows divide by
+   * this before multiplying by shares (CNY-quoted A-share: ~6.7). */
+  priceFx?: number;
   /** The account's metrics and extracted series, as a section above the statements. */
   customRows?: CustomRow[];
 };
 
 
-export function HistoricalTable({ statements, quarterly, priceHistory, externalScrollX, fxFactor = 1, currencyLabel = 'USD', customRows = [] }: Props) {
+export function HistoricalTable({ statements, quarterly, priceHistory, externalScrollX, fxFactor = 1, currencyLabel = 'USD', priceFx = 1, customRows = [] }: Props) {
   const c = useColors();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -387,7 +391,9 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
     const price = priceAtPeriod(col.period);
     const shares = sharesForColumn(col);
     if (price == null || shares == null) return '—';
-    const mcap = price * shares;
+    // Statement figures are USD; the close is in the quote currency.
+    const fx = priceFx && isFinite(priceFx) && priceFx > 0 ? priceFx : 1;
+    const mcap = (price * shares) / fx;
 
     switch (row.metric) {
       case 'pb': {

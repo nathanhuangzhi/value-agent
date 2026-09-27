@@ -240,6 +240,8 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
               annual={data.annual}
               quarterly={data.quarterly}
               priceHistory={priceHistory.data.data}
+              quoteFx={data.quote_fx ?? 1}
+              quoteCurrency={data.quote_currency ?? 'USD'}
             />
           ) : (
             <View style={styles.chartLoading}>
@@ -267,6 +269,7 @@ function TickerPageContent({ symbol, isCenter }: { symbol: string; isCenter: boo
                   externalScrollX={tableScrollX}
                   fxFactor={fxFactor}
                   currencyLabel={currencyLabel}
+                  priceFx={data.quote_fx ?? 1}
                   customRows={(custom?.rows ?? []).map((r) => ({ kind: 'custom' as const, label: r.name, format: r.format, annual: r.annual, quarterly: r.quarterly }))}
                 />
               ) : (

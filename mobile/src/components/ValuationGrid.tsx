@@ -22,15 +22,19 @@ type Props = {
   annual: Statements;
   quarterly: Statements;
   priceHistory?: PricePoint[];
+  /** `quote_fx` / `quote_currency` from the ticker payload: the close is in
+   * the currency the stock trades in, the statements are USD. */
+  quoteFx?: number;
+  quoteCurrency?: string;
 };
 
 
-export function ValuationGrid({ annual, quarterly, priceHistory }: Props) {
+export function ValuationGrid({ annual, quarterly, priceHistory, quoteFx = 1, quoteCurrency = 'USD' }: Props) {
   const c = useColors();
 
   // Build the 4 series once per (statements, priceHistory) change.
   const series = useMemo(() => {
-    const history = computeValuationHistory(annual, quarterly, priceHistory || []);
+    const history = computeValuationHistory(annual, quarterly, priceHistory || [], quoteFx);
     const price: SeriesPoint[] = (priceHistory || [])
       .filter((p) => p.close != null)
       .map((p) => ({ date: p.date, value: p.close! }));
@@ -44,14 +48,19 @@ export function ValuationGrid({ annual, quarterly, priceHistory }: Props) {
       .filter((h) => h.pb != null)
       .map((h) => ({ date: h.date, value: h.pb! }));
     return { price, pe, ps, pb };
-  }, [annual, quarterly, priceHistory]);
+  }, [annual, quarterly, priceHistory, quoteFx]);
 
   // Use `flexBasis` per cell + a gap so each chart is exactly half the
   // row width regardless of phone width.
   return (
     <View style={styles.grid}>
       <View style={styles.cell}>
-        <MiniLineChart title="STOCK PRICE" data={series.price} color={c.brand} format={formatStockPrice} />
+        <MiniLineChart
+          title="STOCK PRICE"
+          data={series.price}
+          color={c.brand}
+          format={(n) => formatStockPrice(n, quoteCurrency)}
+        />
       </View>
       <View style={styles.cell}>
         <MiniLineChart title="STATIC P/E" data={series.pe} color={c.brand} format={formatRatio} />

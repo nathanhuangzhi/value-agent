@@ -382,7 +382,12 @@ def ticker_detail(symbol: str):
         # Non-USD filers: statements above are converted to USD at this rate;
         # None for USD reporters. per_usd None → no rate on file, values native.
         "currency": currency_meta(reporting_currency(yf_row, sec_row), _load_fx()),
+        # Prices below (and in /price-history.json) are in `quote_currency`,
+        # while the statements above are USD — anything that multiplies the
+        # two (the app's valuation charts and the table's Static P/E row)
+        # must divide the close by `quote_fx` first. 1.0 for a USD quote.
         "quote_currency": (row.get("quote_currency") or "USD").upper(),
+        "quote_fx": quote_fx(row, _load_fx()),
     }
 
 
@@ -401,6 +406,7 @@ def ticker_price_history(symbol: str):
         # Closes stay in the currency the stock trades in (CNY for an
         # A-share); ratios are USD, converted at the snapshot boundary.
         "quote_currency": (row.get("quote_currency") or "USD").upper(),
+        "quote_fx": quote_fx(row, _load_fx()),
         "data": ph.get("data") or [],
     }
 

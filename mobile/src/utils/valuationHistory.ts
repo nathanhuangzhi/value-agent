@@ -8,7 +8,9 @@
  *   1. Look up the latest annual NI / Revenue with period_end ≤ month
  *      → these are the "static" denominators that hold across quarters
  *   2. Look up the latest diluted-share count (quarterly preferred, annual fallback)
- *   3. mcap = price × shares
+ *   3. mcap = (price ÷ quoteFx) × shares — the statements are in USD while
+ *      the close is in the currency the stock trades in, so a CNY-quoted
+ *      A-share needs converting or every multiple is ~7x too high
  *   4. Static P/E = mcap / annual_ni; Static P/S = mcap / annual_rev;
  *      P/B = mcap / book_value (book value: quarterly preferred over annual)
  *
@@ -63,6 +65,8 @@ export function computeValuationHistory(
   annual: Statements,
   quarterly: Statements,
   priceHistory: PricePoint[] | undefined | null,
+  /** `quote_fx` from the ticker payload: per-USD rate of the quote currency. */
+  quoteFx: number = 1,
 ): ValuationPoint[] {
   if (!priceHistory || priceHistory.length === 0) return [];
 
@@ -87,7 +91,8 @@ export function computeValuationHistory(
       latestValueAtOrBefore(incASorted, month, SHARES_KEYS);
     if (shares == null) continue;
 
-    const mcap = shares * pt.close;
+    const fx = quoteFx && isFinite(quoteFx) && quoteFx > 0 ? quoteFx : 1;
+    const mcap = (shares * pt.close) / fx;
 
     const bv =
       latestValueAtOrBefore(bsQSorted, month, BV_KEYS) ??

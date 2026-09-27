@@ -126,6 +126,11 @@ export type TickerDetail = {
   /** Non-USD filers: statements are converted to USD at `per_usd`
    * (null when no rate is on file → figures are native). null for USD. */
   currency?: { code: string; per_usd: number | null; as_of: string | null } | null;
+  /** Currency the stock trades in, and the divisor that turns a close into
+   * USD. Statements are USD, prices are not (CNY for an A-share), so any
+   * ratio that multiplies price by a statement figure divides by this. */
+  quote_currency?: string;
+  quote_fx?: number;
   narrative: Narrative;
   validation: Validation;
   analyzed_date: string;
@@ -137,6 +142,8 @@ export type PriceHistoryResponse = {
   ticker: string;
   period: string | null;
   interval: string | null;
+  quote_currency?: string;
+  quote_fx?: number;
   data: PricePoint[];
 };
 

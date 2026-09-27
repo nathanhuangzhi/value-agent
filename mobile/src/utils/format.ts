@@ -41,11 +41,16 @@ export function formatDate(iso: string | null | undefined): string {
  *   >= $10   → one decimal  ($87.4)
  *   <  $10   → two decimals ($5.23)
  */
-export function formatStockPrice(n: number | null | undefined): string {
+const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', CNY: '¥', HKD: 'HK$', EUR: '€', GBP: '£', JPY: '¥' };
+
+/** A quoted share price. `currency` is the payload's `quote_currency` — an
+ * A-share trades in CNY, so labelling it `$` would misstate it. */
+export function formatStockPrice(n: number | null | undefined, currency: string = 'USD'): string {
   if (n == null || !isFinite(n)) return '—';
-  if (n >= 100) return `$${Math.round(n).toLocaleString()}`;
-  if (n >= 10) return `$${n.toFixed(1)}`;
-  return `$${n.toFixed(2)}`;
+  const sym = CURRENCY_SYMBOL[(currency || 'USD').toUpperCase()] ?? '';
+  if (n >= 100) return `${sym}${Math.round(n).toLocaleString()}`;
+  if (n >= 10) return `${sym}${n.toFixed(1)}`;
+  return `${sym}${n.toFixed(2)}`;
 }
 
 /** Industry name → URL slug. Mirrors `_slug` in app/api/routes.py. */
