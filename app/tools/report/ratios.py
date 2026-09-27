@@ -31,6 +31,43 @@ def _latest_value(quarterly, value_keys):
     return None
 
 
+SHARE_KEYS = ["Diluted Average Shares", "Basic Average Shares"]
+_SHARE_WINDOW = 6        # quarters of share counts to judge against
+_SHARE_TOLERANCE = 2.0   # a usable count sits within this factor of their median
+
+
+def reliable_shares(periods, *, window: int = _SHARE_WINDOW, tolerance: float = _SHARE_TOLERANCE):
+    """Share count to value the company on: the most recent quarterly figure
+    that agrees with its neighbours, else their median.
+
+    The newest quarter's `WeightedAverageNumberOfDilutedShares…` fact is not
+    always trustworthy — 279 of 1,251 companies on file have one that
+    contradicts the quarters around it by more than a factor of two (NPK
+    reports 7,159 against a real 7.16 million, ALIT 1.3M against 26.2M).
+    Taking it at face value put market cap — and therefore every P/E, P/B,
+    P/S and P/FCF — out by orders of magnitude, so a lone outlier is skipped
+    rather than trusted."""
+    vals = [v for p in (periods or []) if (v := _pick_first(p.get("items") or {}, SHARE_KEYS))]
+    if not vals:
+        return None
+    recent = vals[-window:]
+    med = _median(recent)
+    if not med:
+        return next((v for v in reversed(recent) if v), None)
+    for v in reversed(recent):
+        if med / tolerance <= v <= med * tolerance:
+            return v
+    return med
+
+
+def _median(values):
+    vals = sorted(v for v in values if v is not None)
+    if not vals:
+        return None
+    mid = len(vals) // 2
+    return vals[mid] if len(vals) % 2 else (vals[mid - 1] + vals[mid]) / 2
+
+
 def to_usd_prices(price_history, price_fx: float = 1.0):
     """Price history with every close divided by `price_fx` (the quote
     currency's per-USD rate — see `app.tools.fx.quote_fx`).
@@ -62,7 +99,7 @@ def _recomputed_mcap(price_history, inc_quarterly):
     """Most recent monthly close × most recently reported diluted shares.
     Matches the market cap derivation used by the monthly valuation chart."""
     price = _latest_close(price_history)
-    shares = _latest_value(inc_quarterly, ["Diluted Average Shares", "Basic Average Shares"])
+    shares = reliable_shares(inc_quarterly)
     if price is None or shares is None:
         return None
     return price * shares
@@ -263,6 +300,7 @@ def _compute_valuation_history_monthly(inc_q, bs_q, inc_annual, bs_annual, price
         key=lambda p: p["date"],
     )
 
+    baseline_shares = reliable_shares(inc_q_sorted) or reliable_shares(inc_a_sorted)
     out = []
     for pt in sorted_prices:
         date = pt["date"]
@@ -273,9 +311,14 @@ def _compute_valuation_history_monthly(inc_q, bs_q, inc_annual, bs_annual, price
         annual_rev = _latest_value_at_or_before(inc_a_sorted, month, ["Total Revenue", "Operating Revenue"])
 
         shares = (
-            _latest_value_at_or_before(inc_q_sorted, month, ["Diluted Average Shares", "Basic Average Shares"])
-            or _latest_value_at_or_before(inc_a_sorted, month, ["Diluted Average Shares", "Basic Average Shares"])
+            _latest_value_at_or_before(inc_q_sorted, month, SHARE_KEYS)
+            or _latest_value_at_or_before(inc_a_sorted, month, SHARE_KEYS)
         )
+        # An outlier count would spike that month's multiples; fall back to the
+        # count the rest of the series agrees on (see reliable_shares).
+        if shares and baseline_shares and not (
+                baseline_shares / _SHARE_TOLERANCE <= shares <= baseline_shares * _SHARE_TOLERANCE):
+            shares = baseline_shares
         if shares is None:
             continue
         mcap_m = shares * price
@@ -332,8 +375,7 @@ def compute_snapshot_ratios(inc_quarterly, bs_quarterly, cf_quarterly, price_his
                                                 "Cash And Cash Equivalents"])
     latest_debt = _latest_value(bs_quarterly, ["Total Debt", "Long Term Debt"])
     latest_assets = _latest_value(bs_quarterly, ["Total Assets"])
-    latest_shares = _latest_value(inc_quarterly, ["Diluted Average Shares",
-                                                   "Basic Average Shares"])
+    latest_shares = reliable_shares(inc_quarterly)
     latest_annual_ni = _latest_value(inc_annual or [], ["Net Income",
                                                          "Net Income Common Stockholders"])
 
@@ -401,13 +443,18 @@ def quarterly_multiples(inc_quarterly, cf_quarterly, price_history, *, n: int = 
     the app draws it as a red bar. None when price, shares or the
     denominator is missing/zero."""
     ni_keys = ["Net Income", "Net Income Common Stockholders"]
-    sh_keys = ["Diluted Average Shares", "Basic Average Shares"]
+    sh_keys = SHARE_KEYS
+    baseline = reliable_shares(inc_quarterly)
     cf_by_period = {p.get("period"): p for p in cf_quarterly or []}
     out = []
     for q in (inc_quarterly or [])[-n:]:
         period = q.get("period") or ""
         items = q.get("items") or {}
-        shares = _pick_first(items, sh_keys) or _latest_value(inc_quarterly, sh_keys)
+        own = _pick_first(items, sh_keys)
+        # Ignore this quarter's own count when it contradicts the others.
+        if own and baseline and not (baseline / _SHARE_TOLERANCE <= own <= baseline * _SHARE_TOLERANCE):
+            own = None
+        shares = own or baseline
         price = _close_at_or_before(price_history, period)
         mcap = price * shares if (price is not None and shares) else None
         ni = _pick_first(items, ni_keys)

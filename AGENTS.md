@@ -287,6 +287,15 @@ GEMINI_API_KEY=...          # only if you re-enable the dormant Gemini path in l
 - **Dormant Gemini path:** `llm_router._call_gemini` is still in source and `google-genai` is still pinned in `requirements.txt`, but no prompt currently targets it (it defaults `provider` to `"gemini"` when the frontmatter field is omitted — but no prompt omits it). If you re-enable, note the client was historically pinned to `v1beta` (`http_options={'api_version': 'v1beta'}`) because the preview Gemini models weren't on the stable API.
 - **Non-calendar fiscal years.** Companies with 52/53-week years (e.g., QDEL ending the Sunday nearest Dec 31) have year-end dates that fall in early January of the next calendar year. `sec_xbrl_tools._fiscal_year_from_end` keys those records to the prior fiscal year (`end month ≤ 5` → `fy = end_year − 1`). Don't revert to a naive `int(end[:4])` — it silently mis-labels and double-keys.
 - **Cash flow is YTD-cumulative on 10-Qs.** Many filers report Q1=90d, H1=180d, 9M=270d, annual=365d under the SAME concept name. `extract_quarterly_cash_flow` does YTD differencing to produce discrete quarterly values. The plain `extract_quarterly_values` only catches Q1.
+- **The latest quarterly share count is not always usable.** 279 of 1,251
+  companies file a `WeightedAverageNumberOfDilutedShares…` fact for the newest
+  quarter that contradicts the quarters around it by more than 2x (NPK 7,159
+  against a real 7.16 million), which put market cap — and every P/E, P/B, P/S
+  and P/FCF with it — out by orders of magnitude. `ratios.reliable_shares`
+  takes the newest count within 2x of the recent median instead; use it rather
+  than reading the share count directly. Separately, ~131 serial diluters have
+  a whole series legitimately far below current shares outstanding (a weighted
+  average is the wrong concept for market cap) — still open.
 - **Gross Profit / Capex / Total Debt derivations.** SEC adapter derives `Gross Profit = Revenue − Cost of Revenue` when GP not directly reported; `Free Cash Flow = OCF − |Capex|` with `Capex` defaulting to $0 if a cash-flow statement was filed but no capex concept; `Total Debt = LongTermDebtNoncurrent + DebtCurrent` (modern split), falling back to the ambiguous-total legacy bucket if neither is reported. See `sec_adapter._resolve_total_debt`.
 - **Gmail App Password is mandatory for SMTP.** Regular Gmail passwords are rejected. Need 2-Step Verification on, then create a 16-letter App Password at https://myaccount.google.com/apppasswords. Pipeline crashes loudly if `GMAIL_APP_PASSWORD` is missing or malformed.
 
