@@ -218,6 +218,17 @@ is what keeps them out of the daily digest — by design.
   running to the next heading at its own level or shallower. cninfo needs its
   internal `orgId`, which comes from the platform's own 6,258-row lookup table
   — guessing it returns an empty result set.
+- **Units.** A company that files *and* trades in its own currency is shown in
+  it, everywhere a single company is in view: the app page (default, chip still
+  flips), the web report (`INCOME STATEMENT (¥M)`, nothing converted — the
+  ratios are identical either way), and the chat's `company_block`. An ADR
+  (reports CNY, trades USD) stays converted. Cross-company lists — the Saved
+  tab, industry pages, the digest — stay USD, because a mixed table is only
+  comparable in one currency.
+- **Series auto-update.** `app/metrics/updater.py` feeds an A-share series from
+  the cninfo 定期报告 (半年报 for a quarterly series, 年报 for an annual one) and
+  hands the model 管理层讨论与分析 rather than the first 60k characters — that is
+  where operating KPIs (客车销量, 门店数) live in a 200k-character report.
 - **Chat.** The annual-report tools dispatch per ticker (`_store` in
   `app/ai/tools/annual_reports.py`); `main_business`, `ashare_indicators`,
   `ashare_shareholders`, `ashare_guidance` and `compare_sources` are the

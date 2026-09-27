@@ -109,3 +109,39 @@ def test_fiscal_year_prefers_the_title():
     assert _fiscal_year("2026年半年度报告", None) == "2026"
     assert _fiscal_year("年度报告", 1774886400000) == "2025"     # filed 2026 → FY2025
     assert _fiscal_year("年度报告", None) == ""
+
+
+def test_the_series_updater_reads_the_right_filings_and_sections(tmp_path, monkeypatch):
+    """An extracted series (客车销量, GMV…) extends itself from new filings. For
+    an A-share those are the cninfo 定期报告, and what matters is the management
+    discussion — handing over the first 60k characters of a 200k-character
+    report would usually miss the number."""
+    from app.metrics import updater
+    from app.tools import ashare_reports
+
+    index = {"ticker": "600066.SS", "filings": [
+        {"accession": "a1", "form": "年度报告", "title": "2025年年度报告",
+         "fiscal_year": "2025", "filed": "2026-03-30", "toc": build_toc(MD)},
+        {"accession": "a2", "form": "半年度报告", "title": "2026年半年度报告",
+         "fiscal_year": "2026", "filed": "2026-08-10", "toc": build_toc(MD)},
+    ]}
+    monkeypatch.setattr(ashare_reports, "load_index", lambda t: index)
+    monkeypatch.setattr(ashare_reports, "read_text", lambda t, f: MD)
+
+    quarterly = updater._new_filings({"ticker": "600066.SS", "grid": "quarterly",
+                                      "last_source": "", "points": []})
+    assert [f["period"] for f in quarterly] == ["2025-12-31", "2026-06-30"]
+    assert quarterly[0]["filed"] < quarterly[1]["filed"]        # oldest first
+
+    # An annual series ignores the interim report…
+    annual = updater._new_filings({"ticker": "600066.SS", "grid": "annual",
+                                   "last_source": "", "points": []})
+    assert [f["period"] for f in annual] == ["2025"]
+
+    # …and a series already fed the 年报 only sees what came after it.
+    later = updater._new_filings({"ticker": "600066.SS", "grid": "quarterly",
+                                  "last_source": "2026-03-30", "points": []})
+    assert [f["period"] for f in later] == ["2026-06-30"]
+
+    # The text handed to the model starts at the management discussion.
+    assert quarterly[0]["text"].startswith("## 第三节 管理层讨论与分析")

@@ -31,6 +31,7 @@ from app.tools.report.format import (
     _fmt_pct,
     _format_money,
     _img_flush,
+    currency_symbol,
     inline_styles,
 )
 from app.tools.report.ratios import (
@@ -130,33 +131,43 @@ def _extract_blended_statements(row: dict) -> dict:
     yf_row = overlay_source_row(yf_row, repo.ashare().get(ticker))
     currency = reporting_currency(yf_row, sec_row)
     by_source = source_currencies(yf_row, sec_row)
+    # A company that files AND trades in its own currency (an A-share) is
+    # rendered in that currency: nothing has to be converted, the ratios are
+    # identical either way, and ¥ is how its filings read. Everyone else —
+    # including an ADR, which reports CNY but trades in USD — is converted, so
+    # one report never mixes units.
+    quote = (row.get("quote_currency") or "USD").upper()
+    native = quote == currency and quote != "USD"
+    prices = (row.get("price_history") or {}).get("data") or []
+    if not native:
+        prices = to_usd_prices(prices, quote_fx(row))
     if sec_row or yf_row:
-        # Non-USD filers are converted to USD right here so every section
-        # below (ratios, chart, table) sees one currency. See app/tools/fx.py.
-        blended_annual = to_usd_statements(
-            sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row), by_source)
+        blended_annual = sec_to_yfinance_annual(sec_row or {}, yfinance_row=yf_row)
+        blended_q = sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row)
+        if not native:
+            blended_annual = to_usd_statements(blended_annual, by_source)
+            blended_q = to_usd_statements(blended_q, by_source)
         inc_annual = blended_annual["income_statement"] or inc_annual
         bs_annual = blended_annual["balance_sheet"] or bs_annual
         cf_annual = blended_annual["cash_flow"] or cf_annual
-        blended_q = to_usd_statements(
-            sec_to_yfinance_quarterly(sec_row or {}, last_n=8, yfinance_row=yf_row), by_source)
         inc_quarterly = blended_q["income_statement"] or inc_quarterly
         bs_quarterly = blended_q["balance_sheet"] or bs_quarterly
         cf_quarterly = blended_q["cash_flow"] or cf_quarterly
 
+    # The row's market cap is USD; in a native report it is the anchor for
+    # share counts alongside native prices, so put it on the same footing.
+    anchor_mcap = row.get("market_cap")
+    if native and anchor_mcap:
+        anchor_mcap = row.get("market_cap_native") or anchor_mcap * quote_fx(row)
     return {
         "inc_annual": inc_annual, "bs_annual": bs_annual, "cf_annual": cf_annual,
         "inc_quarterly": inc_quarterly, "bs_quarterly": bs_quarterly, "cf_quarterly": cf_quarterly,
-        # Converted to USD once, here: the statements above already are, and
-        # every consumer (snapshot, valuation history, chart) multiplies the
-        # two together. See app.tools.fx.quote_fx.
-        "price_history": to_usd_prices((row.get("price_history") or {}).get("data") or [],
-                                       quote_fx(row)),
+        "price_history": prices,
         # Anchor for unreliable filed share counts — see ratios.reliable_shares.
-        "expected_shares": implied_shares(
-            row.get("market_cap"),
-            to_usd_prices((row.get("price_history") or {}).get("data") or [], quote_fx(row))),
+        "expected_shares": implied_shares(anchor_mcap, prices),
         "currency": currency_meta(currency),
+        "unit": currency if native else "USD",
+        "native": native,
     }
 
 
@@ -168,6 +179,7 @@ def _assemble_report_body(row: dict, stmts: dict, validation: dict | None,
     footer. Each section returns either an HTML string or "" so we can
     blindly join."""
     ticker = row.get("ticker", "?")
+    symbol = currency_symbol(stmts.get("unit"))
     val_history = _compute_valuation_history_monthly(
         stmts["inc_quarterly"], stmts["bs_quarterly"],
         stmts["inc_annual"], stmts["bs_annual"], stmts["price_history"],
@@ -179,21 +191,22 @@ def _assemble_report_body(row: dict, stmts: dict, validation: dict | None,
         _band_header(
             ticker, row.get("name") or ticker,
             row.get("exchange") or "", row.get("sector") or "",
-            row.get("industry") or "", row.get("market_cap"),
+            row.get("industry") or "", _header_mcap(row, stmts),
             row.get("analyzed_date") or "", row.get("country") or "",
+            symbol,
         ),
     ]
     banner = _validation_banner(validation)
     if banner:
         parts.append(banner)
-    fx_note = _currency_note(stmts.get("currency"))
+    fx_note = _currency_note(stmts.get("currency"), native=bool(stmts.get("native")))
     if fx_note:
         parts.append(fx_note)
     parts.append(_render_top_two_col(
         snapshot_html=_render_snapshot(
             stmts["inc_quarterly"], stmts["bs_quarterly"],
             stmts["cf_quarterly"], stmts["price_history"], stmts["inc_annual"],
-            stmts.get("expected_shares"),
+            stmts.get("expected_shares"), symbol,
         ),
         overview_html=_render_business_bullets(
             row.get("classification") or {}, row.get("classification_meta") or {},
@@ -207,7 +220,7 @@ def _assemble_report_body(row: dict, stmts: dict, validation: dict | None,
     combined_table = _render_combined_data_table(
         stmts["inc_annual"], stmts["bs_annual"], stmts["cf_annual"],
         stmts["inc_quarterly"], stmts["bs_quarterly"], stmts["cf_quarterly"],
-        price_history=stmts["price_history"],
+        price_history=stmts["price_history"], symbol=symbol,
     )
     if combined_table:
         parts.append(_section(
@@ -270,13 +283,20 @@ def _wrap_document(body: str, title: str) -> str:
     )
 
 
-def _currency_note(meta: dict | None) -> str:
+def _currency_note(meta: dict | None, *, native: bool = False) -> str:
     """One-line notice for non-USD filers: which currency the statements
-    were reported in and the rate used to show them in USD."""
+    were reported in and the rate used to show them in USD — or, for a
+    company rendered in its own currency, the rate for converting the other
+    way."""
     if not meta:
         return ""
     code = html.escape(meta.get("code") or "")
-    if meta.get("per_usd"):
+    if native:
+        rate = meta.get("per_usd")
+        text = (f"Figures as filed, in {code}"
+                + (f" — divide by {rate:.4f} for USD (rate as of "
+                   f"{html.escape(str(meta.get('as_of') or '?'))})." if rate else "."))
+    elif meta.get("per_usd"):
         text = (f"Financial statements reported in {code}; shown in USD at "
                 f"{meta['per_usd']:.4f} {code}/USD (rate as of {html.escape(str(meta.get('as_of') or '?'))}).")
     else:
@@ -320,7 +340,8 @@ def _validation_banner(validation):
     )
 
 
-def _band_header(ticker, name, exchange, sector, industry, mcap, analyzed_date, country):
+def _band_header(ticker, name, exchange, sector, industry, mcap, analyzed_date, country,
+                 symbol="$"):
     chips = " &middot; ".join(filter(None, [html.escape(exchange), f"{html.escape(sector)} / {html.escape(industry)}", html.escape(country)]))
     return (
         f"<tr><td class='band-pad' style='background:{NAVY};color:#ffffff;padding:24px 28px;'>"
@@ -331,7 +352,7 @@ def _band_header(ticker, name, exchange, sector, industry, mcap, analyzed_date, 
         f"<div style='font-size:13px;opacity:0.85;margin-top:6px;'><b>{ticker}</b> &middot; {chips}</div>"
         f"</td>"
         f"<td class='hdr-mcap-cell' valign='top' align='right' width='180'>"
-        f"<div class='hdr-mcap' style='font-size:24px;font-weight:bold;'>{_format_money(mcap)}</div>"
+        f"<div class='hdr-mcap' style='font-size:24px;font-weight:bold;'>{_format_money(mcap, symbol=symbol)}</div>"
         f"<div style='font-size:12px;opacity:0.85;font-family:Helvetica,Arial,sans-serif;'>Market Cap &middot; {analyzed_date}</div>"
         f"</td></tr></table></td></tr>"
     )
@@ -391,8 +412,16 @@ def _band_footer():
     )
 
 
+def _header_mcap(row: dict, stmts: dict):
+    """Market cap for the band header, in the unit the report is rendered in."""
+    mcap = row.get("market_cap")
+    if stmts.get("native") and mcap:
+        return row.get("market_cap_native") or mcap * quote_fx(row)
+    return mcap
+
+
 def _render_snapshot(inc_quarterly, bs_quarterly, cf_quarterly, price_history, inc_annual,
-                     expected_shares=None):
+                     expected_shares=None, symbol="$"):
     """Every metric here is derived from the quarterly statements, monthly
     price history, and (for Static P/E) the most recent annual income
     statement. No fields from yfinance's `info` dict, so the snapshot is
@@ -419,7 +448,7 @@ def _render_snapshot(inc_quarterly, bs_quarterly, cf_quarterly, price_history, i
     ev = (mcap + latest_debt - (latest_cash or 0)) if (mcap is not None and latest_debt is not None) else None
 
     pairs = [
-        ("Market Cap", _format_money(mcap, decimals=1)),
+        ("Market Cap", _format_money(mcap, decimals=1, symbol=symbol)),
         ("TTM P/E", _fmt_num(_div(mcap, ttm_ni), decimals=1)),
         ("Static P/E", _fmt_num(_div(mcap, latest_annual_ni), decimals=1)),
         ("EV/EBITDA", _fmt_num(_div(ev, ttm_ebitda), decimals=1)),
@@ -434,7 +463,7 @@ def _render_snapshot(inc_quarterly, bs_quarterly, cf_quarterly, price_history, i
         ("Profit Margin", _fmt_pct(_div(ttm_ni, ttm_rev), decimals=1)),
         ("Return on Equity", _fmt_pct(_div(ttm_ni, latest_bv), decimals=1)),
         ("Return on Assets", _fmt_pct(_div(ttm_ni, latest_assets), decimals=1)),
-        ("Dividend Rate", _fmt_dividend(dividend_rate_per_share, decimals=1)),
+        ("Dividend Rate", _fmt_dividend(dividend_rate_per_share, decimals=1, symbol=symbol)),
     ]
     cells = []
     for label, value in pairs:

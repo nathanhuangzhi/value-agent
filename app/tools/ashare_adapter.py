@@ -38,6 +38,10 @@ INCOME_FIELDS: dict[str, tuple[str, ...]] = {
     "net_income": ("n_income_attr_p", "n_income"),
     "diluted_eps": ("diluted_eps", "basic_eps"),
     "rd_expense": ("rd_exp",),
+    "pretax_income": ("total_profit",),
+    "income_tax": ("income_tax",),
+    "ebitda": ("ebitda",),
+    "interest_expense": ("fin_exp_int_exp",),
     "selling_marketing_expense": ("sell_exp",),
     "general_admin_expense": ("admin_exp",),
 }
@@ -58,6 +62,10 @@ BALANCE_FIELDS: dict[str, tuple[str, ...]] = {
     "short_term_debt": ("st_borr",),
     "accounts_payable": ("acct_payable", "accounts_pay"),
     "deferred_revenue": ("contract_liab", "adv_receipts"),
+    "current_assets": ("total_cur_assets",),
+    "current_liabilities": ("total_cur_liab",),
+    "retained_earnings": ("undistr_porfit",),
+    "minority_interest": ("minority_int",),
     # 期末总股本 — the app needs a share count for EPS checks and market cap.
     "diluted_shares": ("total_share",),
 }

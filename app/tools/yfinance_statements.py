@@ -32,6 +32,12 @@ from app.tools.paths import DATA_DIR
 # ----- yfinance row label → SEC metric key. First non-NaN label wins. -----
 
 _INCOME_LABELS: dict[str, list[str]] = {
+    # Deeper income-statement lines: present in ~95% of the raw caches, and
+    # the pieces a reader needs to get from operating income to net income.
+    "pretax_income": ["Pretax Income"],
+    "income_tax": ["Tax Provision", "Income Tax Expense Benefit"],
+    "ebitda": ["Normalized EBITDA", "EBITDA"],
+    "interest_expense": ["Interest Expense", "Interest Expense Non Operating"],
     "revenue": ["Total Revenue", "Operating Revenue"],
     "cost_of_revenue": ["Cost Of Revenue", "Reconciled Cost Of Revenue"],
     "gross_profit": ["Gross Profit"],
@@ -47,6 +53,11 @@ _INCOME_LABELS: dict[str, list[str]] = {
 }
 
 _BALANCE_LABELS: dict[str, list[str]] = {
+    # Working-capital and equity detail.
+    "current_assets": ["Current Assets"],
+    "current_liabilities": ["Current Liabilities"],
+    "retained_earnings": ["Retained Earnings"],
+    "minority_interest": ["Minority Interest"],
     "cash": ["Cash And Cash Equivalents"],
     "short_term_investments": ["Other Short Term Investments"],
     "restricted_cash": ["Restricted Cash"],

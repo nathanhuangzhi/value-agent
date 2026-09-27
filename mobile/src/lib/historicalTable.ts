@@ -72,8 +72,10 @@ export type RatioRow = {
   label: string;
   numerator: RatioNumerator;
   denominator: RatioDenominator;
-  /** percent → "12%" / "8.5%"; per_share → "$1.23" / "$15". */
-  format: 'percent' | 'per_share';
+  /** percent → "12%" / "8.5%"; per_share → "$1.23" / "$15";
+   *  ratio → "1.5x" (a plain coverage ratio like current assets ÷ current
+   *  liabilities, which is neither a percentage nor an amount per share). */
+  format: 'percent' | 'per_share' | 'ratio';
 };
 
 export type ValuationRow = {

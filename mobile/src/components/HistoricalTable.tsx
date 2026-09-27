@@ -196,6 +196,10 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
         { kind: 'raw', label: 'Revenue',          source: 'income', keys: ['Total Revenue', 'Operating Revenue'], format: 'money' },
         { kind: 'raw', label: 'Gross Profit',     source: 'income', keys: ['Gross Profit'], format: 'money' },
         { kind: 'raw', label: 'Operating Income', source: 'income', keys: ['Operating Income', 'Total Operating Income As Reported'], format: 'money' },
+        { kind: 'raw', label: 'EBITDA',           source: 'income', keys: ['EBITDA'], format: 'money' },
+        { kind: 'raw', label: 'Interest Expense', source: 'income', keys: ['Interest Expense'], format: 'money' },
+        { kind: 'raw', label: 'Pretax Income',    source: 'income', keys: ['Pretax Income'], format: 'money' },
+        { kind: 'raw', label: 'Income Tax',       source: 'income', keys: ['Tax Provision'], format: 'money' },
         { kind: 'raw', label: 'Net Income',       source: 'income', keys: ['Net Income', 'Net Income Common Stockholders'], format: 'money' },
       ],
     },
@@ -247,12 +251,14 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
       title: `Balance Sheet (${currencyLabel})`,
       rows: [
         { kind: 'raw', label: 'Total Assets',        source: 'balance', keys: ['Total Assets'], format: 'money' },
+        { kind: 'raw', label: 'Current Assets',      source: 'balance', keys: ['Current Assets'], format: 'money' },
         { kind: 'raw', label: 'Cash, STI & Restricted', source: 'balance', keys: ['Cash Cash Equivalents And Short Term Investments', 'Cash And Cash Equivalents'], format: 'money' },
         // Dynamic asset-class rows for this ticker, largest first
         ...assetKeys.map<RawRow>((key) => ({
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
         { kind: 'raw', label: 'Total Liabilities',   source: 'balance', keys: ['Total Liabilities'], format: 'money', dividerAbove: true },
+        { kind: 'raw', label: 'Current Liabilities', source: 'balance', keys: ['Current Liabilities'], format: 'money' },
         // Dynamic top-3 liability rows, largest first (e.g. LT debt, payables,
         // deferred revenue). Interest-bearing "Total Debt" still feeds the
         // snapshot ratios but isn't listed here — it overlaps these rows.
@@ -260,6 +266,12 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
           kind: 'raw', label: key, source: 'balance', keys: [key], format: 'money',
         })),
         { kind: 'raw', label: 'Stockholders Equity', source: 'balance', keys: ['Common Stock Equity', 'Stockholders Equity'], format: 'money', dividerAbove: true },
+        { kind: 'raw', label: 'Retained Earnings',   source: 'balance', keys: ['Retained Earnings'], format: 'money' },
+        {
+          kind: 'ratio', label: 'Current Ratio', format: 'ratio',
+          numerator:   { source: 'balance', keys: ['Current Assets'] },
+          denominator: { source: 'balance', keys: ['Current Liabilities'] },
+        },
       ],
     },
     {
@@ -557,7 +569,10 @@ export function HistoricalTable({ statements, quarterly, priceHistory, externalS
                         const r = resolveRatioCell(row, col);
                         text = row.format === 'percent'
                           ? formatMargin(r.num, r.den)
-                          : formatPerShare(r.num, r.den, fxFactor);
+                          : row.format === 'ratio'
+                            // A coverage ratio: currency-free, so no fx factor.
+                            ? (r.num == null || !r.den ? '—' : formatRatio(r.num / r.den))
+                            : formatPerShare(r.num, r.den, fxFactor);
                         yoy = yoyForRatioRow(row, col, idx);
                       } else if (row.kind === 'custom') {
                         const v = (col.kind === 'annual' ? row.annual : row.quarterly)[col.period] ?? null;

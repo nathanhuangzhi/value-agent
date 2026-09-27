@@ -145,6 +145,25 @@ _INDICATORS: tuple[tuple[str, str], ...] = (
     ("or_yoy", "营收同比 %"), ("netprofit_yoy", "净利润同比 %"),
     ("dt_netprofit_yoy", "扣非净利润同比 %"), ("ebitda", "EBITDA"),
     ("interestdebt", "带息债务"), ("netdebt", "净债务"),
+    # Per-share and capital structure
+    ("revenue_ps", "每股营业收入"), ("cfps", "每股现金流"), ("fcff_ps", "每股企业自由现金流"),
+    ("assets_to_eqt", "权益乘数"), ("debt_to_eqt", "产权比率"),
+    ("currentdebt_to_debt", "流动负债/总负债 %"), ("longdeb_to_debt", "非流动负债/总负债 %"),
+    # Turnover and efficiency
+    ("ca_turn", "流动资产周转率"), ("fa_turn", "固定资产周转率"),
+    ("turn_days", "营业周期 (天)"), ("inv_turn_days", "存货周转天数"),
+    ("arturn_days", "应收周转天数"),
+    # Expense structure, as a share of revenue
+    ("cogs_of_sales", "营业成本/营收 %"), ("expense_of_sales", "销售成本率 %"),
+    ("adminexp_of_gr", "管理费用/营收 %"), ("finaexp_of_gr", "财务费用/营收 %"),
+    ("gc_of_gr", "营业总成本/营收 %"), ("ebit_of_gr", "EBIT/营收 %"),
+    # Growth
+    ("assets_yoy", "总资产同比 %"), ("eqt_yoy", "净资产同比 %"),
+    ("bps_yoy", "每股净资产同比 %"), ("ocf_yoy", "经营现金流同比 %"),
+    ("q_sales_yoy", "单季营收同比 %"), ("q_profit_yoy", "单季净利同比 %"),
+    # Quality of earnings
+    ("profit_to_gr", "净利润/营业总收入 %"), ("op_of_gr", "营业利润/营收 %"),
+    ("extra_item", "非经常性损益"), ("profit_dedt", "扣非净利润"),
 )
 
 

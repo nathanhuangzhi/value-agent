@@ -369,6 +369,15 @@ def extract_quarterly_values(facts: dict, concepts: Sequence[str], *, unit: str 
 # ---------------------------------------------------------------------------
 
 INCOME_METRICS: dict[str, list[str]] = {
+    # From operating income down to net income. EBITDA is deliberately absent:
+    # it is a non-GAAP figure filers rarely tag, so it comes from yfinance and
+    # Tushare only.
+    "pretax_income": [
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+    ],
+    "income_tax": ["IncomeTaxExpenseBenefit", "CurrentIncomeTaxExpenseBenefit"],
+    "interest_expense": ["InterestExpense", "InterestExpenseDebt"],
     "revenue": [
         "Revenues",
         "RevenueFromContractWithCustomerExcludingAssessedTax",
@@ -439,6 +448,11 @@ CASH_FLOW_METRICS: dict[str, list[str]] = {
 }
 
 BALANCE_SHEET_METRICS: dict[str, list[str]] = {
+    # Working capital, and the equity lines below the parent's total.
+    "current_assets": ["AssetsCurrent"],
+    "current_liabilities": ["LiabilitiesCurrent"],
+    "retained_earnings": ["RetainedEarningsAccumulatedDeficit"],
+    "minority_interest": ["MinorityInterest"],
     # Cash & equivalents only. The cash-flow-statement totals that include
     # restricted / client cash are deliberately NOT fallbacks (FUTU FY2022:
     # 55.7B incl. client cash vs 5.0B cash) — yfinance fills a missing year.

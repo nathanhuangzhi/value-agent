@@ -112,6 +112,10 @@ _ANNUAL_LINES = [
     ("income_statement", "Total Revenue", "Revenue"),
     ("income_statement", "Gross Profit", "Gross profit"),
     ("income_statement", "Operating Income", "Operating income"),
+    ("income_statement", "EBITDA", "EBITDA"),
+    ("income_statement", "Interest Expense", "Interest expense"),
+    ("income_statement", "Pretax Income", "Pretax income"),
+    ("income_statement", "Tax Provision", "Income tax"),
     ("income_statement", "Net Income", "Net income"),
     ("income_statement", "Diluted EPS", "Diluted EPS"),
     ("income_statement", "Diluted Average Shares", "Diluted shares"),
@@ -123,6 +127,7 @@ _ANNUAL_LINES = [
     ("balance_sheet", "Restricted Cash", "Restricted cash"),
     ("balance_sheet", "Cash Cash Equivalents And Short Term Investments", "Cash + STI + restricted"),
     ("balance_sheet", "Total Assets", "Total assets"),
+    ("balance_sheet", "Current Assets", "Current assets"),
     ("balance_sheet", "Receivables", "Receivables (total)"),
     ("balance_sheet", "Inventory", "Inventory"),
     ("balance_sheet", "Net PPE", "PP&E (net)"),
@@ -130,6 +135,7 @@ _ANNUAL_LINES = [
     ("balance_sheet", "Other Intangible Assets", "Intangibles (incl. land-use rights)"),
     ("balance_sheet", "Long Term Investments", "Long-term investments"),
     ("balance_sheet", "Total Liabilities", "Total liabilities"),
+    ("balance_sheet", "Current Liabilities", "Current liabilities"),
     ("balance_sheet", "Accounts Payable", "Accounts payable"),
     ("balance_sheet", "Deferred Revenue", "Deferred revenue"),
     ("balance_sheet", "Lease Obligations", "Lease obligations"),
@@ -137,6 +143,8 @@ _ANNUAL_LINES = [
     ("balance_sheet", "Long Term Debt", "Long-term debt"),
     ("balance_sheet", "Total Debt", "Total debt"),
     ("balance_sheet", "Common Stock Equity", "Equity"),
+    ("balance_sheet", "Retained Earnings", "Retained earnings"),
+    ("balance_sheet", "Minority Interest", "Minority interest"),
 ]
 
 _RATIO_LABELS = [

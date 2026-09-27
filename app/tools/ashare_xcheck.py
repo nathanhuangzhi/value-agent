@@ -166,7 +166,13 @@ def worst_severity(report: dict | None) -> str:
     return max((c.get("severity", "ok") for c in cells), key=lambda s: _SEVERITY_ORDER.get(s, 0))
 
 
-def as_issues(report: dict | None) -> list[dict]:
+# A disagreement about a period this old is almost always a restatement one
+# source picked up and another didn't (长安汽车's 2020 total assets: ¥120.92B
+# vs ¥118.27B). Worth recording, not worth a banner on today's page.
+STALE_YEARS = 3
+
+
+def as_issues(report: dict | None, *, today: str | None = None) -> list[dict]:
     """The report's findings as `app/tools/validation.py` issues, so a real
     disagreement surfaces through the banner the page already has.
 
@@ -175,12 +181,17 @@ def as_issues(report: dict | None) -> list[dict]:
     `scripts/validate_companies.py` merges the result in.
     """
     report = report or {}
+    this_year = int((today or report.get("as_of") or date.today().isoformat())[:4])
     out = []
     for cell in sorted((report.get("disagreements") or []),
                        key=lambda c: -(c.get("spread_pct") or 0))[:5]:
         vals = ", ".join(f"{k}={v:,.0f}" for k, v in (cell.get("values") or {}).items())
+        try:
+            stale = this_year - int(str(cell["period"])[:4]) > STALE_YEARS
+        except ValueError:
+            stale = False
         out.append({
-            "severity": cell["severity"],
+            "severity": "info" if stale else cell["severity"],
             "rule": "source_disagreement",
             "detail": f"{cell['metric']} {cell['period']} differs by "
                       f"{(cell.get('spread_pct') or 0) * 100:.2f}% across sources ({vals})",

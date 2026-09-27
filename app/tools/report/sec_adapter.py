@@ -41,6 +41,11 @@ SEC_TO_YFINANCE_INCOME = {
     "sga_expense": "Selling General And Administration",
     "selling_marketing_expense": "Selling And Marketing Expense",
     "general_admin_expense": "General And Administrative Expense",
+    # Operating income → net income, and EBITDA where a source has it.
+    "pretax_income": "Pretax Income",
+    "income_tax": "Tax Provision",
+    "interest_expense": "Interest Expense",
+    "ebitda": "EBITDA",
 }
 
 SEC_TO_YFINANCE_CASHFLOW = {
@@ -73,6 +78,11 @@ SEC_TO_YFINANCE_BALANCE = {
     "accrued_liabilities": "Accrued Liabilities",
     "deferred_revenue": "Deferred Revenue",
     "lease_liabilities": "Lease Obligations",
+    # Working capital (current ratio) and the equity lines beneath the parent's.
+    "current_assets": "Current Assets",
+    "current_liabilities": "Current Liabilities",
+    "retained_earnings": "Retained Earnings",
+    "minority_interest": "Minority Interest",
 }
 
 

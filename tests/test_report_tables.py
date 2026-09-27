@@ -339,3 +339,34 @@ def test_render_combined_table_includes_yfinance_provenance_marker_when_tagged()
     assert "1,500" in html
     # Provenance surfaced (the renderer marks yfinance cells with a tooltip)
     assert "yfinance" in html.lower()
+
+
+def test_the_new_statement_rows_render_for_every_source():
+    """EBITDA, the tax/interest lines and the working-capital pair were added
+    once the A-share work showed they were on disk unused. A column that
+    predates them must still render (as "—"), not raise."""
+    from app.tools.report.tables import _render_combined_data_table
+
+    def period(p, **items):
+        return {"period": p, "items": items, "sources": {k: "sec" for k in items}}
+
+    inc = [period(f"202{y}-12-31", **{
+        "Total Revenue": 1000.0, "Net Income": 100.0, "EBITDA": 250.0,
+        "Pretax Income": 130.0, "Tax Provision": 30.0, "Interest Expense": 10.0,
+        "Diluted Average Shares": 100.0}) for y in range(3, 6)]
+    bs = [period(f"202{y}-12-31", **{
+        "Total Assets": 5000.0, "Current Assets": 2000.0, "Total Liabilities": 3000.0,
+        "Current Liabilities": 1000.0, "Common Stock Equity": 2000.0,
+        "Retained Earnings": 800.0}) for y in range(3, 6)]
+    cf = [period(f"202{y}-12-31", **{"Operating Cash Flow": 200.0}) for y in range(3, 6)]
+
+    html = _render_combined_data_table(inc, bs, cf, [], [], [])
+    for label in ("EBITDA", "Interest Expense", "Pretax Income", "Income Tax",
+                  "Current Assets", "Current Liabilities", "Retained Earnings"):
+        assert label in html, label
+    assert "Current Ratio" in html and "2.0x" in html          # 2000 / 1000
+
+    # A currency other than USD labels the groups and per-share rows with it.
+    cny = _render_combined_data_table(inc, bs, cf, [], [], [], symbol="¥")
+    assert "INCOME STATEMENT (¥M)" in cny.upper()
+    assert "($M)" not in cny

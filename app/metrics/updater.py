@@ -1,8 +1,12 @@
 """Extend users' extracted series from filings that arrived after each
 series' `last_source` date. For every series with a `source_hint`, the
-newest 6-K press release (quarterly series) or annual report (annual
-series) not yet folded in is handed to DeepSeek Flash with the hint and
-the known points; a returned point is appended.
+newest filing not yet folded in is handed to DeepSeek Flash with the hint
+and the known points; a returned point is appended.
+
+Which filing depends on the company: a 6-K press release or 20-F/10-K for a
+US filer, and for an A-share the 年报 / 半年报 filed with cninfo (converted to
+Markdown by `app/tools/ashare_reports.py`) — the 半年报 carries a quarterly
+series forward, the 年报 an annual one.
 
     from app.metrics.updater import update_all
     update_all(budget_usd=0.5)
@@ -18,6 +22,7 @@ from app.data import repo
 from app.log import get_logger
 from app.metrics import series as series_mod
 from app.metrics.series import SeriesError
+from app.tools.ashare_tools import is_ashare
 from app.tools.llm_router import _PRICING_USD_PER_M_TOKENS
 from app.tools.sec_6k import SIXK_DIR, _sixk_client, html_to_text, load_store
 
@@ -37,11 +42,62 @@ class _Out(BaseModel):
     note: str = ""
 
 
+# Sections of a 定期报告 that carry operating KPIs (客车销量, 门店数, GMV…).
+# A full report is ~200k characters, so handing over the first MAX_TEXT of it
+# would usually miss them — 管理层讨论与分析 is where they live.
+_KPI_SECTIONS = ("管理层讨论与分析", "主营业务分析", "经营情况讨论与分析", "重要事项")
+
+
+def _ashare_text(ticker: str, filing: dict) -> str:
+    """The parts of a 定期报告 worth extracting from, newest-relevant first."""
+    from app.tools.ashare_reports import read_text
+    from app.tools.sec_annual_reports import find_section, section_text
+
+    md = read_text(ticker, filing)
+    chunks, seen = [], set()
+    for query in _KPI_SECTIONS:
+        sec = find_section(filing, query)
+        if not sec or sec["line"] in seen:
+            continue
+        seen.add(sec["line"])
+        body, _, _ = section_text(md, sec, max_chars=MAX_TEXT)
+        chunks.append(body)
+        if sum(len(c) for c in chunks) >= MAX_TEXT:
+            break
+    text = "\n\n".join(chunks) if chunks else md
+    return text[:MAX_TEXT]
+
+
+def _ashare_filings(ticker: str, since: str, grid: str) -> list[dict]:
+    """A-share 定期报告 newer than `since`. A quarterly series takes whatever
+    periodic report is new (半年报 included); an annual series only the 年报."""
+    from app.tools.ashare_reports import load_index
+
+    out = []
+    for f in load_index(ticker).get("filings") or []:
+        if (f.get("filed") or "") <= since:
+            continue
+        interim = "半年" in (f.get("form") or "")
+        if grid == "annual" and interim:
+            continue
+        out.append({
+            "kind": f"{f.get('form') or '定期报告'} {f.get('title') or ''}".strip(),
+            "filed": f["filed"],
+            "period": (f"{f['fiscal_year']}-06-30" if (interim and grid == "quarterly")
+                       else f"{f['fiscal_year']}-12-31" if grid == "quarterly"
+                       else f["fiscal_year"]),
+            "text": _ashare_text(ticker, f),
+        })
+    return out
+
+
 def _new_filings(s: dict) -> list[dict]:
     """Filings newer than the series' last_source, oldest first: {kind, filed, period, text}."""
     t = s["ticker"]
     since = s.get("last_source") or ""
     out = []
+    if is_ashare(t):
+        return sorted(_ashare_filings(t, since, s["grid"]), key=lambda x: x["filed"])
     if s["grid"] == "quarterly":
         store = load_store(t)
         for f in store.get("filings") or []:
@@ -72,7 +128,9 @@ def update_series(s: dict, client=None) -> tuple[int, float]:
     if not filings:
         return 0, 0.0
     client = client or _sixk_client()
-    company = (repo.universe().get(s["ticker"]) or {}).get("name") or s["ticker"]
+    company = ((repo.universe().get(s["ticker"]) or {}).get("name")
+               or (repo.analyzed().get(s["ticker"]) or {}).get("name")
+               or s["ticker"])
     known = ", ".join(f"{p['period']}={p['value']}" for p in s["points"][-8:]) or "(none yet)"
     added, cost = 0, 0.0
     for f in filings:

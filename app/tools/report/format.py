@@ -43,19 +43,29 @@ def _div(numerator, denominator):
     return numerator / denominator
 
 
-def _format_money(n, decimals=0):
+CURRENCY_SYMBOL = {"USD": "$", "CNY": "¥", "HKD": "HK$", "EUR": "€", "GBP": "£", "JPY": "¥"}
+
+
+def currency_symbol(code: str | None) -> str:
+    """Symbol for a reporting currency. A report on a company that files and
+    trades in its own currency is rendered in that currency (an A-share in
+    ¥), so the symbol travels with the figures."""
+    return CURRENCY_SYMBOL.get((code or "USD").upper(), "")
+
+
+def _format_money(n, decimals=0, symbol="$"):
     if n is None or not isinstance(n, (int, float)):
         return "n/a"
     a = abs(n)
     if a >= 1e12:
-        return f"${n / 1e12:.{decimals}f}T"
+        return f"{symbol}{n / 1e12:.{decimals}f}T"
     if a >= 1e9:
-        return f"${n / 1e9:.{decimals}f}B"
+        return f"{symbol}{n / 1e9:.{decimals}f}B"
     if a >= 1e6:
-        return f"${n / 1e6:.{decimals}f}M"
+        return f"{symbol}{n / 1e6:.{decimals}f}M"
     if a >= 1e3:
-        return f"${n / 1e3:.{decimals}f}K"
-    return f"${n:.{decimals}f}"
+        return f"{symbol}{n / 1e3:.{decimals}f}K"
+    return f"{symbol}{n:.{decimals}f}"
 
 
 def _fmt_num(n, decimals=0):
@@ -70,13 +80,13 @@ def _fmt_pct(n, decimals=0):
     return f"{n * 100:.{decimals}f}%"
 
 
-def _fmt_dividend(rate, decimals=0):
+def _fmt_dividend(rate, decimals=0, symbol="$"):
     if rate is None:
         return "n/a"
-    return f"${rate:.{decimals}f}"
+    return f"{symbol}{rate:.{decimals}f}"
 
 
-def format_money_compact(n):
+def format_money_compact(n, symbol="$"):
     """Variant of `_format_money` for tables / index pages: returns "" (not
     "n/a") when no value, and uses 1 decimal place only at $1B+ (where the
     extra precision is meaningful). For a Value-Line-style table where
@@ -85,11 +95,11 @@ def format_money_compact(n):
     if n is None or not isinstance(n, (int, float)):
         return ""
     a = abs(n)
-    if a >= 1e12: return f"${n / 1e12:.1f}T"
-    if a >= 1e9:  return f"${n / 1e9:.1f}B"
-    if a >= 1e6:  return f"${n / 1e6:.0f}M"
-    if a >= 1e3:  return f"${n / 1e3:.0f}K"
-    return f"${n:.0f}"
+    if a >= 1e12: return f"{symbol}{n / 1e12:.1f}T"
+    if a >= 1e9:  return f"{symbol}{n / 1e9:.1f}B"
+    if a >= 1e6:  return f"{symbol}{n / 1e6:.0f}M"
+    if a >= 1e3:  return f"{symbol}{n / 1e3:.0f}K"
+    return f"{symbol}{n:.0f}"
 
 
 def status_badge(status):

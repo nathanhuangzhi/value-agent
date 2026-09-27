@@ -11,9 +11,9 @@ from app.tools.ashare_xcheck import (
 )
 
 
-def _row(**metrics):
-    """Source row carrying one annual period (2025) per metric."""
-    return {"annual": {m: {"2025": {"val": v}} for m, v in metrics.items()}, "quarterly": {}}
+def _row(*, period: str = "2025", **metrics):
+    """Source row carrying one annual period per metric (2025 by default)."""
+    return {"annual": {m: {period: {"val": v}} for m, v in metrics.items()}, "quarterly": {}}
 
 
 def test_severity_thresholds():
@@ -97,3 +97,25 @@ def test_a_clean_report_adds_no_issues():
     report = build_report("600066.SS", {"ashare": _row(revenue=100.0), "eastmoney": _row(revenue=100.0)})
     assert report["worst"] == "ok"
     assert as_issues(report) == []
+
+
+def test_an_old_restatement_is_recorded_but_does_not_raise_a_banner():
+    """长安汽车's 2020 total assets differ by 2.2% between sources — a
+    restatement one picked up and the other didn't. Worth keeping, not worth
+    flagging on a page about this year."""
+    old = build_report("000625.SZ",
+                       {"ashare": _row(period="2020", total_assets=120_915_805_350.0),
+                        "eastmoney": _row(period="2020", total_assets=118_265_186_395.0)},
+                       today="2026-09-27")
+    # The cell itself is still a warn in the report…
+    assert old["disagreements"][0]["severity"] == "warn"
+    # …but the issue it raises is downgraded, because the period is stale.
+    assert as_issues(old)[0]["severity"] == "info"
+
+
+def test_a_recent_disagreement_still_raises():
+    recent = {"disagreements": [{"period": "2026-06-30", "metric": "net_income",
+                                 "values": {"ashare": 100.0, "eastmoney": 120.0},
+                                 "spread_pct": 0.167, "severity": "error"}],
+              "as_of": "2026-09-27"}
+    assert as_issues(recent)[0]["severity"] == "error"

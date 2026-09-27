@@ -103,6 +103,13 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
         debt, debt_src = _pick_first_with_source(bs_items, bs_src, ["Total Debt", "Long Term Debt"])
         assets, assets_src = _pick_first_with_source(bs_items, bs_src, ["Total Assets"])
         liabilities, liabilities_src = _pick_first_with_source(bs_items, bs_src, ["Total Liabilities"])
+        ebitda, ebitda_src = _pick_first_with_source(items, item_src, ["EBITDA"])
+        pretax, pretax_src = _pick_first_with_source(items, item_src, ["Pretax Income"])
+        tax, tax_src = _pick_first_with_source(items, item_src, ["Tax Provision"])
+        interest, interest_src = _pick_first_with_source(items, item_src, ["Interest Expense"])
+        cur_assets, cur_assets_src = _pick_first_with_source(bs_items, bs_src, ["Current Assets"])
+        cur_liab, cur_liab_src = _pick_first_with_source(bs_items, bs_src, ["Current Liabilities"])
+        retained, retained_src = _pick_first_with_source(bs_items, bs_src, ["Retained Earnings"])
         rd = _pick_first(items, ["Research And Development"])
         sm = _pick_first(items, ["Selling And Marketing Expense"])
         ga = _pick_first(items, ["General And Administrative Expense"])
@@ -144,7 +151,10 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
             "sps": _div(rev, shares_for_mcap),
             "bvps": _div(bv, shares_for_mcap),
             "ocf": ocf, "fcf": fcf, "capex": capex,
+            "ebitda": ebitda, "pretax": pretax, "tax": tax, "interest": interest,
             "cash": cash, "debt": debt, "assets": assets, "liabilities": liabilities, "equity": bv,
+            "cur_assets": cur_assets, "cur_liab": cur_liab, "retained": retained,
+            "current_ratio": _div(cur_assets, cur_liab),
             "gm": _div(gp, rev), "om": _div(op, rev), "nm": _div(ni, rev),
             "rd_r": _div(rd, rev), "sm_r": _div(sm, rev), "ga_r": _div(ga, rev), "sga_r": _div(sga, rev),
             "other_r": _div(other, rev),
@@ -161,6 +171,9 @@ def _collect_table_columns(inc_periods, bs_periods, cf_periods, label_fn,
                 "ocf": ocf_src, "fcf": fcf_src, "capex": capex_src,
                 "cash": cash_src, "debt": debt_src, "assets": assets_src,
                 "liabilities": liabilities_src,
+                "ebitda": ebitda_src, "pretax": pretax_src, "tax": tax_src,
+                "interest": interest_src, "cur_assets": cur_assets_src,
+                "cur_liab": cur_liab_src, "retained": retained_src,
                 "equity": (bs_src or {}).get("Common Stock Equity") or (bs_src or {}).get("Stockholders Equity"),
             },
         }
@@ -206,7 +219,7 @@ def _slice_and_pad(cols, target, extra_keys):
 
 def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
                                 inc_quarterly, bs_quarterly, cf_quarterly,
-                                price_history=None):
+                                price_history=None, symbol="$"):
     """One table with annual columns first (FY22, FY23, ...), a vertical
     divider, then quarterly columns (2025 Q1, ...). Same metric rows down
     the side. A group header row labels the two column blocks.
@@ -257,7 +270,7 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         return f"{prefix}{scaled:,.{decs}f}{suffix}"
 
     money_m = lambda v: _fmt(v / 1e6) if v is not None else "—"
-    per_share = lambda v: _fmt(v, prefix="$") if v is not None else "—"
+    per_share = lambda v: _fmt(v, prefix=symbol) if v is not None else "—"
     def shares_cnt(v):
         # Adaptive units (K/M/B) so micro-cap share counts stay legible.
         if v is None:
@@ -274,10 +287,14 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
     ratio_str = lambda v: _fmt(v, suffix="x") if v is not None else "—"
 
     rows: list[tuple[str, str] | tuple[str, str, Callable[[Any], str]]] = [
-        ("group", "Income Statement ($M)"),
+        ("group", f"Income Statement ({symbol}M)"),
         ("Revenue", "rev", money_m),
         ("Gross Profit", "gp", money_m),
         ("Operating Income", "op", money_m),
+        ("EBITDA", "ebitda", money_m),
+        ("Interest Expense", "interest", money_m),
+        ("Pretax Income", "pretax", money_m),
+        ("Income Tax", "tax", money_m),
         ("Net Income", "ni", money_m),
         ("group", "Profitability Margins"),
         ("Gross Margin", "gm", pct_str),
@@ -294,14 +311,18 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         ),
         ("R&D / Revenue", "rd_r", pct_str),
         ("Other Opex / Revenue", "other_r", pct_str),
-        ("group", "Balance Sheet ($M)"),
+        ("group", f"Balance Sheet ({symbol}M)"),
         ("Total Assets", "assets", money_m),
+        ("Current Assets", "cur_assets", money_m),
         ("Cash, STI & Restricted", "cash", money_m),
         *[(key, key, money_m) for key in top_asset_keys],
         ("Total Liabilities", "liabilities", money_m),
+        ("Current Liabilities", "cur_liab", money_m),
         *[(key, key, money_m) for key in top_liability_keys],   # largest first
         ("Stockholders Equity", "equity", money_m),
-        ("group", "Cash Flow ($M)"),
+        ("Retained Earnings", "retained", money_m),
+        ("Current Ratio", "current_ratio", ratio_str),
+        ("group", f"Cash Flow ({symbol}M)"),
         ("Operating CF", "ocf", money_m),
         ("Capex", "capex", money_m),
         ("Free CF", "fcf", money_m),
@@ -377,11 +398,14 @@ def _render_combined_data_table(inc_annual, bs_annual, cf_annual,
         for i, c in enumerate(cols):
             bl = f"border-left:2px solid {RULE};" if i == divider_idx else ""
             prev = col_by_label.get(_prior_year_label(c["label"]))
-            yoy = _yoy_cell_style(c[key], prev[key] if prev else None)
+            # `.get`, not `[...]`: a column built elsewhere (or from an older
+            # cached payload) may not carry every row's key.
+            value = c.get(key)
+            yoy = _yoy_cell_style(value, prev.get(key) if prev else None)
             src = (c.get("sources") or {}).get(key)
-            value_str = fmt(c[key])
+            value_str = fmt(value)
             marker = ""
-            if c[key] is not None and src == "yfinance":
+            if value is not None and src == "yfinance":
                 marker = yf_marker_html
                 any_yfinance_cell = True
             cells.append(
