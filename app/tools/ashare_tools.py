@@ -112,7 +112,12 @@ def fetch_raw(ticker: str, *, start_date: str = "20120101") -> dict:
     (`report_type=2`). Restated periods come back as several rows — the
     adapter dedupes them, so the raw file keeps all of it."""
     code = ts_code(ticker)
-    p = {"ts_code": code, "start_date": start_date}
+    # `start_date` filters different interfaces on different dates — for the
+    # holder and event series it drops rows that go back to 2006 (top10_holders
+    # 929 → 578, forecast 24 → 11), so those are fetched whole. Only the
+    # daily-grain series get a window, because they would otherwise dwarf the
+    # file.
+    p = {"ts_code": code}
     out = {
         "ticker": ticker.upper(),
         "ts_code": code,
@@ -128,7 +133,7 @@ def fetch_raw(ticker: str, *, start_date: str = "20120101") -> dict:
         # 财务指标: 108 ready-made ratios (turnover days, diluted ROE, …).
         "fina_indicator": call("fina_indicator", p),
         # 主营业务构成 by region / industry / product.
-        "fina_mainbz": call("fina_mainbz", {**p, "start_date": "20180101"}),
+        "fina_mainbz": call("fina_mainbz", p),
         # 分红送股: every stage (预案 → 股东大会通过 → 实施); the adapter reads
         # the 实施 rows, which is what the snapshot's Dividend Rate needs.
         "dividend": call("dividend", {"ts_code": code}),
@@ -160,6 +165,8 @@ def fetch_raw(ticker: str, *, start_date: str = "20120101") -> dict:
     # The charts use the 10-year monthly series; these are the raw record.
     out["daily"] = call("daily", {"ts_code": code, "start_date": start_date})
     out["daily_basic"] = call("daily_basic", {"ts_code": code, "start_date": start_date})
+    out["fetch_note"] = ("event and holder series are fetched whole; daily series from "
+                         f"{start_date}, microstructure from {_recent(start_date)}")
     return out
 
 
