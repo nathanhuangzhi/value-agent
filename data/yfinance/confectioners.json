@@ -1,10 +1,114 @@
 [
   {
     "ticker": "RMCF",
-    "fetched_at": "2026-09-26T12:29:00+00:00",
+    "fetched_at": "2026-09-28T12:13:49+00:00",
     "source": "yfinance",
     "financial_currency": "USD",
     "annual": {
+      "pretax_income": {
+        "2025": {
+          "val": -4373000.0,
+          "end": "2026-02-28",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -6122000.0,
+          "end": "2025-02-28",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -4876000.0,
+          "end": "2024-02-29",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -4874513.0,
+          "end": "2023-02-28",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        }
+      },
+      "income_tax": {
+        "2025": {
+          "val": 187000.0,
+          "end": "2026-02-28",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 0.0,
+          "end": "2025-02-28",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 0.0,
+          "end": "2024-02-29",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 613843.0,
+          "end": "2023-02-28",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        }
+      },
+      "ebitda": {
+        "2025": {
+          "val": -2128000.0,
+          "end": "2026-02-28",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -4965000.0,
+          "end": "2025-02-28",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -3936000.0,
+          "end": "2024-02-29",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -4098819.0,
+          "end": "2023-02-28",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        }
+      },
+      "interest_expense": {
+        "2025": {
+          "val": 840000.0,
+          "end": "2026-02-28",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 454000.0,
+          "end": "2025-02-28",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 53000.0,
+          "end": "2024-02-29",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 10431.0,
+          "end": "2023-02-28",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        }
+      },
       "revenue": {
         "2025": {
           "val": 27497000.0,
@@ -266,6 +370,85 @@
           "source": "yfinance"
         }
       },
+      "current_assets": {
+        "2025": {
+          "val": 8768000.0,
+          "end": "2026-02-28",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 9223000.0,
+          "end": "2025-02-28",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 9602000.0,
+          "end": "2024-02-29",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 11204976.0,
+          "end": "2023-02-28",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        }
+      },
+      "current_liabilities": {
+        "2025": {
+          "val": 6786000.0,
+          "end": "2026-02-28",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 6869000.0,
+          "end": "2025-02-28",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 8072000.0,
+          "end": "2024-02-29",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 5010226.0,
+          "end": "2023-02-28",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        }
+      },
+      "retained_earnings": {
+        "2025": {
+          "val": -9948000.0,
+          "end": "2026-02-28",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -5388000.0,
+          "end": "2025-02-28",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 734000.0,
+          "end": "2024-02-29",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 4906032.0,
+          "end": "2023-02-28",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        }
+      },
+      "minority_interest": {},
       "cash": {
         "2025": {
           "val": 1218000.0,
@@ -773,6 +956,134 @@
       }
     },
     "quarterly": {
+      "pretax_income": {
+        "2026-05-31": {
+          "val": -1168000.0,
+          "end": "2026-05-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2026-02-28": {
+          "val": -3232000.0,
+          "end": "2026-02-28",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2025-11-30": {
+          "val": -155000.0,
+          "end": "2025-11-30",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2025-08-31": {
+          "val": -662000.0,
+          "end": "2025-08-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2025-05-31": {
+          "val": -324000.0,
+          "end": "2025-05-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        }
+      },
+      "income_tax": {
+        "2026-05-31": {
+          "val": 0.0,
+          "end": "2026-05-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2026-02-28": {
+          "val": 187000.0,
+          "end": "2026-02-28",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2025-11-30": {
+          "val": 0.0,
+          "end": "2025-11-30",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2025-08-31": {
+          "val": 0.0,
+          "end": "2025-08-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2025-05-31": {
+          "val": 0.0,
+          "end": "2025-05-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        }
+      },
+      "ebitda": {
+        "2026-05-31": {
+          "val": -594000.0,
+          "end": "2026-05-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2026-02-28": {
+          "val": -2644000.0,
+          "end": "2026-02-28",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2025-11-30": {
+          "val": 433000.0,
+          "end": "2025-11-30",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2025-08-31": {
+          "val": -127000.0,
+          "end": "2025-08-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2025-05-31": {
+          "val": 210000.0,
+          "end": "2025-05-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        }
+      },
+      "interest_expense": {
+        "2026-05-31": {
+          "val": 208000.0,
+          "end": "2026-05-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2026-02-28": {
+          "val": 219000.0,
+          "end": "2026-02-28",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2025-11-30": {
+          "val": 243000.0,
+          "end": "2025-11-30",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2025-08-31": {
+          "val": 190000.0,
+          "end": "2025-08-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2025-05-31": {
+          "val": 188000.0,
+          "end": "2025-05-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        }
+      },
       "revenue": {
         "2026-05-31": {
           "val": 6113000.0,
@@ -1094,6 +1405,103 @@
           "source": "yfinance"
         }
       },
+      "current_assets": {
+        "2026-05-31": {
+          "val": 7548000.0,
+          "end": "2026-05-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2026-02-28": {
+          "val": 8768000.0,
+          "end": "2026-02-28",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2025-11-30": {
+          "val": 9065000.0,
+          "end": "2025-11-30",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2025-08-31": {
+          "val": 10183000.0,
+          "end": "2025-08-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2025-05-31": {
+          "val": 8382000.0,
+          "end": "2025-05-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        }
+      },
+      "current_liabilities": {
+        "2026-05-31": {
+          "val": 6684000.0,
+          "end": "2026-05-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2026-02-28": {
+          "val": 6786000.0,
+          "end": "2026-02-28",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2025-11-30": {
+          "val": 5463000.0,
+          "end": "2025-11-30",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2025-08-31": {
+          "val": 6651000.0,
+          "end": "2025-08-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2025-05-31": {
+          "val": 6162000.0,
+          "end": "2025-05-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        }
+      },
+      "retained_earnings": {
+        "2026-05-31": {
+          "val": -11116000.0,
+          "end": "2026-05-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2026-02-28": {
+          "val": -9948000.0,
+          "end": "2026-02-28",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2025-11-30": {
+          "val": -6529000.0,
+          "end": "2025-11-30",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2025-08-31": {
+          "val": -6374000.0,
+          "end": "2025-08-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2025-05-31": {
+          "val": -5712000.0,
+          "end": "2025-05-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        }
+      },
+      "minority_interest": {},
       "cash": {
         "2026-05-31": {
           "val": 609000.0,
@@ -1710,10 +2118,114 @@
   },
   {
     "ticker": "SOWG",
-    "fetched_at": "2026-09-26T12:30:24+00:00",
+    "fetched_at": "2026-09-28T12:15:15+00:00",
     "source": "yfinance",
     "financial_currency": "USD",
     "annual": {
+      "pretax_income": {
+        "2025": {
+          "val": -6823265.0,
+          "end": "2025-12-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -11831129.0,
+          "end": "2024-12-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -3060433.0,
+          "end": "2023-12-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -12127068.0,
+          "end": "2022-12-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        }
+      },
+      "income_tax": {
+        "2025": {
+          "val": 0.0,
+          "end": "2025-12-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 0.0,
+          "end": "2024-12-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 0.0,
+          "end": "2023-12-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 0.0,
+          "end": "2022-12-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        }
+      },
+      "ebitda": {
+        "2025": {
+          "val": -6506490.0,
+          "end": "2025-12-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -10944000.0,
+          "end": "2024-12-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -692862.0,
+          "end": "2023-12-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -5366878.0,
+          "end": "2022-12-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        }
+      },
+      "interest_expense": {
+        "2025": {
+          "val": 159953.0,
+          "end": "2025-12-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 741204.0,
+          "end": "2024-12-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 1839749.0,
+          "end": "2023-12-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 1277965.0,
+          "end": "2022-12-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        }
+      },
       "revenue": {
         "2025": {
           "val": 0.0,
@@ -1950,6 +2462,85 @@
           "source": "yfinance"
         }
       },
+      "current_assets": {
+        "2025": {
+          "val": 3392778.0,
+          "end": "2025-12-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 25076141.0,
+          "end": "2024-12-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 10378639.0,
+          "end": "2023-12-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 2578057.0,
+          "end": "2022-12-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        }
+      },
+      "current_liabilities": {
+        "2025": {
+          "val": 6187442.0,
+          "end": "2025-12-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": 7364541.0,
+          "end": "2024-12-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": 5771200.0,
+          "end": "2023-12-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": 890177.0,
+          "end": "2022-12-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        }
+      },
+      "retained_earnings": {
+        "2025": {
+          "val": -103083717.0,
+          "end": "2025-12-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2024": {
+          "val": -62442211.0,
+          "end": "2024-12-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2023": {
+          "val": -58739995.0,
+          "end": "2023-12-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2022": {
+          "val": -55679562.0,
+          "end": "2022-12-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        }
+      },
+      "minority_interest": {},
       "cash": {
         "2025": {
           "val": 1474445.0,
@@ -2408,6 +2999,134 @@
       "cash_dividends_paid": {}
     },
     "quarterly": {
+      "pretax_income": {
+        "2026-06-30": {
+          "val": -3855712.0,
+          "end": "2026-06-30",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": -1930036.0,
+          "end": "2026-03-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 10869785.0,
+          "end": "2025-12-31",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -10935484.0,
+          "end": "2025-09-30",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": -1270656.0,
+          "end": "2025-06-30",
+          "concept": "Pretax Income",
+          "source": "yfinance"
+        }
+      },
+      "income_tax": {
+        "2026-06-30": {
+          "val": 0.0,
+          "end": "2026-06-30",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 0.0,
+          "end": "2026-03-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 0.0,
+          "end": "2025-12-31",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 0.0,
+          "end": "2025-09-30",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 0.0,
+          "end": "2025-06-30",
+          "concept": "Tax Provision",
+          "source": "yfinance"
+        }
+      },
+      "ebitda": {
+        "2026-06-30": {
+          "val": -3697965.0,
+          "end": "2026-06-30",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": -1651321.0,
+          "end": "2026-03-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 10648075.0,
+          "end": "2025-12-31",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -10747259.0,
+          "end": "2025-09-30",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": -774638.0,
+          "end": "2025-06-30",
+          "concept": "Normalized EBITDA",
+          "source": "yfinance"
+        }
+      },
+      "interest_expense": {
+        "2026-06-30": {
+          "val": 105219.0,
+          "end": "2026-06-30",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 243594.0,
+          "end": "2026-03-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -229060.0,
+          "end": "2025-12-31",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 93274.0,
+          "end": "2025-09-30",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 113163.0,
+          "end": "2025-06-30",
+          "concept": "Interest Expense",
+          "source": "yfinance"
+        }
+      },
       "revenue": {
         "2026-06-30": {
           "val": 0.0,
@@ -2459,15 +3178,15 @@
           "concept": "Cost Of Revenue",
           "source": "yfinance"
         },
-        "2024-12-31": {
-          "val": 2601528.0,
-          "end": "2024-12-31",
-          "concept": "Cost Of Revenue",
-          "source": "yfinance"
-        },
         "2025-03-31": {
           "val": 1374199.0,
           "end": "2025-03-31",
+          "concept": "Cost Of Revenue",
+          "source": "yfinance"
+        },
+        "2024-12-31": {
+          "val": 2601528.0,
+          "end": "2024-12-31",
           "concept": "Cost Of Revenue",
           "source": "yfinance"
         }
@@ -2698,6 +3417,103 @@
           "source": "yfinance"
         }
       },
+      "current_assets": {
+        "2026-06-30": {
+          "val": 383469.0,
+          "end": "2026-06-30",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 2956059.0,
+          "end": "2026-03-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 3392778.0,
+          "end": "2025-12-31",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 13046193.0,
+          "end": "2025-09-30",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 22800083.0,
+          "end": "2025-06-30",
+          "concept": "Current Assets",
+          "source": "yfinance"
+        }
+      },
+      "current_liabilities": {
+        "2026-06-30": {
+          "val": 5600588.0,
+          "end": "2026-06-30",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": 4346679.0,
+          "end": "2026-03-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": 6187442.0,
+          "end": "2025-12-31",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": 3216029.0,
+          "end": "2025-09-30",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": 5384019.0,
+          "end": "2025-06-30",
+          "concept": "Current Liabilities",
+          "source": "yfinance"
+        }
+      },
+      "retained_earnings": {
+        "2026-06-30": {
+          "val": -109452497.0,
+          "end": "2026-06-30",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2026-03-31": {
+          "val": -105573470.0,
+          "end": "2026-03-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2025-12-31": {
+          "val": -103083717.0,
+          "end": "2025-12-31",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2025-09-30": {
+          "val": -80135261.0,
+          "end": "2025-09-30",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        },
+        "2025-06-30": {
+          "val": -69199776.0,
+          "end": "2025-06-30",
+          "concept": "Retained Earnings",
+          "source": "yfinance"
+        }
+      },
+      "minority_interest": {},
       "cash": {
         "2026-06-30": {
           "val": 8492.0,
