@@ -14,12 +14,15 @@ Raw responses are cached per ticker under `data/ashare_raw/` (gitignored)
 so re-mapping after a field-map change is `--reparse`, not a re-download —
 same contract as `data/sec_raw` and `data/yfinance_raw`.
 
-Interfaces used (all need ≥2000 积分): stock_basic, income, balancesheet,
-cashflow, daily_basic, daily, fina_indicator, fina_mainbz, dividend,
-forecast, express, top10_holders, stk_holdernumber. Everything the API
-returns is kept in the raw file, whether or not the app surfaces it — the
-`_vip` bulk variants (5000 积分) are the only thing out of reach, and they
-only matter for whole-market pulls.
+Every interface this token can reach for one company is fetched and kept in
+the raw file, whether or not the app surfaces it: statements and 单季 variants,
+财务指标, 主营构成, 分红, 业绩预告/快报, 十大股东 and 十大流通股东, 股东户数,
+管理层 and 薪酬, 股权质押, 回购, 限售解禁, 股东增减持, 审计意见, 披露计划,
+曾用名, 大宗交易, 融资融券, 资金流向, and the full daily series.
+
+Out of reach on 2000 积分 (they need 5000): `anns_d` (公告全文 — cninfo serves
+those for free, see app/tools/ashare_reports.py), `bak_basic`, `stk_factor`,
+`cyq_perf`. None are needed here.
 """
 from __future__ import annotations
 
@@ -94,6 +97,13 @@ def save_raw(ticker: str, payload: dict) -> None:
     tmp.replace(raw_path(ticker))
 
 
+def _recent(start_date: str, *, years: int = 2) -> str:
+    """Start date for the daily-grain series, which would otherwise dwarf the
+    rest of the file: the later of `start_date` and `years` ago."""
+    cutoff = f"{datetime.now(timezone.utc).year - years}0101"
+    return max(start_date, cutoff)
+
+
 def fetch_raw(ticker: str, *, start_date: str = "20120101") -> dict:
     """Every interface this pipeline needs for one company, in one payload.
 
@@ -127,7 +137,24 @@ def fetch_raw(ticker: str, *, start_date: str = "20120101") -> dict:
         "express": call("express", p),
         # 股东: top ten holders per period, and the holder count over time.
         "top10_holders": call("top10_holders", p),
+        # 十大流通股东 — the tradable float, which is the more useful list:
+        # it excludes the locked-up parent holding.
+        "top10_floatholders": call("top10_floatholders", p),
         "stk_holdernumber": call("stk_holdernumber", p),
+        # Governance and risk signals.
+        "fina_audit": call("fina_audit", {"ts_code": code}),
+        "stk_managers": call("stk_managers", {"ts_code": code}),
+        "stk_rewards": call("stk_rewards", {"ts_code": code}),
+        "pledge_stat": call("pledge_stat", {"ts_code": code}),
+        "repurchase": call("repurchase", {"ts_code": code}),
+        "share_float": call("share_float", {"ts_code": code}),
+        "stk_holdertrade": call("stk_holdertrade", p),
+        "disclosure_date": call("disclosure_date", {"ts_code": code}),
+        "namechange": call("namechange", {"ts_code": code}),
+        # Market microstructure, last ~2 years (the daily ones are large).
+        "block_trade": call("block_trade", {**p, "start_date": _recent(start_date)}),
+        "margin_detail": call("margin_detail", {"ts_code": code, "start_date": _recent(start_date)}),
+        "moneyflow": call("moneyflow", {"ts_code": code, "start_date": _recent(start_date)}),
     }
     # Daily bars and daily valuation, full history (one stock is ~7k rows).
     # The charts use the 10-year monthly series; these are the raw record.

@@ -203,21 +203,30 @@ is what keeps them out of the daily digest — by design.
 - **Validation.** `validate_ticker(..., sec_expected=False)` drops the
   XBRL-presence tier for these companies (`SEC_ONLY_RULES`) — otherwise a
   complete page shows a red banner for filings that will never exist.
-- **What's on disk.** `data/ashare_raw/<T>.json` keeps every interface in
-  full — 三大报表 (85 / 152 / 97 columns, 合并 and 单季), `fina_indicator` (108
-  ratios), `fina_mainbz`, `dividend`, `forecast`, `express`, `top10_holders`,
-  `stk_holdernumber`, and the complete `daily` / `daily_basic` history — so
-  surfacing a new line item is a `--reparse`, never a re-download. The mapped
+- **What's on disk.** `data/ashare_raw/<T>.json` keeps all 26 interfaces this
+  token can reach, in full: 三大报表 (85 / 152 / 97 columns, 合并 and 单季),
+  `fina_indicator` (108 ratios), `fina_mainbz`, `dividend`, `forecast`,
+  `express`, `top10_holders`, `top10_floatholders`, `stk_holdernumber`,
+  `fina_audit`, `stk_managers`, `stk_rewards`, `pledge_stat`, `repurchase`,
+  `share_float`, `stk_holdertrade`, `disclosure_date`, `namechange`, and the
+  daily series (`daily`, `daily_basic` in full; `block_trade`, `margin_detail`,
+  `moneyflow` for the last two years) — so surfacing a new line item is a
+  `--reparse`, never a re-download. Out of reach on 2000 积分, and not needed:
+  `anns_d` (公告全文 — cninfo has those free), `bak_basic`, `stk_factor`,
+  `cyq_perf`. Tushare has no report text at all. The mapped
   view (`data/ashare/<T>.json`) exposes the ~27 metrics the blend vocabulary
   has a home for.
-- **年报 / 半年报.** Chinese issuers file a PDF with 巨潮资讯网, not an HTML
-  10-K, so `scripts/fetch_ashare_reports.py` downloads it and converts it to
+- **定期报告 (all four).** Chinese issuers file a PDF with 巨潮资讯网, not an HTML
+  10-K, so `scripts/fetch_ashare_reports.py` downloads 年报 / 半年报 / 一季报 /
+  三季报 (`PERIODIC_CATEGORIES`) and converts them to
   **Markdown** with pymupdf4llm (`app/tools/ashare_reports.py` → `data/ashare_reports/`).
   Headings stay headings and 合并利润表 stays a table, and the TOC is built from
   the filing's own numbering (第N节 → 一、→ (一) → 1、) with the section span
   running to the next heading at its own level or shallower. cninfo needs its
   internal `orgId`, which comes from the platform's own 6,258-row lookup table
-  — guessing it returns an empty result set.
+  — guessing it returns an empty result set. Each filing records `report_date`
+  and `cumulative`, because 半年报 / 三季报 state figures 年初至报告期末; the series
+  updater passes that on so a 前三季度 number is not recorded as one quarter's.
 - **Units.** A company that files *and* trades in its own currency is shown in
   it, everywhere a single company is in view: the app page (default, chip still
   flips), the web report (`INCOME STATEMENT (¥M)`, nothing converted — the

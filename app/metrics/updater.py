@@ -68,24 +68,41 @@ def _ashare_text(ticker: str, filing: dict) -> str:
     return text[:MAX_TEXT]
 
 
+def _from_form(form: str) -> tuple[str, bool]:
+    """(period-end month-day, figures are cumulative) for a 定期报告, used when
+    an index row predates those fields — a `--reparse` fills them in, and this
+    keeps the fallback honest meanwhile."""
+    from app.tools.ashare_reports import _FORM_PERIOD
+    return _FORM_PERIOD.get(form, ("12-31", True))
+
+
 def _ashare_filings(ticker: str, since: str, grid: str) -> list[dict]:
-    """A-share 定期报告 newer than `since`. A quarterly series takes whatever
-    periodic report is new (半年报 included); an annual series only the 年报."""
+    """A-share 定期报告 newer than `since`.
+
+    A quarterly series takes any of the four periodic reports; an annual series
+    only the 年报. Chinese interim reports state figures 年初至报告期末 —
+    cumulative from January — so the filing description says which, or the
+    model would record 前三季度 sales as one quarter's."""
     from app.tools.ashare_reports import load_index
 
     out = []
     for f in load_index(ticker).get("filings") or []:
         if (f.get("filed") or "") <= since:
             continue
-        interim = "半年" in (f.get("form") or "")
-        if grid == "annual" and interim:
+        form = f.get("form") or "定期报告"
+        if grid == "annual" and form != "年度报告":
             continue
+        month_day, cumulative_by_form = _from_form(form)
+        cumulative = f.get("cumulative", cumulative_by_form)
+        kind = f"{form} {f.get('title') or ''}".strip()
+        if cumulative and grid == "quarterly":
+            kind += " — 注意：报告中的期间数字多为「年初至报告期末」累计数，" \
+                    "请给出该季度单独的数字（必要时用累计数相减）"
         out.append({
-            "kind": f"{f.get('form') or '定期报告'} {f.get('title') or ''}".strip(),
+            "kind": kind,
             "filed": f["filed"],
-            "period": (f"{f['fiscal_year']}-06-30" if (interim and grid == "quarterly")
-                       else f"{f['fiscal_year']}-12-31" if grid == "quarterly"
-                       else f["fiscal_year"]),
+            "period": (f.get("report_date") or f"{f['fiscal_year']}-{month_day}")
+                      if grid == "quarterly" else f["fiscal_year"],
             "text": _ashare_text(ticker, f),
         })
     return out

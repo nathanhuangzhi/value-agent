@@ -1,8 +1,9 @@
 """A-share 年报 / 半年报 from 巨潮资讯网 (cninfo), converted to Markdown.
 
-The SEC path (`fetch_annual_reports.py`) downloads an HTML 10-K/20-F and
-flattens it to text. Chinese issuers file a PDF instead, so this stage
-downloads the PDF as filed and converts it with PyMuPDF — headings stay
+All four 定期报告 are covered — 年报, 半年报, 一季报, 三季报. The SEC path
+(`fetch_annual_reports.py`) downloads an HTML 10-K/20-F and flattens it to
+text; Chinese issuers file a PDF instead, so this stage downloads the PDF as
+filed and converts it with PyMuPDF — headings stay
 headings and 合并利润表 comes out as a Markdown table, which is what the AI
 chat's `list_annual_reports` / `get_annual_report_section` /
 `search_annual_report` tools read.
@@ -30,8 +31,10 @@ log = get_logger(__name__)
 def main() -> None:
     ap = argparse.ArgumentParser(description="Fetch A-share 定期报告 from cninfo")
     ap.add_argument("--ticker")
-    ap.add_argument("--keep", type=int, default=DEFAULT_KEEP, help="reports per category (default 3)")
-    ap.add_argument("--no-interim", action="store_true", help="年报 only, skip 半年报")
+    ap.add_argument("--keep", type=int, default=DEFAULT_KEEP,
+                    help="reports per category — 年报/半年报/一季报/三季报 (default 3 each)")
+    ap.add_argument("--no-interim", action="store_true",
+                    help="年报 only, skip 半年报 / 一季报 / 三季报")
     ap.add_argument("--reparse", action="store_true", help="rebuild the TOC from converted files")
     args = ap.parse_args()
 

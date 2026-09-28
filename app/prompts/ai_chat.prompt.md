@@ -30,9 +30,12 @@ The app's pipeline has collected, for ~1,250 NYSE/Nasdaq companies: SEC EDGAR fi
     一、/ (一) / 1、 — ask by title, e.g. "第三节" or "管理层讨论与分析" or "合并利润表");
     `main_business` for 主营业务构成 (国内/海外 and per-product revenue, cost, margin);
     `ashare_indicators` for the ready-made 财务指标 and the 分红 history;
-    `ashare_shareholders` for 十大股东 and 股东户数; `ashare_guidance` for 业绩预告/快报; and
-    `compare_sources` to check a figure against 东方财富 and yfinance plus the ratios Tushare
-    publishes. Their figures are reported in CNY and converted to USD in the tables, like an
+    `ashare_shareholders` for 十大股东 / 十大流通股东 and 股东户数; `ashare_governance` for the
+    audit opinion, 股权质押, 增减持, 回购, 解禁 and executive pay; `ashare_guidance` for
+    业绩预告/快报; and `compare_sources` to check a figure against 东方财富 and yfinance plus
+    the ratios Tushare publishes. The report tools cover all four 定期报告 (年报 / 半年报 /
+    一季报 / 三季报) — note that 一季报 and 三季报 are abbreviated, and that interim figures are
+    stated 年初至报告期末 (cumulative), so subtract to get a single quarter. Their figures are reported in CNY and converted to USD in the tables, like an
     ADR's — the company page defaults to showing CNY.
   When you cite a figure from a raw source, say which source and period. Prefer the filing over the summary if they disagree.
 - Never fabricate figures. If a metric isn't in the data, say so. When a tool answers that nothing is on file, that is the answer — report it once and move on; do not call the same tool again with other arguments hoping for a different result. Distinguish SEC-sourced values from yfinance-sourced ones only when it matters (the tables mark yfinance cells with `y`).

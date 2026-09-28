@@ -46,14 +46,34 @@ _HEADERS = {
 _TIMEOUT_S = 90
 DEFAULT_KEEP = 3
 
-# cninfo's category codes: 年报 and 半年报 (the two that carry audited /
-# reviewed statements and a full management discussion).
+# cninfo's category codes for the four 定期报告. The 年报 and 半年报 carry a full
+# management discussion; 一季报 / 三季报 are abbreviated (statements plus a short
+# explanation) but are the only text the company publishes for those quarters.
 CATEGORY_ANNUAL = "category_ndbg_szsh"
 CATEGORY_INTERIM = "category_bndbg_szsh"
+CATEGORY_Q1 = "category_yjdbg_szsh"
+CATEGORY_Q3 = "category_sjdbg_szsh"
+PERIODIC_CATEGORIES = (CATEGORY_ANNUAL, CATEGORY_INTERIM, CATEGORY_Q1, CATEGORY_Q3)
 
-# 年报 are re-issued as 摘要 / 更正 / English versions — those are not the report.
+# Reports are re-issued as 摘要 / 更正 / English versions — those are not the report.
 _SKIP_TITLE = re.compile(r"摘要|英文|English|更正|已取消|公告$")
-_ANNUAL_TITLE = re.compile(r"年度报告|半年度报告")
+_ANNUAL_TITLE = re.compile(r"年度报告|半年度报告|第一季度报告|第三季度报告")
+
+# form label → (month-day the period ends, whether the figures are cumulative
+# 年初至报告期末 rather than for that quarter alone).
+_FORM_PERIOD = {
+    "年度报告": ("12-31", True),
+    "半年度报告": ("06-30", True),
+    "第一季度报告": ("03-31", False),
+    "第三季度报告": ("09-30", True),
+}
+
+
+def _form_of(title: str) -> str:
+    for form in ("半年度报告", "第一季度报告", "第三季度报告", "年度报告"):
+        if form in title:
+            return form
+    return "定期报告"
 
 # The filing's own numbering, outermost first: 第三节 → 一、→ (一) → 1、.
 # This — not the Markdown heading depth — is the logical hierarchy: PyMuPDF
@@ -203,13 +223,16 @@ def build_toc(text: str) -> list[dict]:
 # ---- sync -----------------------------------------------------------------
 
 def sync_ticker(ticker: str, *, keep: int = DEFAULT_KEEP, interim: bool = True,
-                log=print) -> dict:
-    """Fetch, convert and index the newest reports for one A-share."""
+                categories: tuple[str, ...] | None = None, log=print) -> dict:
+    """Fetch, convert and index the newest reports for one A-share.
+
+    `interim=False` narrows it to 年报 only; `categories` overrides the set
+    outright."""
     t = ticker.upper()
     idx = load_index(t)
     have = {f["accession"] for f in idx["filings"]}
     wanted: list[dict] = []
-    for category in (CATEGORY_ANNUAL,) + ((CATEGORY_INTERIM,) if interim else ()):
+    for category in (categories or (PERIODIC_CATEGORIES if interim else (CATEGORY_ANNUAL,))):
         anns = [a for a in list_announcements(t, category=category)
                 if _ANNUAL_TITLE.search(a.get("announcementTitle") or "")
                 and not _SKIP_TITLE.search(a.get("announcementTitle") or "")]
@@ -230,14 +253,22 @@ def sync_ticker(ticker: str, *, keep: int = DEFAULT_KEEP, interim: bool = True,
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(md)
         toc = build_toc(md)
+        form = _form_of(title)
+        fiscal_year = _fiscal_year(title, ann.get("announcementTime"))
+        month_day, cumulative = _FORM_PERIOD.get(form, ("12-31", True))
         filing: dict = {
             "accession": accession,
-            "form": "半年度报告" if "半年" in title else "年度报告",
+            "form": form,
             "title": title,
-            "fiscal_year": _fiscal_year(title, ann.get("announcementTime")),
+            "fiscal_year": fiscal_year,
             "filed": datetime.fromtimestamp((ann.get("announcementTime") or 0) / 1000,
                                             timezone.utc).date().isoformat(),
-            "report_date": None,
+            # The period covered, and whether the figures run from January
+            # (Chinese interim reports state 年初至报告期末 cumulatives) — the
+            # series updater passes that on, so a 前三季度 number is not
+            # recorded as one quarter's.
+            "report_date": f"{fiscal_year}-{month_day}" if fiscal_year else None,
+            "cumulative": cumulative,
             "url": PDF_BASE + str(ann.get("adjunctUrl") or "").lstrip("/"),
             "pages": None,
             "chars": len(md),
@@ -254,7 +285,9 @@ def sync_ticker(ticker: str, *, keep: int = DEFAULT_KEEP, interim: bool = True,
 
 
 def reparse_ticker(ticker: str, *, log=print) -> dict:
-    """Rebuild the TOC (and char counts) from the Markdown already on disk."""
+    """Rebuild the TOC, char counts and period fields from the Markdown already
+    on disk — no network, so it is also how rows written by an earlier version
+    of this module pick up new fields."""
     t = ticker.upper()
     idx = load_index(t)
     for f in idx.get("filings") or []:
@@ -263,7 +296,11 @@ def reparse_ticker(ticker: str, *, log=print) -> dict:
             continue
         md = p.read_text(errors="replace")
         f["chars"], f["toc"] = len(md), build_toc(md)
-        log(f"  {t} {f.get('form')} FY{f.get('fiscal_year')}: {len(f['toc'])} sections")
+        f["form"] = _form_of(f.get("title") or "")
+        month_day, f["cumulative"] = _FORM_PERIOD.get(f["form"], ("12-31", True))
+        if f.get("fiscal_year"):
+            f["report_date"] = f"{f['fiscal_year']}-{month_day}"
+        log(f"  {t} {f['form']} {f.get('report_date')}: {len(f['toc'])} sections, {f['chars']:,} chars")
     save_index(idx)
     return idx
 

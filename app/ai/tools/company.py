@@ -214,8 +214,9 @@ def ashare_indicators(ticker: str, period: str | None = None) -> str:
 @tool(
     "ashare_shareholders",
     description=(
-        "Who owns an A-share: the ten largest holders with their stakes and the change since "
-        "last period, plus how the total number of shareholders has moved (a crowding signal)."
+        "Who owns an A-share: the ten largest holders and the ten largest holders of the tradable "
+        "float, each with stakes and the change since last period, plus how the total number of "
+        "shareholders has moved (a crowding signal)."
     ),
     params={"ticker": {"type": "string"}, "period": {"type": "string", "description": "YYYYMMDD; omit for the latest"}},
     required=["ticker"],
@@ -228,16 +229,28 @@ def ashare_shareholders(ticker: str, period: str | None = None) -> str:
     raw = load_raw(t)
     if not raw:
         return f"ERROR: nothing on file for {t} — A-shares only."
+    def _table(rows: list[dict], title: str, want: str | None) -> list[str]:
+        rows = [h for h in rows if str(h.get("end_date")) == want]
+        if not rows:
+            return []
+        lines = [f"{title} · period {want}"]
+        for h in sorted(rows, key=lambda r: -(r.get("hold_ratio") or 0)):
+            chg = h.get("hold_change") or 0
+            chg_s = "" if not chg else f" ({'+' if chg > 0 else ''}{chg:,.0f} shares)"
+            lines.append(f"  {h.get('hold_ratio', 0):5.2f}%  {h.get('holder_name')}"
+                         f" · {h.get('holder_type') or '?'}{chg_s}")
+        return lines
+
     holders = raw.get("top10_holders") or []
+    floaters = raw.get("top10_floatholders") or []
     periods = sorted({str(h.get("end_date")) for h in holders if h.get("end_date")})
     want = (period.replace("-", "") if period else (periods[-1] if periods else None))
-    rows = [h for h in holders if str(h.get("end_date")) == want]
-    out = [f"{t} 十大股东 · period {want}"]
-    for h in sorted(rows, key=lambda r: -(r.get("hold_ratio") or 0)):
-        chg = h.get("hold_change")
-        chg_s = "" if chg in (None, 0) else f" ({'+' if chg > 0 else ''}{chg:,.0f} shares)"
-        out.append(f"  {h.get('hold_ratio', 0):5.2f}%  {h.get('holder_name')}"
-                   f" · {h.get('holder_type') or '?'}{chg_s}")
+    out = _table(holders, f"{t} 十大股东", want)
+    # 十大流通股东 is the more telling list: it drops the locked-up parent
+    # holding, so it shows who actually trades the float.
+    float_periods = sorted({str(h.get("end_date")) for h in floaters if h.get("end_date")})
+    out += [""] + _table(floaters, f"{t} 十大流通股东", want if want in float_periods
+                         else (float_periods[-1] if float_periods else None))
     nums = sorted(raw.get("stk_holdernumber") or [], key=lambda r: str(r.get("end_date") or ""))
     if nums:
         out.append("股东户数:")
@@ -279,3 +292,69 @@ def ashare_guidance(ticker: str) -> str:
         out.append(f"  快报 {r.get('end_date')}: 营收 {(r.get('revenue') or 0) / 1e8:.2f} 亿元 · "
                    f"净利 {(r.get('n_income') or 0) / 1e8:.2f} 亿元 (公告 {r.get('ann_date')})")
     return "\n".join(out) if len(out) > 1 else f"No 业绩预告/快报 on file for {t}."
+
+
+@tool(
+    "ashare_governance",
+    description=(
+        "Governance and risk signals for an A-share, from the filings: the audit opinion and who "
+        "signed it (and the fee), 股权质押 by major holders, insider buying and selling "
+        "(股东增减持), buybacks, upcoming 限售解禁, board and executive pay, and when the next "
+        "report is due. Use it for 'is there anything wrong with this company' questions."
+    ),
+    params={"ticker": {"type": "string", "description": "e.g. 600066.SS"}},
+    required=["ticker"],
+    status="Reading {ticker}'s 治理与风险信号…",
+)
+def ashare_governance(ticker: str) -> str:
+    from app.tools.ashare_tools import load_raw
+
+    t = (ticker or "").upper().strip()
+    raw = load_raw(t)
+    if not raw:
+        return f"ERROR: nothing on file for {t} — A-shares only."
+
+    def newest(key: str, n: int = 3, by: str = "end_date") -> list[dict]:
+        return sorted(raw.get(key) or [], key=lambda r: str(r.get(by) or ""), reverse=True)[:n]
+
+    out = [f"{t} 治理与风险"]
+    for r in newest("fina_audit"):
+        fee = r.get("audit_fees")
+        out.append(f"  审计 {r.get('end_date')}: {r.get('audit_result')} · {r.get('audit_agency') or '?'}"
+                   + (f" · 审计费 {fee / 1e4:,.0f} 万元" if fee else ""))
+    for r in newest("pledge_stat", 2):
+        # Tushare reports both halves in 万股 and the ratio already in percent.
+        pledged = (r.get("unrest_pledge") or 0) + (r.get("rest_pledge") or 0)
+        ratio = r.get("pledge_ratio")
+        out.append(f"  股权质押 {r.get('end_date')}: {r.get('pledge_count')} 笔 · "
+                   f"质押 {pledged:,.0f} 万股"
+                   + (f" ({ratio:.2f}% of 总股本)" if ratio is not None else ""))
+    for r in newest("stk_holdertrade", 4, by="ann_date"):
+        direction = "增持" if (r.get("in_de") or "").upper().startswith("I") else "减持"
+        out.append(f"  {direction} {r.get('ann_date')}: {r.get('holder_name')} "
+                   f"({r.get('holder_type') or '?'}) {abs(r.get('change_vol') or 0):,.0f} shares")
+    for r in newest("repurchase", 2, by="ann_date"):
+        out.append(f"  回购 {r.get('ann_date')}: {r.get('proc') or '?'} · "
+                   f"{(r.get('vol') or 0):,.0f} shares · 金额 {(r.get('amount') or 0) / 1e8:,.2f} 亿元")
+    for r in newest("share_float", 3, by="float_date"):
+        # float_share is in 股; float_ratio is already a percentage.
+        out.append(f"  解禁 {r.get('float_date')}: {(r.get('float_share') or 0) / 1e4:,.0f} 万股 "
+                   f"({(r.get('float_ratio') or 0):.2f}%) · {r.get('holder_name')}"
+                   + (f" · {r.get('share_type')}" if r.get("share_type") else ""))
+    # Pay is only disclosed with an annual report, and `reward` is in 元.
+    paid = [r for r in (raw.get("stk_rewards") or []) if (r.get("reward") or 0) > 0]
+    if paid:
+        latest = max(str(r.get("end_date") or "") for r in paid)
+        top = sorted((r for r in paid if str(r.get("end_date")) == latest),
+                     key=lambda r: -(r.get("reward") or 0))[:5]
+        out.append(f"  高管薪酬 {latest}: " + "; ".join(
+            f"{r.get('name')} ({(r.get('title') or '?').split(',')[0]}) "
+            f"{(r.get('reward') or 0) / 1e4:,.1f} 万元" for r in top))
+    nxt = [r for r in (raw.get("disclosure_date") or []) if not r.get("actual_date")]
+    if nxt:
+        r = sorted(nxt, key=lambda x: str(x.get("pre_date") or ""))[0]
+        out.append(f"  下次披露: {r.get('end_date')} 报告，预计 {r.get('pre_date')}")
+    for r in (raw.get("namechange") or [])[:2]:
+        out.append(f"  曾用名: {r.get('name')} ({r.get('start_date')}–{r.get('end_date') or '今'})"
+                   + (f" · {r.get('change_reason')}" if r.get("change_reason") else ""))
+    return "\n".join(out) if len(out) > 1 else f"No governance records on file for {t}."

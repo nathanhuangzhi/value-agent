@@ -120,18 +120,34 @@ def test_the_series_updater_reads_the_right_filings_and_sections(tmp_path, monke
     from app.tools import ashare_reports
 
     index = {"ticker": "600066.SS", "filings": [
-        {"accession": "a1", "form": "年度报告", "title": "2025年年度报告",
-         "fiscal_year": "2025", "filed": "2026-03-30", "toc": build_toc(MD)},
-        {"accession": "a2", "form": "半年度报告", "title": "2026年半年度报告",
-         "fiscal_year": "2026", "filed": "2026-08-10", "toc": build_toc(MD)},
+        {"accession": "a1", "form": "年度报告", "title": "2025年年度报告", "fiscal_year": "2025",
+         "filed": "2026-03-30", "report_date": "2025-12-31", "cumulative": True,
+         "toc": build_toc(MD)},
+        {"accession": "a2", "form": "半年度报告", "title": "2026年半年度报告", "fiscal_year": "2026",
+         "filed": "2026-08-10", "report_date": "2026-06-30", "cumulative": True,
+         "toc": build_toc(MD)},
+        {"accession": "a3", "form": "第一季度报告", "title": "2026年第一季度报告",
+         "fiscal_year": "2026", "filed": "2026-04-27", "report_date": "2026-03-31",
+         "cumulative": False, "toc": build_toc(MD)},
+        # A row written before `report_date` existed: the period must still
+        # come out right, from the form.
+        {"accession": "a4", "form": "第三季度报告", "title": "2025年第三季度报告",
+         "fiscal_year": "2025", "filed": "2025-10-28", "toc": build_toc(MD)},
     ]}
     monkeypatch.setattr(ashare_reports, "load_index", lambda t: index)
     monkeypatch.setattr(ashare_reports, "read_text", lambda t, f: MD)
 
     quarterly = updater._new_filings({"ticker": "600066.SS", "grid": "quarterly",
                                       "last_source": "", "points": []})
-    assert [f["period"] for f in quarterly] == ["2025-12-31", "2026-06-30"]
-    assert quarterly[0]["filed"] < quarterly[1]["filed"]        # oldest first
+    assert [f["period"] for f in quarterly] == ["2025-09-30", "2025-12-31",
+                                                "2026-03-31", "2026-06-30"]
+    assert [f["filed"] for f in quarterly] == sorted(f["filed"] for f in quarterly)
+    # 一季报 figures are for the quarter; the others are cumulative, and the
+    # model is told so or it would book 前三季度 sales as one quarter's.
+    by_period = {f["period"]: f["kind"] for f in quarterly}
+    assert "年初至报告期末" not in by_period["2026-03-31"]
+    assert "年初至报告期末" in by_period["2026-06-30"]
+    assert "年初至报告期末" in by_period["2025-09-30"]
 
     # An annual series ignores the interim report…
     annual = updater._new_filings({"ticker": "600066.SS", "grid": "annual",
@@ -141,7 +157,7 @@ def test_the_series_updater_reads_the_right_filings_and_sections(tmp_path, monke
     # …and a series already fed the 年报 only sees what came after it.
     later = updater._new_filings({"ticker": "600066.SS", "grid": "quarterly",
                                   "last_source": "2026-03-30", "points": []})
-    assert [f["period"] for f in later] == ["2026-06-30"]
+    assert [f["period"] for f in later] == ["2026-03-31", "2026-06-30"]
 
     # The text handed to the model starts at the management discussion.
     assert quarterly[0]["text"].startswith("## 第三节 管理层讨论与分析")
